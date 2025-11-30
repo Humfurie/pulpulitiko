@@ -42,7 +42,7 @@ func (r *CategoryRepository) GetByID(ctx context.Context, id uuid.UUID) (*models
 	query := `
 		SELECT id, name, slug, description, created_at, updated_at
 		FROM categories
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	category := &models.Category{}
@@ -65,7 +65,7 @@ func (r *CategoryRepository) GetBySlug(ctx context.Context, slug string) (*model
 	query := `
 		SELECT id, name, slug, description, created_at, updated_at
 		FROM categories
-		WHERE slug = $1
+		WHERE slug = $1 AND deleted_at IS NULL
 	`
 
 	category := &models.Category{}
@@ -88,6 +88,7 @@ func (r *CategoryRepository) List(ctx context.Context) ([]models.Category, error
 	query := `
 		SELECT id, name, slug, description, created_at, updated_at
 		FROM categories
+		WHERE deleted_at IS NULL
 		ORDER BY name ASC
 	`
 
@@ -135,11 +136,41 @@ func (r *CategoryRepository) Update(ctx context.Context, id uuid.UUID, req *mode
 }
 
 func (r *CategoryRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := "DELETE FROM categories WHERE id = $1"
+	query := "UPDATE categories SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 
 	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete category: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("category not found")
+	}
+
+	return nil
+}
+
+func (r *CategoryRepository) Restore(ctx context.Context, id uuid.UUID) error {
+	query := "UPDATE categories SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to restore category: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("category not found or not deleted")
+	}
+
+	return nil
+}
+
+func (r *CategoryRepository) HardDelete(ctx context.Context, id uuid.UUID) error {
+	query := "DELETE FROM categories WHERE id = $1"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to permanently delete category: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {

@@ -1,9 +1,13 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
 
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates curl
 
 WORKDIR /app
+
+# Install golang-migrate
+RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.0/migrate.linux-amd64.tar.gz | tar xvz && \
+    mv migrate /usr/local/bin/migrate
 
 # Copy go mod files first for better caching
 COPY api/go.mod api/go.sum ./
@@ -25,7 +29,10 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /server .
 
-# Copy migrations if needed
+# Copy migrate tool from builder
+COPY --from=builder /usr/local/bin/migrate /usr/local/bin/migrate
+
+# Copy migrations
 COPY api/migrations ./migrations
 
 EXPOSE 8080

@@ -15,6 +15,14 @@ const articles = ref<ArticleListItem[]>([])
 const totalPages = ref(1)
 const error = ref('')
 
+const columns = [
+  { accessorKey: 'title', header: 'Title' },
+  { accessorKey: 'category_name', header: 'Category' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'published_at', header: 'Published' },
+  { id: 'actions', header: '' }
+]
+
 async function fetchArticles() {
   loading.value = true
   error.value = ''
@@ -57,13 +65,13 @@ function getStatusColor(status: string) {
     default: return 'neutral'
   }
 }
-
 onMounted(fetchArticles)
 watch(page, fetchArticles)
 
 useSeoMeta({
   title: 'Articles - Pulpulitiko Admin'
 })
+
 </script>
 
 <template>
@@ -85,13 +93,8 @@ useSeoMeta({
       <UTable
         v-else-if="articles.length"
         :data="articles"
-        :columns="[
-          { key: 'title', label: 'Title' },
-          { key: 'category_name', label: 'Category' },
-          { key: 'status', label: 'Status' },
-          { key: 'published_at', label: 'Published' },
-          { key: 'actions', label: '' }
-        ]"
+        :columns="columns"
+        class="flex-1"
       >
         <template #title-cell="{ row }">
           <div>

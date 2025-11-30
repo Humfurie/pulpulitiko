@@ -71,6 +71,29 @@ func (h *TagHandler) GetArticlesBySlug(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GET /api/admin/tags/:id
+func (h *TagHandler) AdminGetByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "invalid tag ID")
+		return
+	}
+
+	tag, err := h.tagService.GetByID(r.Context(), id)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch tag")
+		return
+	}
+
+	if tag == nil {
+		WriteNotFound(w, "tag not found")
+		return
+	}
+
+	WriteSuccess(w, tag)
+}
+
 // POST /api/admin/tags
 func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateTagRequest
@@ -132,4 +155,21 @@ func (h *TagHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteSuccess(w, map[string]string{"message": "tag deleted"})
+}
+
+// POST /api/admin/tags/:id/restore
+func (h *TagHandler) Restore(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "invalid tag ID")
+		return
+	}
+
+	if err := h.tagService.Restore(r.Context(), id); err != nil {
+		WriteInternalError(w, err.Error())
+		return
+	}
+
+	WriteSuccess(w, map[string]string{"message": "tag restored"})
 }

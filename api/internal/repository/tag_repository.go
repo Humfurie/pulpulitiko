@@ -37,7 +37,7 @@ func (r *TagRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Tag,
 	query := `
 		SELECT id, name, slug, created_at, updated_at
 		FROM tags
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	tag := &models.Tag{}
@@ -57,7 +57,7 @@ func (r *TagRepository) GetBySlug(ctx context.Context, slug string) (*models.Tag
 	query := `
 		SELECT id, name, slug, created_at, updated_at
 		FROM tags
-		WHERE slug = $1
+		WHERE slug = $1 AND deleted_at IS NULL
 	`
 
 	tag := &models.Tag{}
@@ -77,6 +77,7 @@ func (r *TagRepository) List(ctx context.Context) ([]models.Tag, error) {
 	query := `
 		SELECT id, name, slug, created_at, updated_at
 		FROM tags
+		WHERE deleted_at IS NULL
 		ORDER BY name ASC
 	`
 
@@ -120,11 +121,41 @@ func (r *TagRepository) Update(ctx context.Context, id uuid.UUID, req *models.Up
 }
 
 func (r *TagRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := "DELETE FROM tags WHERE id = $1"
+	query := "UPDATE tags SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 
 	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete tag: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("tag not found")
+	}
+
+	return nil
+}
+
+func (r *TagRepository) Restore(ctx context.Context, id uuid.UUID) error {
+	query := "UPDATE tags SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to restore tag: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("tag not found or not deleted")
+	}
+
+	return nil
+}
+
+func (r *TagRepository) HardDelete(ctx context.Context, id uuid.UUID) error {
+	query := "DELETE FROM tags WHERE id = $1"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to permanently delete tag: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {

@@ -14,6 +14,13 @@ const { data: trendingArticles } = await useAsyncData(
   () => api.getTrendingArticles()
 )
 
+// Track article view (only on client-side)
+onMounted(() => {
+  if (article.value) {
+    api.trackArticleView(slug.value)
+  }
+})
+
 function formatDate(dateString?: string): string {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('en-PH', {

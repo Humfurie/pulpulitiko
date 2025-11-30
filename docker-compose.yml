@@ -62,6 +62,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-politics}:${POSTGRES_PASSWORD:-localdev}@postgres:5432/${POSTGRES_DB:-politics_db}?sslmode=disable
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: localhost:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-politics-media}
@@ -78,15 +79,20 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  # Nuxt Frontend
+  # Nuxt Frontend (Development with hot reload)
   web:
     build:
       context: .
-      dockerfile: docker/web.Dockerfile
+      dockerfile: docker/web.dev.Dockerfile
     container_name: pulpulitiko-web
     environment:
       NUXT_PUBLIC_API_URL: ${NUXT_PUBLIC_API_URL:-http://localhost:8080/api}
       NUXT_API_INTERNAL_URL: http://api:8080/api
+      CHOKIDAR_USEPOLLING: "true"
+      NUXT_VITE_HMR_CLIENT_PORT: "3000"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     depends_on:

@@ -71,6 +71,60 @@ func (h *CategoryHandler) GetArticlesBySlug(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// GET /api/admin/categories
+func (h *CategoryHandler) AdminList(w http.ResponseWriter, r *http.Request) {
+	page, perPage := GetPaginationParams(r)
+
+	categories, err := h.categoryService.List(r.Context())
+	if err != nil {
+		WriteInternalError(w, "failed to fetch categories")
+		return
+	}
+
+	// Calculate pagination
+	total := len(categories)
+	totalPages := (total + perPage - 1) / perPage
+	start := (page - 1) * perPage
+	end := start + perPage
+	if start > total {
+		start = total
+	}
+	if end > total {
+		end = total
+	}
+
+	WriteSuccess(w, map[string]interface{}{
+		"categories":  categories[start:end],
+		"total":       total,
+		"page":        page,
+		"per_page":    perPage,
+		"total_pages": totalPages,
+	})
+}
+
+// GET /api/admin/categories/:id
+func (h *CategoryHandler) AdminGetByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "invalid category ID")
+		return
+	}
+
+	category, err := h.categoryService.GetByID(r.Context(), id)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch category")
+		return
+	}
+
+	if category == nil {
+		WriteNotFound(w, "category not found")
+		return
+	}
+
+	WriteSuccess(w, category)
+}
+
 // POST /api/admin/categories
 func (h *CategoryHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateCategoryRequest
@@ -132,4 +186,21 @@ func (h *CategoryHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteSuccess(w, map[string]string{"message": "category deleted"})
+}
+
+// POST /api/admin/categories/:id/restore
+func (h *CategoryHandler) Restore(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "invalid category ID")
+		return
+	}
+
+	if err := h.categoryService.Restore(r.Context(), id); err != nil {
+		WriteInternalError(w, err.Error())
+		return
+	}
+
+	WriteSuccess(w, map[string]string{"message": "category restored"})
 }

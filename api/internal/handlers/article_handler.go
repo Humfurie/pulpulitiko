@@ -204,3 +204,36 @@ func (h *ArticleHandler) AdminGetByID(w http.ResponseWriter, r *http.Request) {
 
 	WriteSuccess(w, article)
 }
+
+// POST /api/articles/:slug/view
+func (h *ArticleHandler) IncrementViewCount(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		WriteBadRequest(w, "slug is required")
+		return
+	}
+
+	if err := h.service.IncrementViewCount(r.Context(), slug); err != nil {
+		WriteInternalError(w, "failed to increment view count")
+		return
+	}
+
+	WriteSuccess(w, map[string]string{"message": "view count incremented"})
+}
+
+// POST /api/admin/articles/:id/restore
+func (h *ArticleHandler) Restore(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "invalid article ID")
+		return
+	}
+
+	if err := h.service.Restore(r.Context(), id); err != nil {
+		WriteInternalError(w, err.Error())
+		return
+	}
+
+	WriteSuccess(w, map[string]string{"message": "article restored"})
+}

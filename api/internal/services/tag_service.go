@@ -51,3 +51,7 @@ func (s *TagService) Update(ctx context.Context, id uuid.UUID, req *models.Updat
 func (s *TagService) Delete(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
 }
+
+func (s *TagService) Restore(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Restore(ctx, id)
+}

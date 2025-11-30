@@ -16,12 +16,26 @@ onMounted(async () => {
   }
 })
 
-const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: 'i-heroicons-home' },
-  { name: 'Articles', href: '/admin/articles', icon: 'i-heroicons-document-text' },
-  { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder' },
-  { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag' }
+// Navigation items with role requirements
+// roles: undefined = all authenticated users, ['admin'] = admin only, ['admin', 'author'] = admin and author
+const allNavigation = [
+  { name: 'Dashboard', href: '/admin', icon: 'i-heroicons-home', roles: undefined },
+  { name: 'Articles', href: '/admin/articles', icon: 'i-heroicons-document-text', roles: ['admin', 'author'] },
+  { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
+  { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
+  { name: 'Users', href: '/admin/users', icon: 'i-heroicons-users', roles: ['admin'] }
 ]
+
+// Filter navigation based on user role
+const navigation = computed(() => {
+  const userRole = auth.user.value?.role
+  if (!userRole) return []
+
+  return allNavigation.filter(item => {
+    if (!item.roles) return true // Visible to all authenticated users
+    return item.roles.includes(userRole)
+  })
+})
 
 function isActive(href: string) {
   if (href === '/admin') {
@@ -66,9 +80,19 @@ function isActive(href: string) {
           <div class="flex items-center gap-3 mb-3">
             <UAvatar :alt="auth.user.value?.name" size="sm" />
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {{ auth.user.value?.name }}
-              </p>
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  {{ auth.user.value?.name }}
+                </p>
+                <UBadge
+                  :color="auth.user.value?.role === 'admin' ? 'error' : auth.user.value?.role === 'author' ? 'primary' : 'neutral'"
+                  variant="subtle"
+                  size="xs"
+                  class="capitalize"
+                >
+                  {{ auth.user.value?.role }}
+                </UBadge>
+              </div>
               <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {{ auth.user.value?.email }}
               </p>

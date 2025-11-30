@@ -20,7 +20,7 @@ func NewUserRepository(db *pgxpool.Pool) *UserRepository {
 
 func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 	query := `
-		INSERT INTO users (email, password_hash, name, role)
+		INSERT INTO users (email, password_hash, name, role_id)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at, updated_at
 	`
@@ -29,7 +29,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 		user.Email,
 		user.PasswordHash,
 		user.Name,
-		user.Role,
+		user.RoleID,
 	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
@@ -41,15 +41,16 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 
 func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, role, created_at, updated_at
-		FROM users
-		WHERE id = $1
+		SELECT u.id, u.email, u.password_hash, u.name, u.role_id, COALESCE(r.slug, '') as role_slug, u.created_at, u.updated_at, u.deleted_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1 AND u.deleted_at IS NULL
 	`
 
 	user := &models.User{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
-		&user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.RoleID, &user.RoleSlug,
+		&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -64,15 +65,16 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Use
 
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, role, created_at, updated_at
-		FROM users
-		WHERE email = $1
+		SELECT u.id, u.email, u.password_hash, u.name, u.role_id, COALESCE(r.slug, '') as role_slug, u.created_at, u.updated_at, u.deleted_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.email = $1 AND u.deleted_at IS NULL
 	`
 
 	user := &models.User{}
 	err := r.db.QueryRow(ctx, query, email).Scan(
-		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
-		&user.CreatedAt, &user.UpdatedAt,
+		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.RoleID, &user.RoleSlug,
+		&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -87,9 +89,11 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 func (r *UserRepository) List(ctx context.Context) ([]models.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, role, created_at, updated_at
-		FROM users
-		ORDER BY created_at DESC
+		SELECT u.id, u.email, u.password_hash, u.name, u.role_id, COALESCE(r.slug, '') as role_slug, u.created_at, u.updated_at, u.deleted_at
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		WHERE u.deleted_at IS NULL
+		ORDER BY u.created_at DESC
 	`
 
 	rows, err := r.db.Query(ctx, query)
@@ -102,8 +106,8 @@ func (r *UserRepository) List(ctx context.Context) ([]models.User, error) {
 	for rows.Next() {
 		var user models.User
 		err := rows.Scan(
-			&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role,
-			&user.CreatedAt, &user.UpdatedAt,
+			&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.RoleID, &user.RoleSlug,
+			&user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -115,11 +119,41 @@ func (r *UserRepository) List(ctx context.Context) ([]models.User, error) {
 }
 
 func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := "DELETE FROM users WHERE id = $1"
+	query := "UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 
 	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
+func (r *UserRepository) Restore(ctx context.Context, id uuid.UUID) error {
+	query := "UPDATE users SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to restore user: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found or not deleted")
+	}
+
+	return nil
+}
+
+func (r *UserRepository) HardDelete(ctx context.Context, id uuid.UUID) error {
+	query := "DELETE FROM users WHERE id = $1"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to permanently delete user: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {

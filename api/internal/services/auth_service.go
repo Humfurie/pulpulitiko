@@ -14,12 +14,14 @@ import (
 
 type AuthService struct {
 	userRepo  *repository.UserRepository
+	roleRepo  *repository.RoleRepository
 	jwtSecret []byte
 }
 
-func NewAuthService(userRepo *repository.UserRepository, jwtSecret string) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, roleRepo *repository.RoleRepository, jwtSecret string) *AuthService {
 	return &AuthService{
 		userRepo:  userRepo,
+		roleRepo:  roleRepo,
 		jwtSecret: []byte(jwtSecret),
 	}
 }
@@ -27,7 +29,8 @@ func NewAuthService(userRepo *repository.UserRepository, jwtSecret string) *Auth
 type JWTClaims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
-	Role   string `json:"role"`
+	RoleID string `json:"role_id"`
+	Role   string `json:"role"` // Role slug for backwards compatibility
 	jwt.RegisteredClaims
 }
 
@@ -49,10 +52,22 @@ func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest) (*mod
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
+	// Get user permissions
+	var permissions []string
+	if user.RoleID != nil {
+		permissions, _ = s.roleRepo.GetPermissionSlugsByRoleID(ctx, *user.RoleID)
+	}
+
 	return &models.LoginResponse{
-		Token: token,
-		User:  *user,
+		Token:       token,
+		User:        *user,
+		Permissions: permissions,
 	}, nil
+}
+
+// GetPermissionsByRoleID returns permission slugs for a role
+func (s *AuthService) GetPermissionsByRoleID(ctx context.Context, roleID uuid.UUID) ([]string, error) {
+	return s.roleRepo.GetPermissionSlugsByRoleID(ctx, roleID)
 }
 
 func (s *AuthService) CreateUser(ctx context.Context, req *models.CreateUserRequest) (*models.User, error) {
@@ -69,11 +84,16 @@ func (s *AuthService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
+	roleID, err := uuid.Parse(req.RoleID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid role ID: %w", err)
+	}
+
 	user := &models.User{
 		Email:        req.Email,
 		PasswordHash: string(hashedPassword),
 		Name:         req.Name,
-		Role:         models.UserRole(req.Role),
+		RoleID:       &roleID,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -108,10 +128,16 @@ func (s *AuthService) ValidateToken(tokenString string) (*JWTClaims, error) {
 }
 
 func (s *AuthService) generateToken(user *models.User) (string, error) {
+	roleID := ""
+	if user.RoleID != nil {
+		roleID = user.RoleID.String()
+	}
+
 	claims := &JWTClaims{
 		UserID: user.ID.String(),
 		Email:  user.Email,
-		Role:   string(user.Role),
+		RoleID: roleID,
+		Role:   user.RoleSlug,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

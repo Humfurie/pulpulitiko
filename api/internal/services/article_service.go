@@ -238,6 +238,17 @@ func (s *ArticleService) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (s *ArticleService) Restore(ctx context.Context, id uuid.UUID) error {
+	if err := s.repo.Restore(ctx, id); err != nil {
+		return err
+	}
+
+	// Invalidate caches
+	s.invalidateArticleCache(ctx, id)
+
+	return nil
+}
+
 func (s *ArticleService) GetTrending(ctx context.Context, limit int) ([]models.ArticleListItem, error) {
 	if limit < 1 || limit > 20 {
 		limit = 10
@@ -282,6 +293,10 @@ func (s *ArticleService) Search(ctx context.Context, query string, page, perPage
 		}(),
 	}
 	return s.List(ctx, filter, page, perPage)
+}
+
+func (s *ArticleService) IncrementViewCount(ctx context.Context, slug string) error {
+	return s.repo.IncrementViewCountBySlug(ctx, slug)
 }
 
 func (s *ArticleService) invalidateArticleCache(ctx context.Context, id uuid.UUID) {

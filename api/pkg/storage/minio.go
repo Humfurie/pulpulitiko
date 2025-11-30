@@ -15,10 +15,11 @@ import (
 )
 
 type MinioStorage struct {
-	client     *minio.Client
-	bucketName string
-	endpoint   string
-	useSSL     bool
+	client         *minio.Client
+	bucketName     string
+	endpoint       string
+	publicEndpoint string
+	useSSL         bool
 }
 
 type UploadResult struct {
@@ -28,7 +29,7 @@ type UploadResult struct {
 	MimeType string `json:"mime_type"`
 }
 
-func NewMinioStorage(endpoint, accessKey, secretKey, bucket string, useSSL bool) (*MinioStorage, error) {
+func NewMinioStorage(endpoint, publicEndpoint, accessKey, secretKey, bucket string, useSSL bool) (*MinioStorage, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
@@ -72,10 +73,11 @@ func NewMinioStorage(endpoint, accessKey, secretKey, bucket string, useSSL bool)
 	}
 
 	return &MinioStorage{
-		client:     client,
-		bucketName: bucket,
-		endpoint:   endpoint,
-		useSSL:     useSSL,
+		client:         client,
+		bucketName:     bucket,
+		endpoint:       endpoint,
+		publicEndpoint: publicEndpoint,
+		useSSL:         useSSL,
 	}, nil
 }
 
@@ -100,7 +102,7 @@ func (s *MinioStorage) Upload(ctx context.Context, reader io.Reader, fileName st
 
 	return &UploadResult{
 		Key:      key,
-		URL:      fmt.Sprintf("%s://%s/%s/%s", protocol, s.endpoint, s.bucketName, key),
+		URL:      fmt.Sprintf("%s://%s/%s/%s", protocol, s.publicEndpoint, s.bucketName, key),
 		Size:     info.Size,
 		MimeType: contentType,
 	}, nil
@@ -128,7 +130,7 @@ func (s *MinioStorage) GetURL(key string) string {
 	if s.useSSL {
 		protocol = "https"
 	}
-	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.endpoint, s.bucketName, key)
+	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.publicEndpoint, s.bucketName, key)
 }
 
 func (s *MinioStorage) KeyFromURL(fileURL string) string {

@@ -24,6 +24,7 @@ type Article struct {
 	AuthorID      *uuid.UUID    `json:"author_id,omitempty"`
 	CategoryID    *uuid.UUID    `json:"category_id,omitempty"`
 	Status        ArticleStatus `json:"status"`
+	ViewCount     int           `json:"view_count"`
 	PublishedAt   *time.Time    `json:"published_at,omitempty"`
 	CreatedAt     time.Time     `json:"created_at"`
 	UpdatedAt     time.Time     `json:"updated_at"`
@@ -41,6 +42,7 @@ type ArticleListItem struct {
 	Summary       *string       `json:"summary,omitempty"`
 	FeaturedImage *string       `json:"featured_image,omitempty"`
 	Status        ArticleStatus `json:"status"`
+	ViewCount     int           `json:"view_count"`
 	PublishedAt   *time.Time    `json:"published_at,omitempty"`
 	CreatedAt     time.Time     `json:"created_at"`
 
@@ -74,11 +76,12 @@ type UpdateArticleRequest struct {
 }
 
 type ArticleFilter struct {
-	Status     *ArticleStatus
-	CategoryID *uuid.UUID
-	TagID      *uuid.UUID
-	AuthorID   *uuid.UUID
-	Search     *string
+	Status         *ArticleStatus
+	CategoryID     *uuid.UUID
+	TagID          *uuid.UUID
+	AuthorID       *uuid.UUID
+	Search         *string
+	IncludeDeleted bool
 }
 
 type PaginatedArticles struct {

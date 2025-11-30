@@ -2,11 +2,14 @@ import type {
   ApiResponse,
   Article,
   ArticleListItem,
+  Author,
+  AuthorWithArticles,
   Category,
   CategoryWithArticles,
   PaginatedArticles,
   Tag,
-  TagWithArticles
+  TagWithArticles,
+  UploadResult
 } from '~/types'
 
 export function useApi() {
@@ -42,6 +45,14 @@ export function useApi() {
       return fetchApi<Article>(`/articles/${slug}`)
     },
 
+    async trackArticleView(slug: string): Promise<void> {
+      try {
+        await $fetch(`${baseUrl}/articles/${slug}/view`, { method: 'POST' })
+      } catch {
+        // Silently fail - view tracking shouldn't break the page
+      }
+    },
+
     async getTrendingArticles(): Promise<ArticleListItem[]> {
       return fetchApi<ArticleListItem[]>('/articles/trending')
     },
@@ -70,6 +81,42 @@ export function useApi() {
 
     async getTagArticles(slug: string, page = 1, perPage = 10): Promise<TagWithArticles> {
       return fetchApi<TagWithArticles>(`/tags/${slug}?page=${page}&per_page=${perPage}`)
+    },
+
+    // Authors
+    async getAuthors(): Promise<Author[]> {
+      return fetchApi<Author[]>('/authors')
+    },
+
+    async getAuthorArticles(slug: string, page = 1, perPage = 10): Promise<AuthorWithArticles> {
+      return fetchApi<AuthorWithArticles>(`/authors/${slug}?page=${page}&per_page=${perPage}`)
+    },
+
+    // Upload
+    async uploadFile(file: File, authHeaders: HeadersInit): Promise<UploadResult> {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Extract only the Authorization header - don't set Content-Type for FormData
+      const headers: Record<string, string> = {}
+      if (authHeaders && typeof authHeaders === 'object') {
+        const authRecord = authHeaders as Record<string, string>
+        if (authRecord.Authorization) {
+          headers.Authorization = authRecord.Authorization
+        }
+      }
+
+      const response = await $fetch<ApiResponse<UploadResult>>(`${baseUrl}/admin/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      })
+
+      if (!response.success) {
+        throw new Error((response as unknown as { error: string }).error || 'Upload failed')
+      }
+
+      return response.data
     }
   }
 }

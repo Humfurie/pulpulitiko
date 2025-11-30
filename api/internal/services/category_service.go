@@ -104,3 +104,13 @@ func (s *CategoryService) Delete(ctx context.Context, id uuid.UUID) error {
 
 	return nil
 }
+
+func (s *CategoryService) Restore(ctx context.Context, id uuid.UUID) error {
+	if err := s.repo.Restore(ctx, id); err != nil {
+		return err
+	}
+
+	s.cache.Delete(ctx, cache.CategoriesKey())
+
+	return nil
+}

@@ -58,25 +58,25 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.Article)
 func (r *ArticleRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Article, error) {
 	query := `
 		SELECT a.id, a.slug, a.title, a.summary, a.content, a.featured_image,
-			   a.author_id, a.category_id, a.status, a.published_at, a.created_at, a.updated_at,
+			   a.author_id, a.category_id, a.status, a.view_count, a.published_at, a.created_at, a.updated_at,
 			   au.id, au.name, au.slug, au.bio, au.avatar, au.email,
 			   c.id, c.name, c.slug, c.description
 		FROM articles a
-		LEFT JOIN authors au ON a.author_id = au.id
-		LEFT JOIN categories c ON a.category_id = c.id
-		WHERE a.id = $1
+		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
+		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+		WHERE a.id = $1 AND a.deleted_at IS NULL
 	`
 
 	article := &models.Article{}
-	var author models.Author
-	var category models.Category
 	var authorID, categoryID *uuid.UUID
+	var authorName, authorSlug, authorBio, authorAvatar, authorEmail *string
+	var categoryName, categorySlug, categoryDescription *string
 
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Content, &article.FeaturedImage,
-		&article.AuthorID, &article.CategoryID, &article.Status, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
-		&authorID, &author.Name, &author.Slug, &author.Bio, &author.Avatar, &author.Email,
-		&categoryID, &category.Name, &category.Slug, &category.Description,
+		&article.AuthorID, &article.CategoryID, &article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
+		&authorID, &authorName, &authorSlug, &authorBio, &authorAvatar, &authorEmail,
+		&categoryID, &categoryName, &categorySlug, &categoryDescription,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -87,12 +87,22 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 	}
 
 	if authorID != nil {
-		author.ID = *authorID
-		article.Author = &author
+		article.Author = &models.Author{
+			ID:     *authorID,
+			Name:   *authorName,
+			Slug:   *authorSlug,
+			Bio:    authorBio,
+			Avatar: authorAvatar,
+			Email:  authorEmail,
+		}
 	}
 	if categoryID != nil {
-		category.ID = *categoryID
-		article.Category = &category
+		article.Category = &models.Category{
+			ID:          *categoryID,
+			Name:        *categoryName,
+			Slug:        *categorySlug,
+			Description: categoryDescription,
+		}
 	}
 
 	tags, err := r.GetArticleTags(ctx, article.ID)
@@ -107,25 +117,25 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 func (r *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*models.Article, error) {
 	query := `
 		SELECT a.id, a.slug, a.title, a.summary, a.content, a.featured_image,
-			   a.author_id, a.category_id, a.status, a.published_at, a.created_at, a.updated_at,
+			   a.author_id, a.category_id, a.status, a.view_count, a.published_at, a.created_at, a.updated_at,
 			   au.id, au.name, au.slug, au.bio, au.avatar, au.email,
 			   c.id, c.name, c.slug, c.description
 		FROM articles a
-		LEFT JOIN authors au ON a.author_id = au.id
-		LEFT JOIN categories c ON a.category_id = c.id
-		WHERE a.slug = $1
+		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
+		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+		WHERE a.slug = $1 AND a.deleted_at IS NULL
 	`
 
 	article := &models.Article{}
-	var author models.Author
-	var category models.Category
 	var authorID, categoryID *uuid.UUID
+	var authorName, authorSlug, authorBio, authorAvatar, authorEmail *string
+	var categoryName, categorySlug, categoryDescription *string
 
 	err := r.db.QueryRow(ctx, query, slug).Scan(
 		&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Content, &article.FeaturedImage,
-		&article.AuthorID, &article.CategoryID, &article.Status, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
-		&authorID, &author.Name, &author.Slug, &author.Bio, &author.Avatar, &author.Email,
-		&categoryID, &category.Name, &category.Slug, &category.Description,
+		&article.AuthorID, &article.CategoryID, &article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
+		&authorID, &authorName, &authorSlug, &authorBio, &authorAvatar, &authorEmail,
+		&categoryID, &categoryName, &categorySlug, &categoryDescription,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -136,12 +146,22 @@ func (r *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*models
 	}
 
 	if authorID != nil {
-		author.ID = *authorID
-		article.Author = &author
+		article.Author = &models.Author{
+			ID:     *authorID,
+			Name:   *authorName,
+			Slug:   *authorSlug,
+			Bio:    authorBio,
+			Avatar: authorAvatar,
+			Email:  authorEmail,
+		}
 	}
 	if categoryID != nil {
-		category.ID = *categoryID
-		article.Category = &category
+		article.Category = &models.Category{
+			ID:          *categoryID,
+			Name:        *categoryName,
+			Slug:        *categorySlug,
+			Description: categoryDescription,
+		}
 	}
 
 	tags, err := r.GetArticleTags(ctx, article.ID)
@@ -154,7 +174,7 @@ func (r *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*models
 }
 
 func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilter, page, perPage int) (*models.PaginatedArticles, error) {
-	whereClause := []string{"1=1"}
+	whereClause := []string{"a.deleted_at IS NULL"}
 	args := []interface{}{}
 	argNum := 1
 
@@ -184,6 +204,9 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 			args = append(args, *filter.Search)
 			argNum++
 		}
+		if filter.IncludeDeleted {
+			whereClause[0] = "1=1"
+		}
 	}
 
 	where := strings.Join(whereClause, " AND ")
@@ -201,7 +224,7 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 	args = append(args, perPage, offset)
 
 	query := fmt.Sprintf(`
-		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.published_at, a.created_at,
+		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.view_count, a.published_at, a.created_at,
 			   au.name, c.name, c.slug
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id
@@ -222,7 +245,7 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 		var article models.ArticleListItem
 		err := rows.Scan(
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
-			&article.Status, &article.PublishedAt, &article.CreatedAt,
+			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
 			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
 		)
 		if err != nil {
@@ -274,11 +297,41 @@ func (r *ArticleRepository) Update(ctx context.Context, id uuid.UUID, updates ma
 }
 
 func (r *ArticleRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := "DELETE FROM articles WHERE id = $1"
+	query := "UPDATE articles SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 
 	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete article: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("article not found")
+	}
+
+	return nil
+}
+
+func (r *ArticleRepository) Restore(ctx context.Context, id uuid.UUID) error {
+	query := "UPDATE articles SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to restore article: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("article not found or not deleted")
+	}
+
+	return nil
+}
+
+func (r *ArticleRepository) HardDelete(ctx context.Context, id uuid.UUID) error {
+	query := "DELETE FROM articles WHERE id = $1"
+
+	result, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to permanently delete article: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {
@@ -345,8 +398,8 @@ func (r *ArticleRepository) SetArticleTags(ctx context.Context, articleID uuid.U
 func (r *ArticleRepository) GetTrendingIDs(ctx context.Context, limit int) ([]uuid.UUID, error) {
 	query := `
 		SELECT id FROM articles
-		WHERE status = 'published'
-		ORDER BY published_at DESC
+		WHERE status = 'published' AND deleted_at IS NULL
+		ORDER BY view_count DESC, published_at DESC
 		LIMIT $1
 	`
 
@@ -381,12 +434,12 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 	}
 
 	query := fmt.Sprintf(`
-		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.published_at, a.created_at,
+		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.view_count, a.published_at, a.created_at,
 			   au.name, c.name, c.slug
 		FROM articles a
-		LEFT JOIN authors au ON a.author_id = au.id
-		LEFT JOIN categories c ON a.category_id = c.id
-		WHERE a.id IN (%s)
+		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
+		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+		WHERE a.id IN (%s) AND a.deleted_at IS NULL
 	`, strings.Join(placeholders, ","))
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -400,7 +453,7 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 		var article models.ArticleListItem
 		err := rows.Scan(
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
-			&article.Status, &article.PublishedAt, &article.CreatedAt,
+			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
 			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
 		)
 		if err != nil {
@@ -418,4 +471,22 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 	}
 
 	return articles, nil
+}
+
+func (r *ArticleRepository) IncrementViewCount(ctx context.Context, id uuid.UUID) error {
+	query := "UPDATE articles SET view_count = view_count + 1 WHERE id = $1"
+	_, err := r.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to increment view count: %w", err)
+	}
+	return nil
+}
+
+func (r *ArticleRepository) IncrementViewCountBySlug(ctx context.Context, slug string) error {
+	query := "UPDATE articles SET view_count = view_count + 1 WHERE slug = $1 AND status = 'published'"
+	_, err := r.db.Exec(ctx, query, slug)
+	if err != nil {
+		return fmt.Errorf("failed to increment view count: %w", err)
+	}
+	return nil
 }

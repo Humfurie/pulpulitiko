@@ -58,6 +58,7 @@ func main() {
 	logger.Info().Msg("Connecting to MinIO...")
 	minioStorage, err := storage.NewMinioStorage(
 		cfg.MinioEndpoint,
+		cfg.MinioPublicEndpoint,
 		cfg.MinioAccessKey,
 		cfg.MinioSecretKey,
 		cfg.MinioBucket,
@@ -73,13 +74,19 @@ func main() {
 	categoryRepo := repository.NewCategoryRepository(db)
 	tagRepo := repository.NewTagRepository(db)
 	userRepo := repository.NewUserRepository(db)
+	authorRepo := repository.NewAuthorRepository(db)
+	metricsRepo := repository.NewMetricsRepository(db)
+	roleRepo := repository.NewRoleRepository(db)
+	permissionRepo := repository.NewPermissionRepository(db)
 
 	// Initialize services
 	articleService := services.NewArticleService(articleRepo, redisCache)
 	categoryService := services.NewCategoryService(categoryRepo, redisCache)
 	tagService := services.NewTagService(tagRepo)
-	authService := services.NewAuthService(userRepo, cfg.JWTSecret)
+	authService := services.NewAuthService(userRepo, roleRepo, cfg.JWTSecret)
 	uploadService := services.NewUploadService(minioStorage)
+	authorService := services.NewAuthorService(authorRepo)
+	roleService := services.NewRoleService(roleRepo, permissionRepo)
 
 	// Initialize handlers
 	articleHandler := handlers.NewArticleHandler(articleService)
@@ -88,6 +95,9 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	uploadHandler := handlers.NewUploadHandler(uploadService)
 	healthHandler := handlers.NewHealthHandler()
+	authorHandler := handlers.NewAuthorHandler(authorService, articleService)
+	metricsHandler := handlers.NewMetricsHandler(metricsRepo)
+	roleHandler := handlers.NewRoleHandler(roleService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -122,6 +132,7 @@ func main() {
 		r.Get("/articles", articleHandler.List)
 		r.Get("/articles/trending", articleHandler.GetTrending)
 		r.Get("/articles/{slug}", articleHandler.GetBySlug)
+		r.Post("/articles/{slug}/view", articleHandler.IncrementViewCount)
 
 		// Categories
 		r.Get("/categories", categoryHandler.List)
@@ -130,6 +141,10 @@ func main() {
 		// Tags
 		r.Get("/tags", tagHandler.List)
 		r.Get("/tags/{slug}", tagHandler.GetArticlesBySlug)
+
+		// Authors
+		r.Get("/authors", authorHandler.List)
+		r.Get("/authors/{slug}", authorHandler.GetArticlesBySlug)
 
 		// Search
 		r.Get("/search", articleHandler.Search)
@@ -143,28 +158,60 @@ func main() {
 	r.Route("/api/admin", func(r chi.Router) {
 		r.Use(authMiddleware.Authenticate)
 
+		// Metrics
+		r.Get("/metrics", metricsHandler.GetDashboardMetrics)
+		r.Get("/metrics/top-articles", metricsHandler.GetTopArticles)
+		r.Get("/metrics/categories", metricsHandler.GetCategoryMetrics)
+		r.Get("/metrics/tags", metricsHandler.GetTagMetrics)
+
 		// Articles
 		r.Get("/articles", articleHandler.AdminList)
 		r.Get("/articles/{id}", articleHandler.AdminGetByID)
 		r.Post("/articles", articleHandler.Create)
 		r.Put("/articles/{id}", articleHandler.Update)
 		r.Delete("/articles/{id}", articleHandler.Delete)
+		r.Post("/articles/{id}/restore", articleHandler.Restore)
 
 		// Categories
+		r.Get("/categories", categoryHandler.AdminList)
+		r.Get("/categories/{id}", categoryHandler.AdminGetByID)
 		r.Post("/categories", categoryHandler.Create)
 		r.Put("/categories/{id}", categoryHandler.Update)
 		r.Delete("/categories/{id}", categoryHandler.Delete)
+		r.Post("/categories/{id}/restore", categoryHandler.Restore)
 
 		// Tags
+		r.Get("/tags/{id}", tagHandler.AdminGetByID)
 		r.Post("/tags", tagHandler.Create)
 		r.Put("/tags/{id}", tagHandler.Update)
 		r.Delete("/tags/{id}", tagHandler.Delete)
+		r.Post("/tags/{id}/restore", tagHandler.Restore)
 
 		// Upload
 		r.Post("/upload", uploadHandler.Upload)
 
-		// Users (admin only)
-		r.With(authMiddleware.RequireAdmin).Post("/users", authHandler.CreateUser)
+		// Users management (admin only)
+		r.Route("/users", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Get("/", authorHandler.AdminList)
+			r.Get("/{id}", authorHandler.AdminGetByID)
+			r.Post("/", authorHandler.AdminCreate)
+			r.Put("/{id}", authorHandler.AdminUpdate)
+			r.Delete("/{id}", authorHandler.AdminDelete)
+			r.Post("/{id}/restore", authorHandler.AdminRestore)
+		})
+
+		// Roles management (admin only)
+		r.Route("/roles", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Get("/", roleHandler.List)
+			r.Get("/permissions", roleHandler.ListPermissions)
+			r.Get("/{id}", roleHandler.GetByID)
+			r.Post("/", roleHandler.Create)
+			r.Put("/{id}", roleHandler.Update)
+			r.Delete("/{id}", roleHandler.Delete)
+			r.Post("/{id}/restore", roleHandler.Restore)
+		})
 	})
 
 	// Start server
