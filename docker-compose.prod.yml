@@ -1,0 +1,88 @@
+services:
+  # Go API Backend - Production
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: pulpulitiko-api
+    environment:
+      APP_ENV: production
+      APP_PORT: "8080"
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
+      JWT_SECRET: ${JWT_SECRET}
+    expose:
+      - "8080"
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pulpulitiko-api.rule=Host(`pulpulitiko.humfurie.org`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.pulpulitiko-api.entrypoints=websecure"
+      - "traefik.http.routers.pulpulitiko-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pulpulitiko-api.loadbalancer.server.port=8080"
+      - "traefik.docker.network=traefik-public"
+
+  # Nuxt Frontend - Production
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: pulpulitiko-web
+    environment:
+      NODE_ENV: production
+      NUXT_PUBLIC_API_URL: ${NUXT_PUBLIC_API_URL:-https://pulpulitiko.humfurie.org/api}
+      NUXT_API_INTERNAL_URL: http://api:8080/api
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pulpulitiko-web.rule=Host(`pulpulitiko.humfurie.org`)"
+      - "traefik.http.routers.pulpulitiko-web.entrypoints=websecure"
+      - "traefik.http.routers.pulpulitiko-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pulpulitiko-web.loadbalancer.server.port=3000"
+      - "traefik.docker.network=traefik-public"
+      # Lower priority so /api routes go to api service first
+      - "traefik.http.routers.pulpulitiko-web.priority=1"
+      - "traefik.http.routers.pulpulitiko-api.priority=2"
+
+networks:
+  traefik-public:
+    external: true
+  default:
+    driver: bridge

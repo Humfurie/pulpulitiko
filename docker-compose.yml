@@ -1,0 +1,99 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: pulpulitiko-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-politics_db}
+      POSTGRES_USER: ${POSTGRES_USER:-politics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-politics} -d ${POSTGRES_DB:-politics_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: pulpulitiko-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: pulpulitiko-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Go API Backend
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: pulpulitiko-api
+    environment:
+      APP_ENV: development
+      APP_PORT: "8080"
+      DATABASE_URL: postgres://${POSTGRES_USER:-politics}:${POSTGRES_PASSWORD:-localdev}@postgres:5432/${POSTGRES_DB:-politics_db}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-politics-media}
+      MINIO_USE_SSL: "false"
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: unless-stopped
+
+  # Nuxt Frontend
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: pulpulitiko-web
+    environment:
+      NUXT_PUBLIC_API_URL: ${NUXT_PUBLIC_API_URL:-http://localhost:8080/api}
+      NUXT_API_INTERNAL_URL: http://api:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
