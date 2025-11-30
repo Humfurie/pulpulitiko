@@ -2,20 +2,6 @@
 const auth = useAuth()
 const route = useRoute()
 
-// Protect admin routes
-onMounted(async () => {
-  if (!auth.token.value) {
-    await navigateTo('/login')
-    return
-  }
-
-  await auth.fetchCurrentUser()
-
-  if (!auth.isAuthenticated.value) {
-    await navigateTo('/login')
-  }
-})
-
 // Navigation items with role requirements
 // roles: undefined = all authenticated users, ['admin'] = admin only, ['admin', 'author'] = admin and author
 const allNavigation = [
@@ -23,7 +9,8 @@ const allNavigation = [
   { name: 'Articles', href: '/admin/articles', icon: 'i-heroicons-document-text', roles: ['admin', 'author'] },
   { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
   { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
-  { name: 'Users', href: '/admin/users', icon: 'i-heroicons-users', roles: ['admin'] }
+  { name: 'Users', href: '/admin/users', icon: 'i-heroicons-users', roles: ['admin'] },
+  { name: 'Roles', href: '/admin/roles', icon: 'i-heroicons-shield-check', roles: ['admin'] }
 ]
 
 // Filter navigation based on user role
@@ -77,7 +64,10 @@ function isActive(href: string) {
 
         <!-- User section -->
         <div class="p-4 border-t border-gray-200 dark:border-gray-800">
-          <div class="flex items-center gap-3 mb-3">
+          <NuxtLink
+            to="/admin/account"
+            class="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+          >
             <UAvatar :alt="auth.user.value?.name" size="sm" />
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
@@ -97,7 +87,7 @@ function isActive(href: string) {
                 {{ auth.user.value?.email }}
               </p>
             </div>
-          </div>
+          </NuxtLink>
           <div class="flex gap-2">
             <UButton
               to="/"

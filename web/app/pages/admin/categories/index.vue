@@ -3,7 +3,8 @@ import type { Category, PaginatedCategories, ApiResponse } from '~/types'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -38,8 +39,9 @@ async function fetchCategories() {
       categories.value = response.data.categories
       totalPages.value = response.data.total_pages
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load categories'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load categories'
   }
 
   loading.value = false
@@ -54,8 +56,9 @@ async function deleteCategory(id: string) {
       headers: auth.getAuthHeaders()
     })
     await fetchCategories()
-  } catch (e: any) {
-    alert(e?.data?.error?.message || 'Failed to delete category')
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    alert(err?.data?.error?.message || 'Failed to delete category')
   }
 }
 
@@ -128,7 +131,7 @@ useSeoMeta({
         <NuxtLink to="/admin/categories/new" class="text-primary hover:underline">Create one</NuxtLink>
       </div>
 
-      <template #footer v-if="totalPages > 1">
+      <template v-if="totalPages > 1" #footer>
         <div class="flex justify-center">
           <UPagination v-model:page="page" :total="totalPages * 20" :items-per-page="20" />
         </div>

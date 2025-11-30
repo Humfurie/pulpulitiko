@@ -10,17 +10,19 @@ services:
       APP_PORT: "8080"
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-minio.humfurie.org}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_BUCKET: ${MINIO_BUCKET}
-      MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
+      MINIO_BUCKET: ${MINIO_BUCKET:-politics-media}
+      MINIO_USE_SSL: "false"
       JWT_SECRET: ${JWT_SECRET}
     expose:
       - "8080"
     restart: always
     networks:
       - traefik-public
+      - proxy
       - default
     deploy:
       resources:
@@ -83,6 +85,8 @@ services:
 
 networks:
   traefik-public:
+    external: true
+  proxy:
     external: true
   default:
     driver: bridge

@@ -2,7 +2,8 @@
 import type { Category, ApiResponse, UpdateCategoryRequest } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const route = useRoute()
@@ -36,8 +37,9 @@ async function loadCategory() {
       form.slug = category.slug
       form.description = category.description || ''
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load category'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load category'
   }
   loading.value = false
 }
@@ -59,8 +61,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/categories')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to update category'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to update category'
   }
 
   saving.value = false

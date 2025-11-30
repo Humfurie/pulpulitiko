@@ -81,7 +81,7 @@ const editor = useEditor({
 
 watch(() => props.modelValue, (newValue) => {
   if (editor.value && editor.value.getHTML() !== newValue) {
-    editor.value.commands.setContent(newValue, false)
+    editor.value.commands.setContent(newValue, { emitUpdate: false })
   }
 })
 
@@ -95,8 +95,9 @@ async function uploadAndInsertImage(file: File) {
   try {
     const result = await api.uploadFile(file, auth.getAuthHeaders())
     editor.value?.chain().focus().setImage({ src: result.url }).run()
-  } catch (error: any) {
-    alert(error.message || 'Failed to upload image')
+  } catch (e: unknown) {
+    const err = e as { message?: string }
+    alert(err.message || 'Failed to upload image')
   } finally {
     uploading.value = false
   }

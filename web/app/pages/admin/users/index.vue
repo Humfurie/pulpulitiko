@@ -2,7 +2,8 @@
 import type { Author, ApiResponse } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -34,8 +35,9 @@ async function fetchUsers() {
     if (response.success) {
       users.value = response.data
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load users'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load users'
   }
 
   loading.value = false
@@ -50,8 +52,9 @@ async function deleteUser(id: string) {
       headers: auth.getAuthHeaders()
     })
     await fetchUsers()
-  } catch (e: any) {
-    alert(e?.data?.error?.message || 'Failed to delete user')
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    alert(err?.data?.error?.message || 'Failed to delete user')
   }
 }
 

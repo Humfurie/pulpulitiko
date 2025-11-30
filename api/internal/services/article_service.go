@@ -81,7 +81,7 @@ func (s *ArticleService) Create(ctx context.Context, req *models.CreateArticleRe
 	}
 
 	// Invalidate list cache
-	s.cache.DeletePattern(ctx, cache.KeyPrefixArticleList+"*")
+	_ = s.cache.DeletePattern(ctx, cache.KeyPrefixArticleList+"*")
 
 	return s.repo.GetByID(ctx, article.ID)
 }
@@ -102,7 +102,7 @@ func (s *ArticleService) GetByID(ctx context.Context, id uuid.UUID) (*models.Art
 		return nil, nil
 	}
 
-	s.cache.Set(ctx, cacheKey, result, ArticleCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, ArticleCacheTTL)
 
 	return result, nil
 }
@@ -123,7 +123,7 @@ func (s *ArticleService) GetBySlug(ctx context.Context, slug string) (*models.Ar
 		return nil, nil
 	}
 
-	s.cache.Set(ctx, cacheKey, result, ArticleCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, ArticleCacheTTL)
 
 	return result, nil
 }
@@ -149,7 +149,7 @@ func (s *ArticleService) List(ctx context.Context, filter *models.ArticleFilter,
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, articles, ArticleListCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, articles, ArticleListCacheTTL)
 
 	return articles, nil
 }
@@ -233,7 +233,7 @@ func (s *ArticleService) Delete(ctx context.Context, id uuid.UUID) error {
 
 	// Invalidate caches
 	s.invalidateArticleCache(ctx, id)
-	s.cache.Delete(ctx, cache.ArticleSlugKey(article.Slug))
+	_ = s.cache.Delete(ctx, cache.ArticleSlugKey(article.Slug))
 
 	return nil
 }
@@ -300,10 +300,10 @@ func (s *ArticleService) IncrementViewCount(ctx context.Context, slug string) er
 }
 
 func (s *ArticleService) invalidateArticleCache(ctx context.Context, id uuid.UUID) {
-	s.cache.Delete(ctx, cache.ArticleKey(id.String()))
-	s.cache.Delete(ctx, cache.TrendingKey())
-	s.cache.DeletePattern(ctx, cache.KeyPrefixArticleList+"*")
-	s.cache.DeletePattern(ctx, cache.KeyPrefixArticleSlug+"*")
+	_ = s.cache.Delete(ctx, cache.ArticleKey(id.String()))
+	_ = s.cache.Delete(ctx, cache.TrendingKey())
+	_ = s.cache.DeletePattern(ctx, cache.KeyPrefixArticleList+"*")
+	_ = s.cache.DeletePattern(ctx, cache.KeyPrefixArticleSlug+"*")
 }
 
 func hashFilter(filter *models.ArticleFilter) string {

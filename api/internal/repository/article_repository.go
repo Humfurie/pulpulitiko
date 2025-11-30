@@ -372,7 +372,7 @@ func (r *ArticleRepository) SetArticleTags(ctx context.Context, articleID uuid.U
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Delete existing tags
 	_, err = tx.Exec(ctx, "DELETE FROM article_tags WHERE article_id = $1", articleID)

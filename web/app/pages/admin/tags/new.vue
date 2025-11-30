@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { ApiResponse, CreateTagRequest } from '~/types'
+import type { CreateTagRequest } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -39,8 +40,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/tags')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to create tag'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to create tag'
   }
 
   loading.value = false

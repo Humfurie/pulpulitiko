@@ -7,6 +7,7 @@ export function useAuth() {
     : config.public.apiUrl
 
   const user = useState<User | null>('auth-user', () => null)
+  const permissions = useState<string[]>('auth-permissions', () => [])
   const token = useCookie('auth-token', {
     maxAge: 60 * 60 * 24 * 7, // 7 days
     sameSite: 'lax'
@@ -14,6 +15,15 @@ export function useAuth() {
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
+  const isAuthor = computed(() => user.value?.role === 'author')
+
+  function hasPermission(permission: string): boolean {
+    return permissions.value.includes(permission)
+  }
+
+  function hasAnyPermission(...perms: string[]): boolean {
+    return perms.some(p => permissions.value.includes(p))
+  }
 
   async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -25,18 +35,21 @@ export function useAuth() {
       if (response.success) {
         token.value = response.data.token
         user.value = response.data.user
+        permissions.value = response.data.permissions || []
         return { success: true }
       }
 
       return { success: false, error: 'Login failed' }
-    } catch (error: any) {
-      return { success: false, error: error?.data?.error?.message || 'Invalid credentials' }
+    } catch (e: unknown) {
+      const err = e as { data?: { error?: { message?: string } } }
+      return { success: false, error: err?.data?.error?.message || 'Invalid credentials' }
     }
   }
 
   async function logout() {
     token.value = null
     user.value = null
+    permissions.value = []
     await navigateTo('/login')
   }
 
@@ -68,11 +81,15 @@ export function useAuth() {
   return {
     user: readonly(user),
     token: readonly(token),
+    permissions: readonly(permissions),
     isAuthenticated,
     isAdmin,
+    isAuthor,
     login,
     logout,
     fetchCurrentUser,
-    getAuthHeaders
+    getAuthHeaders,
+    hasPermission,
+    hasAnyPermission
   }
 }

@@ -73,7 +73,9 @@ func main() {
 			log.Fatal("Version number required for force command")
 		}
 		var v int
-		fmt.Sscanf(version, "%d", &v)
+		if _, err := fmt.Sscanf(version, "%d", &v); err != nil {
+			log.Fatalf("Invalid version number: %v", err)
+		}
 		if err := m.Force(v); err != nil {
 			log.Fatalf("Force failed: %v", err)
 		}

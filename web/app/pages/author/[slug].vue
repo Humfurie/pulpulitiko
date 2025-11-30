@@ -111,7 +111,7 @@ useSeoMeta({
         />
 
         <!-- Pagination -->
-        <Pagination
+        <AppPagination
           v-if="data.articles.total_pages > 1"
           :current-page="data.articles.page"
           :total-pages="data.articles.total_pages"

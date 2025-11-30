@@ -2,7 +2,8 @@
 import type { RoleWithPermissionCount, ApiResponse } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -34,8 +35,9 @@ async function fetchRoles() {
     if (response.success) {
       roles.value = response.data || []
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load roles'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load roles'
   }
 
   loading.value = false
@@ -55,8 +57,9 @@ async function deleteRole(id: string, isSystem: boolean) {
       headers: auth.getAuthHeaders()
     })
     await fetchRoles()
-  } catch (e: any) {
-    alert(e?.data?.error?.message || 'Failed to delete role')
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    alert(err?.data?.error?.message || 'Failed to delete role')
   }
 }
 

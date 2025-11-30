@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { Tag, PaginatedTags, ApiResponse } from '~/types'
+import type { Tag, ApiResponse } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -27,8 +28,9 @@ async function fetchTags() {
       tags.value = response.data
       totalPages.value = 1
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load tags'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load tags'
   }
 
   loading.value = false
@@ -43,8 +45,9 @@ async function deleteTag(id: string) {
       headers: auth.getAuthHeaders()
     })
     await fetchTags()
-  } catch (e: any) {
-    alert(e?.data?.error?.message || 'Failed to delete tag')
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    alert(err?.data?.error?.message || 'Failed to delete tag')
   }
 }
 
@@ -114,7 +117,7 @@ useSeoMeta({
         </UButton>
       </div>
 
-      <template #footer v-if="totalPages > 1">
+      <template v-if="totalPages > 1" #footer>
         <div class="flex justify-center">
           <UPagination v-model:page="page" :total="totalPages * 20" :items-per-page="20" />
         </div>

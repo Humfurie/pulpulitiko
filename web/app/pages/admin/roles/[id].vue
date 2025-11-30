@@ -2,7 +2,8 @@
 import type { Role, PermissionCategory, ApiResponse, UpdateRoleRequest } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const route = useRoute()
@@ -52,8 +53,9 @@ async function loadRole() {
     if (permissionsResponse.success) {
       permissionCategories.value = permissionsResponse.data || []
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load role'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load role'
   }
   loading.value = false
 }
@@ -112,8 +114,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/roles')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to update role'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to update role'
   }
 
   saving.value = false

@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/humfurie/pulpulitiko/api/internal/middleware"
 	"github.com/humfurie/pulpulitiko/api/internal/models"
 	"github.com/humfurie/pulpulitiko/api/internal/services"
 )
@@ -185,4 +186,60 @@ func (h *AuthorHandler) AdminRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	WriteSuccess(w, map[string]string{"message": "user restored"})
+}
+
+// Account endpoints - for current authenticated user
+
+// GET /api/auth/account
+func (h *AuthorHandler) GetAccount(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserClaims(r.Context())
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "not authenticated")
+		return
+	}
+
+	author, err := h.authorService.GetByEmail(r.Context(), claims.Email)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch account")
+		return
+	}
+
+	if author == nil {
+		WriteNotFound(w, "account not found")
+		return
+	}
+
+	WriteSuccess(w, author)
+}
+
+// PUT /api/auth/account
+func (h *AuthorHandler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserClaims(r.Context())
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "not authenticated")
+		return
+	}
+
+	var req models.UpdateAuthorRequest
+	if err := DecodeAndValidate(r, &req); err != nil {
+		WriteValidationError(w, err)
+		return
+	}
+
+	// Users cannot change their own role or email via this endpoint
+	req.RoleID = nil
+	req.Email = nil
+
+	author, err := h.authorService.UpdateByEmail(r.Context(), claims.Email, &req)
+	if err != nil {
+		WriteInternalError(w, err.Error())
+		return
+	}
+
+	if author == nil {
+		WriteNotFound(w, "account not found")
+		return
+	}
+
+	WriteSuccess(w, author)
 }

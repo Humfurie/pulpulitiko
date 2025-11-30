@@ -2,7 +2,8 @@
 import type { PermissionCategory, ApiResponse, CreateRoleRequest } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const router = useRouter()
@@ -41,8 +42,9 @@ async function loadPermissions() {
     if (response.success) {
       permissionCategories.value = response.data || []
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load permissions'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load permissions'
   }
   loading.value = false
 }
@@ -101,8 +103,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/roles')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to create role'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to create role'
   }
 
   saving.value = false

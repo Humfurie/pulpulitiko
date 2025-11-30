@@ -152,6 +152,8 @@ func main() {
 		// Auth
 		r.Post("/auth/login", authHandler.Login)
 		r.With(authMiddleware.Authenticate).Get("/auth/me", authHandler.GetCurrentUser)
+		r.With(authMiddleware.Authenticate).Get("/auth/account", authorHandler.GetAccount)
+		r.With(authMiddleware.Authenticate).Put("/auth/account", authorHandler.UpdateAccount)
 	})
 
 	// Admin API routes (authenticated)

@@ -2,7 +2,8 @@
 import type { ArticleListItem, PaginatedArticles, ApiResponse } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -36,8 +37,9 @@ async function fetchArticles() {
       articles.value = response.data.articles
       totalPages.value = response.data.total_pages
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load articles'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load articles'
   }
 
   loading.value = false
@@ -52,8 +54,9 @@ async function deleteArticle(id: string) {
       headers: auth.getAuthHeaders()
     })
     await fetchArticles()
-  } catch (e: any) {
-    alert(e?.data?.error?.message || 'Failed to delete article')
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    alert(err?.data?.error?.message || 'Failed to delete article')
   }
 }
 
@@ -145,7 +148,7 @@ useSeoMeta({
         <NuxtLink to="/admin/articles/new" class="text-primary hover:underline">Create one</NuxtLink>
       </div>
 
-      <template #footer v-if="totalPages > 1">
+      <template v-if="totalPages > 1" #footer>
         <div class="flex justify-center">
           <UPagination v-model:page="page" :total="totalPages * 20" :items-per-page="20" />
         </div>

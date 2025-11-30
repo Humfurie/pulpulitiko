@@ -2,7 +2,8 @@
 import type { ApiResponse, DashboardMetrics } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -142,11 +143,13 @@ useSeoMeta({
             :key="article.id"
             class="flex items-center gap-3"
           >
-            <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center text-sm font-bold rounded-full"
+            <span
+              class="flex-shrink-0 w-6 h-6 flex items-center justify-center text-sm font-bold rounded-full"
               :class="{
                 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': index === 0,
                 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400': index > 0
-              }">
+              }"
+            >
               {{ index + 1 }}
             </span>
             <div class="flex-1 min-w-0">
@@ -296,7 +299,7 @@ useSeoMeta({
           No tags yet
         </div>
 
-        <template #footer v-if="metrics?.tag_metrics && metrics.tag_metrics.length > 12">
+        <template v-if="metrics?.tag_metrics && metrics.tag_metrics.length > 12" #footer>
           <NuxtLink to="/admin/tags" class="text-sm text-primary-500 hover:underline">
             View all {{ metrics.tag_metrics.length }} tags
           </NuxtLink>

@@ -54,7 +54,7 @@ useSeoMeta({
         </div>
       </template>
 
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleSubmit">
         <UAlert
           v-if="error"
           color="error"

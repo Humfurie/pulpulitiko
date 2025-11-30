@@ -2,7 +2,8 @@
 import type { ApiResponse, CreateAuthorRequest, SocialLinks, RoleWithPermissionCount } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -54,7 +55,7 @@ async function loadRoles() {
         form.role_id = roles.value[0].id
       }
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Failed to load roles', e)
   }
   loadingRoles.value = false
@@ -83,8 +84,9 @@ async function uploadAvatar(file: File) {
   try {
     const result = await api.uploadFile(file, auth.getAuthHeaders())
     form.avatar = result.url
-  } catch (e: any) {
-    error.value = e.message || 'Failed to upload avatar'
+  } catch (e: unknown) {
+    const err = e as { message?: string }
+    error.value = err.message || 'Failed to upload avatar'
   } finally {
     uploadingAvatar.value = false
   }
@@ -113,7 +115,7 @@ async function handleSubmit() {
     if (form.social_links) {
       Object.entries(form.social_links).forEach(([key, value]) => {
         if (value) {
-          (socialLinks as any)[key] = value
+          socialLinks[key as keyof SocialLinks] = value
         }
       })
     }
@@ -137,8 +139,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/users')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to create user'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to create user'
   }
 
   loading.value = false
@@ -204,7 +207,7 @@ useSeoMeta({
                   :src="form.avatar"
                   alt="Avatar"
                   class="w-full h-full object-cover"
-                />
+                >
                 <div v-else class="w-full h-full flex items-center justify-center">
                   <UIcon name="i-heroicons-user" class="size-12 text-gray-400" />
                 </div>
@@ -217,7 +220,7 @@ useSeoMeta({
                 <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profile Photo</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Click to upload or drag and drop</p>
                 <div class="flex gap-2">
-                  <UButton size="sm" variant="soft" @click="avatarInput?.click()" :loading="uploadingAvatar">
+                  <UButton size="sm" variant="soft" :loading="uploadingAvatar" @click="avatarInput?.click()">
                     Upload
                   </UButton>
                   <UButton v-if="form.avatar" size="sm" variant="soft" color="error" @click="removeAvatar">

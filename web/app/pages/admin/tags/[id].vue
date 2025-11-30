@@ -2,7 +2,8 @@
 import type { Tag, ApiResponse, UpdateTagRequest } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const route = useRoute()
@@ -34,8 +35,9 @@ async function loadTag() {
       form.name = tag.name
       form.slug = tag.slug
     }
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to load tag'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to load tag'
   }
   loading.value = false
 }
@@ -52,8 +54,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/tags')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to update tag'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to update tag'
   }
 
   saving.value = false

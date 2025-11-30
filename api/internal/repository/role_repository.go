@@ -176,7 +176,7 @@ func (r *RoleRepository) Create(ctx context.Context, req *models.CreateRoleReque
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Insert role
 	query := `
@@ -227,7 +227,7 @@ func (r *RoleRepository) Update(ctx context.Context, id uuid.UUID, req *models.U
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Get existing role
 	var role models.Role

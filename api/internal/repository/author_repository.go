@@ -269,3 +269,74 @@ func (r *AuthorRepository) GetRoleIDBySlug(ctx context.Context, slug string) (*u
 
 	return &roleID, nil
 }
+
+func (r *AuthorRepository) GetByEmail(ctx context.Context, email string) (*models.Author, error) {
+	query := `
+		SELECT a.id, a.name, a.slug, a.bio, a.avatar, a.email, a.phone, a.address, a.social_links,
+		       a.role_id, COALESCE(r.slug, '') as role_slug, a.created_at, a.updated_at, a.deleted_at
+		FROM authors a
+		LEFT JOIN roles r ON a.role_id = r.id
+		WHERE a.email = $1 AND a.deleted_at IS NULL
+	`
+
+	author := &models.Author{}
+	var socialLinksJSON []byte
+	err := r.db.QueryRow(ctx, query, email).Scan(
+		&author.ID, &author.Name, &author.Slug, &author.Bio, &author.Avatar,
+		&author.Email, &author.Phone, &author.Address, &socialLinksJSON,
+		&author.RoleID, &author.Role, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
+	)
+
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get author by email: %w", err)
+	}
+
+	if len(socialLinksJSON) > 0 {
+		var socialLinks models.SocialLinks
+		if err := json.Unmarshal(socialLinksJSON, &socialLinks); err == nil {
+			author.SocialLinks = &socialLinks
+		}
+	}
+
+	return author, nil
+}
+
+func (r *AuthorRepository) UpdateByEmail(ctx context.Context, email string, req *models.UpdateAuthorRequest) error {
+	var socialLinksJSON []byte
+	if req.SocialLinks != nil {
+		var err error
+		socialLinksJSON, err = json.Marshal(req.SocialLinks)
+		if err != nil {
+			return fmt.Errorf("failed to marshal social links: %w", err)
+		}
+	}
+
+	query := `
+		UPDATE authors
+		SET name = COALESCE($1, name),
+			slug = COALESCE($2, slug),
+			bio = COALESCE($3, bio),
+			avatar = COALESCE($4, avatar),
+			phone = COALESCE($5, phone),
+			address = COALESCE($6, address),
+			social_links = COALESCE($7, social_links)
+		WHERE email = $8 AND deleted_at IS NULL
+	`
+
+	result, err := r.db.Exec(ctx, query,
+		req.Name, req.Slug, req.Bio, req.Avatar,
+		req.Phone, req.Address, socialLinksJSON, email,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update author: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("author not found")
+	}
+
+	return nil
+}

@@ -33,15 +33,33 @@ function formatDate(dateString?: string): string {
 }
 
 // SEO
+const config = useRuntimeConfig()
+const siteUrl = config.public.siteUrl
+
+// Ensure image URL is absolute for social media
+const ogImageUrl = computed(() => {
+  const img = article.value?.featured_image
+  if (!img) return undefined
+  if (img.startsWith('http')) return img
+  return `${siteUrl}${img.startsWith('/') ? '' : '/'}${img}`
+})
+
 useSeoMeta({
   title: () => article.value?.title || 'Article',
   ogTitle: () => article.value?.title,
   description: () => article.value?.summary || '',
   ogDescription: () => article.value?.summary || '',
-  ogImage: () => article.value?.featured_image,
+  ogImage: () => ogImageUrl.value,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
   ogType: 'article',
+  ogUrl: () => `${siteUrl}/article/${slug.value}`,
   articlePublishedTime: () => article.value?.published_at,
-  articleAuthor: () => article.value?.author?.name
+  articleAuthor: () => article.value?.author?.name,
+  twitterCard: 'summary_large_image',
+  twitterTitle: () => article.value?.title,
+  twitterDescription: () => article.value?.summary || '',
+  twitterImage: () => ogImageUrl.value
 })
 
 // Schema.org structured data

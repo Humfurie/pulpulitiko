@@ -53,7 +53,7 @@ useSeoMeta({
         <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
           Search Articles
         </h1>
-        <form @submit.prevent="handleSearch" class="max-w-xl">
+        <form class="max-w-xl" @submit.prevent="handleSearch">
           <div class="flex gap-2">
             <UInput
               v-model="searchQuery"
@@ -125,7 +125,7 @@ useSeoMeta({
         </div>
 
         <!-- Pagination -->
-        <Pagination
+        <AppPagination
           v-if="data.total_pages > 1"
           :current-page="data.page"
           :total-pages="data.total_pages"

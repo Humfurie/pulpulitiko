@@ -2,7 +2,8 @@
 import type { Category, Tag, ApiResponse, CreateArticleRequest } from '~/types'
 
 definePageMeta({
-  layout: 'admin'
+  layout: 'admin',
+  middleware: 'admin'
 })
 
 const auth = useAuth()
@@ -22,7 +23,7 @@ const form = reactive<CreateArticleRequest>({
   summary: '',
   content: '',
   featured_image: '',
-  category_id: null as any,
+  category_id: null as string | null,
   status: 'draft',
   tag_ids: []
 })
@@ -73,14 +74,21 @@ async function uploadFeaturedImage(file: File) {
     return
   }
 
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  if (file.size > maxSize) {
+    error.value = 'Image size must be less than 10MB'
+    return
+  }
+
   uploadingFeaturedImage.value = true
   error.value = ''
 
   try {
     const result = await api.uploadFile(file, auth.getAuthHeaders())
     form.featured_image = result.url
-  } catch (e: any) {
-    error.value = e.message || 'Failed to upload image'
+  } catch (e: unknown) {
+    const err = e as { message?: string }
+    error.value = err.message || 'Failed to upload image'
   } finally {
     uploadingFeaturedImage.value = false
   }
@@ -112,10 +120,23 @@ async function handleSubmit() {
   error.value = ''
 
   try {
-    const payload = {
-      ...form,
-      category_id: form.category_id || undefined,
-      tag_ids: form.tag_ids?.length ? form.tag_ids : undefined
+    const payload: Record<string, unknown> = {
+      slug: form.slug,
+      title: form.title,
+      summary: form.summary || undefined,
+      content: form.content,
+      featured_image: form.featured_image || undefined,
+      status: form.status
+    }
+
+    // Only include category_id if it's a valid non-empty value
+    if (form.category_id && form.category_id !== 'null') {
+      payload.category_id = form.category_id
+    }
+
+    // Only include tag_ids if there are any
+    if (form.tag_ids?.length) {
+      payload.tag_ids = form.tag_ids
     }
 
     await $fetch(`${baseUrl}/admin/articles`, {
@@ -125,8 +146,9 @@ async function handleSubmit() {
     })
 
     await router.push('/admin/articles')
-  } catch (e: any) {
-    error.value = e?.data?.error?.message || 'Failed to create article'
+  } catch (e: unknown) {
+    const err = e as { data?: { error?: { message?: string } } }
+    error.value = err?.data?.error?.message || 'Failed to create article'
   }
 
   loading.value = false
@@ -342,8 +364,8 @@ useSeoMeta({
                 size="sm"
                 :variant="form.tag_ids?.includes(tag.id) ? 'solid' : 'soft'"
                 :color="form.tag_ids?.includes(tag.id) ? 'primary' : 'neutral'"
-                @click="toggleTag(tag.id)"
                 class="transition-all duration-200"
+                @click="toggleTag(tag.id)"
               >
                 <UIcon
                   :name="form.tag_ids?.includes(tag.id) ? 'i-heroicons-check' : 'i-heroicons-plus'"
@@ -386,11 +408,11 @@ useSeoMeta({
                   alt="Featured image preview"
                   class="w-full h-full object-cover"
                   @error="form.featured_image = ''"
-                />
+                >
                 <!-- Remove button overlay -->
                 <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <UButton
-                    color="white"
+                    color="neutral"
                     variant="solid"
                     icon="i-heroicons-arrow-path"
                     size="sm"

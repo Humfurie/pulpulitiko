@@ -86,3 +86,14 @@ func (s *AuthorService) Delete(ctx context.Context, id uuid.UUID) error {
 func (s *AuthorService) Restore(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Restore(ctx, id)
 }
+
+func (s *AuthorService) GetByEmail(ctx context.Context, email string) (*models.Author, error) {
+	return s.repo.GetByEmail(ctx, email)
+}
+
+func (s *AuthorService) UpdateByEmail(ctx context.Context, email string, req *models.UpdateAuthorRequest) (*models.Author, error) {
+	if err := s.repo.UpdateByEmail(ctx, email, req); err != nil {
+		return nil, err
+	}
+	return s.repo.GetByEmail(ctx, email)
+}
