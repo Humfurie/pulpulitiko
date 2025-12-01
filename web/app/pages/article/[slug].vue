@@ -54,8 +54,8 @@ useSeoMeta({
   ogImageHeight: 630,
   ogType: 'article',
   ogUrl: () => `${siteUrl}/article/${slug.value}`,
-  articlePublishedTime: () => article.value?.published_at,
-  articleAuthor: () => article.value?.author?.name,
+  articlePublishedTime: computed(() => article.value?.published_at),
+  articleAuthor: computed(() => article.value?.author?.name ? [article.value.author.name] : undefined),
   twitterCard: 'summary_large_image',
   twitterTitle: () => article.value?.title,
   twitterDescription: () => article.value?.summary || '',
@@ -67,7 +67,7 @@ useHead({
   script: [
     {
       type: 'application/ld+json',
-      children: computed(() => JSON.stringify({
+      innerHTML: computed(() => JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
         headline: article.value?.title,
@@ -195,6 +195,7 @@ useHead({
               </p>
 
               <!-- Content -->
+              <!-- eslint-disable-next-line vue/no-v-html -->
               <div
                 class="mt-8 prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary"
                 v-html="article.content"

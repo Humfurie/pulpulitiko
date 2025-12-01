@@ -12,6 +12,12 @@ import type {
   UploadResult
 } from '~/types'
 
+interface FetchOptions {
+  method?: string
+  headers?: Record<string, string>
+  body?: unknown
+}
+
 export function useApi() {
   const config = useRuntimeConfig()
   // Use internal Docker URL for SSR, public URL for client-side
@@ -19,13 +25,16 @@ export function useApi() {
     ? config.apiInternalUrl
     : config.public.apiUrl
 
-  async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  async function fetchApi<T>(endpoint: string, options?: FetchOptions): Promise<T> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options?.headers
+    }
+
     const response = await $fetch<ApiResponse<T>>(`${baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
-      }
+      method: options?.method,
+      headers,
+      body: options?.body
     })
 
     if (!response.success) {

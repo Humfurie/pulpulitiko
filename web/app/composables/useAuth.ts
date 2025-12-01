@@ -74,8 +74,9 @@ export function useAuth() {
   }
 
   function getAuthHeaders(): Record<string, string> {
-    if (!token.value) return {}
-    return { Authorization: `Bearer ${token.value}` }
+    const tokenVal = token.value
+    if (!tokenVal) return {}
+    return { Authorization: `Bearer ${tokenVal}` }
   }
 
   return {
