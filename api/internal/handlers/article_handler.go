@@ -237,3 +237,38 @@ func (h *ArticleHandler) Restore(w http.ResponseWriter, r *http.Request) {
 
 	WriteSuccess(w, map[string]string{"message": "article restored"})
 }
+
+// GET /api/articles/:slug/related
+func (h *ArticleHandler) GetRelatedArticles(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		WriteBadRequest(w, "slug is required")
+		return
+	}
+
+	// First get the article to get its category and tags
+	article, err := h.service.GetBySlug(r.Context(), slug)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch article")
+		return
+	}
+
+	if article == nil {
+		WriteNotFound(w, "article not found")
+		return
+	}
+
+	// Get tag IDs
+	tagIDs := make([]uuid.UUID, len(article.Tags))
+	for i, tag := range article.Tags {
+		tagIDs[i] = tag.ID
+	}
+
+	related, err := h.service.GetRelatedArticles(r.Context(), article.ID, article.CategoryID, tagIDs, 4)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch related articles")
+		return
+	}
+
+	WriteSuccess(w, related)
+}

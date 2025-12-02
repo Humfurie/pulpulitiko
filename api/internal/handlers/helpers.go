@@ -41,6 +41,18 @@ func WriteInternalError(w http.ResponseWriter, message string) {
 	WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", message)
 }
 
+func WriteUnauthorized(w http.ResponseWriter, message string) {
+	WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", message)
+}
+
+func WriteForbidden(w http.ResponseWriter, message string) {
+	WriteError(w, http.StatusForbidden, "FORBIDDEN", message)
+}
+
+func WriteSuccessWithStatus(w http.ResponseWriter, status int, data interface{}) {
+	WriteJSON(w, status, models.SuccessResponse(data))
+}
+
 func WriteValidationError(w http.ResponseWriter, err error) {
 	WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
 }

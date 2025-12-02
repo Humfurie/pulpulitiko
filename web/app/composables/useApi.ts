@@ -6,10 +6,15 @@ import type {
   AuthorWithArticles,
   Category,
   CategoryWithArticles,
+  Comment,
+  CommentAuthor,
+  CommentCountResponse,
+  CreateCommentRequest,
   PaginatedArticles,
   Tag,
   TagWithArticles,
-  UploadResult
+  UploadResult,
+  UserProfile
 } from '~/types'
 
 interface FetchOptions {
@@ -64,6 +69,10 @@ export function useApi() {
 
     async getTrendingArticles(): Promise<ArticleListItem[]> {
       return fetchApi<ArticleListItem[]>('/articles/trending')
+    },
+
+    async getRelatedArticles(slug: string): Promise<ArticleListItem[]> {
+      return fetchApi<ArticleListItem[]>(`/articles/${slug}/related`)
     },
 
     async searchArticles(query: string, page = 1, perPage = 10): Promise<PaginatedArticles> {
@@ -126,6 +135,90 @@ export function useApi() {
       }
 
       return response.data
+    },
+
+    // Comments
+    async getArticleComments(
+      slug: string,
+      authHeaders?: Record<string, string>,
+      page = 1,
+      pageSize = 10,
+      sort: 'recent' | 'liked' | 'oldest' = 'recent'
+    ): Promise<Comment[]> {
+      const params = new URLSearchParams({
+        page: String(page),
+        page_size: String(pageSize),
+        sort
+      })
+      return fetchApi<Comment[]>(`/articles/${slug}/comments?${params}`, { headers: authHeaders })
+    },
+
+    async getCommentCount(slug: string): Promise<CommentCountResponse> {
+      return fetchApi<CommentCountResponse>(`/articles/${slug}/comments/count`)
+    },
+
+    async getComment(id: string): Promise<Comment> {
+      return fetchApi<Comment>(`/comments/${id}`)
+    },
+
+    async getCommentReplies(id: string, authHeaders?: Record<string, string>): Promise<Comment[]> {
+      return fetchApi<Comment[]>(`/comments/${id}/replies`, { headers: authHeaders })
+    },
+
+    async createComment(slug: string, data: CreateCommentRequest, authHeaders: Record<string, string>): Promise<Comment> {
+      return fetchApi<Comment>(`/articles/${slug}/comments`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: data
+      })
+    },
+
+    async updateComment(id: string, content: string, authHeaders: Record<string, string>): Promise<Comment> {
+      return fetchApi<Comment>(`/comments/${id}`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: { content }
+      })
+    },
+
+    async deleteComment(id: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/comments/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      })
+    },
+
+    async addReaction(commentId: string, reaction: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/comments/${commentId}/reactions`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: { reaction }
+      })
+    },
+
+    async removeReaction(commentId: string, reaction: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/comments/${commentId}/reactions/${reaction}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      })
+    },
+
+    // Users (for mentions)
+    async getMentionableUsers(): Promise<CommentAuthor[]> {
+      return fetchApi<CommentAuthor[]>('/users/mentionable')
+    },
+
+    // User profiles
+    async getUserProfile(slug: string): Promise<UserProfile> {
+      return fetchApi<UserProfile>(`/users/${slug}/profile`)
+    },
+
+    async getUserComments(slug: string, page = 1, pageSize = 10): Promise<Comment[]> {
+      return fetchApi<Comment[]>(`/users/${slug}/comments?page=${page}&page_size=${pageSize}`)
+    },
+
+    async getUserReplies(slug: string, page = 1, pageSize = 10): Promise<Comment[]> {
+      return fetchApi<Comment[]>(`/users/${slug}/replies?page=${page}&page_size=${pageSize}`)
     }
   }
 }

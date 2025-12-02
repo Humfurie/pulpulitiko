@@ -20,6 +20,7 @@ import (
 	"github.com/humfurie/pulpulitiko/api/internal/repository"
 	"github.com/humfurie/pulpulitiko/api/internal/services"
 	"github.com/humfurie/pulpulitiko/api/pkg/cache"
+	"github.com/humfurie/pulpulitiko/api/pkg/email"
 	"github.com/humfurie/pulpulitiko/api/pkg/storage"
 )
 
@@ -69,6 +70,19 @@ func main() {
 	}
 	logger.Info().Msg("MinIO connected")
 
+	// Initialize email service
+	emailService := email.NewEmailService(
+		cfg.ResendAPIKey,
+		cfg.EmailFromEmail,
+		cfg.EmailFromName,
+		cfg.FrontendURL,
+	)
+	if emailService.IsConfigured() {
+		logger.Info().Msg("Email service configured")
+	} else {
+		logger.Warn().Msg("Email service not configured (RESEND_API_KEY not set)")
+	}
+
 	// Initialize repositories
 	articleRepo := repository.NewArticleRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
@@ -78,15 +92,17 @@ func main() {
 	metricsRepo := repository.NewMetricsRepository(db)
 	roleRepo := repository.NewRoleRepository(db)
 	permissionRepo := repository.NewPermissionRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
 
 	// Initialize services
 	articleService := services.NewArticleService(articleRepo, redisCache)
 	categoryService := services.NewCategoryService(categoryRepo, redisCache)
 	tagService := services.NewTagService(tagRepo)
-	authService := services.NewAuthService(userRepo, roleRepo, cfg.JWTSecret)
+	authService := services.NewAuthService(userRepo, roleRepo, authorRepo, emailService, cfg.JWTSecret)
 	uploadService := services.NewUploadService(minioStorage)
 	authorService := services.NewAuthorService(authorRepo)
 	roleService := services.NewRoleService(roleRepo, permissionRepo)
+	commentService := services.NewCommentService(commentRepo, articleRepo)
 
 	// Initialize handlers
 	articleHandler := handlers.NewArticleHandler(articleService)
@@ -98,6 +114,9 @@ func main() {
 	authorHandler := handlers.NewAuthorHandler(authorService, articleService)
 	metricsHandler := handlers.NewMetricsHandler(metricsRepo)
 	roleHandler := handlers.NewRoleHandler(roleService)
+	commentHandler := handlers.NewCommentHandler(commentService)
+	rssHandler := handlers.NewRSSHandler(articleService, cfg.SiteURL)
+	userHandler := handlers.NewUserHandler(userRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -126,13 +145,24 @@ func main() {
 	// Health check
 	r.Get("/health", healthHandler.Health)
 
+	// RSS Feed
+	r.Get("/rss", rssHandler.Feed)
+	r.Get("/feed", rssHandler.Feed)
+
 	// Public API routes
 	r.Route("/api", func(r chi.Router) {
-		// Articles
+		// Articles - use nested routing to avoid route conflicts
 		r.Get("/articles", articleHandler.List)
 		r.Get("/articles/trending", articleHandler.GetTrending)
-		r.Get("/articles/{slug}", articleHandler.GetBySlug)
-		r.Post("/articles/{slug}/view", articleHandler.IncrementViewCount)
+		r.Route("/articles/{slug}", func(r chi.Router) {
+			r.Get("/", articleHandler.GetBySlug)
+			r.Post("/view", articleHandler.IncrementViewCount)
+			r.Get("/related", articleHandler.GetRelatedArticles)
+			// Comments for this article - use OptionalAuth to identify user for reaction status
+			r.With(authMiddleware.OptionalAuth).Get("/comments", commentHandler.ListComments)
+			r.Get("/comments/count", commentHandler.GetCommentCount)
+			r.With(authMiddleware.Authenticate).Post("/comments", commentHandler.CreateComment)
+		})
 
 		// Categories
 		r.Get("/categories", categoryHandler.List)
@@ -149,11 +179,28 @@ func main() {
 		// Search
 		r.Get("/search", articleHandler.Search)
 
+		// Comments - standalone routes (by ID) - use OptionalAuth for reaction status
+		r.With(authMiddleware.OptionalAuth).Get("/comments/{id}", commentHandler.GetComment)
+		r.With(authMiddleware.OptionalAuth).Get("/comments/{id}/replies", commentHandler.GetReplies)
+		r.With(authMiddleware.Authenticate).Put("/comments/{id}", commentHandler.UpdateComment)
+		r.With(authMiddleware.Authenticate).Delete("/comments/{id}", commentHandler.DeleteComment)
+		r.With(authMiddleware.Authenticate).Post("/comments/{id}/reactions", commentHandler.AddReaction)
+		r.With(authMiddleware.Authenticate).Delete("/comments/{id}/reactions/{reaction}", commentHandler.RemoveReaction)
+
 		// Auth
 		r.Post("/auth/login", authHandler.Login)
+		r.Post("/auth/register", authHandler.Register)
+		r.Post("/auth/forgot-password", authHandler.ForgotPassword)
+		r.Post("/auth/reset-password", authHandler.ResetPassword)
 		r.With(authMiddleware.Authenticate).Get("/auth/me", authHandler.GetCurrentUser)
 		r.With(authMiddleware.Authenticate).Get("/auth/account", authorHandler.GetAccount)
 		r.With(authMiddleware.Authenticate).Put("/auth/account", authorHandler.UpdateAccount)
+
+		// User profiles (public)
+		r.Get("/users/mentionable", userHandler.GetMentionableUsers)
+		r.Get("/users/{slug}/profile", userHandler.GetUserProfile)
+		r.Get("/users/{slug}/comments", userHandler.GetUserComments)
+		r.Get("/users/{slug}/replies", userHandler.GetUserReplies)
 	})
 
 	// Admin API routes (authenticated)
@@ -213,6 +260,13 @@ func main() {
 			r.Put("/{id}", roleHandler.Update)
 			r.Delete("/{id}", roleHandler.Delete)
 			r.Post("/{id}/restore", roleHandler.Restore)
+		})
+
+		// Comments moderation (admin only)
+		r.Route("/comments", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Get("/", commentHandler.ListAllComments)
+			r.Put("/{id}/moderate", commentHandler.ModerateComment)
 		})
 	})
 

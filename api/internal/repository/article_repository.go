@@ -490,3 +490,76 @@ func (r *ArticleRepository) IncrementViewCountBySlug(ctx context.Context, slug s
 	}
 	return nil
 }
+
+// GetRelatedArticles returns articles related to the given article by category and tags
+func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uuid.UUID, categoryID *uuid.UUID, tagIDs []uuid.UUID, limit int) ([]models.ArticleListItem, error) {
+	if limit < 1 {
+		limit = 4
+	}
+
+	// Build query to find related articles:
+	// 1. Same category OR
+	// 2. Shared tags
+	// Ordered by: shared tags count (desc), view_count (desc), published_at (desc)
+	query := `
+		WITH article_tag_ids AS (
+			SELECT tag_id FROM article_tags WHERE article_id = $1
+		),
+		scored_articles AS (
+			SELECT
+				a.id,
+				a.slug,
+				a.title,
+				a.summary,
+				a.featured_image,
+				a.status,
+				a.view_count,
+				a.published_at,
+				a.created_at,
+				au.name as author_name,
+				c.name as category_name,
+				c.slug as category_slug,
+				COALESCE((
+					SELECT COUNT(*)
+					FROM article_tags at
+					WHERE at.article_id = a.id
+					AND at.tag_id IN (SELECT tag_id FROM article_tag_ids)
+				), 0) as shared_tags,
+				CASE WHEN a.category_id = $2 THEN 1 ELSE 0 END as same_category
+			FROM articles a
+			LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
+			LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+			WHERE a.id != $1
+				AND a.status = 'published'
+				AND a.deleted_at IS NULL
+		)
+		SELECT id, slug, title, summary, featured_image, status, view_count, published_at, created_at,
+			   author_name, category_name, category_slug
+		FROM scored_articles
+		WHERE shared_tags > 0 OR same_category = 1
+		ORDER BY shared_tags DESC, same_category DESC, view_count DESC, published_at DESC NULLS LAST
+		LIMIT $3
+	`
+
+	rows, err := r.db.Query(ctx, query, articleID, categoryID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get related articles: %w", err)
+	}
+	defer rows.Close()
+
+	articles := []models.ArticleListItem{}
+	for rows.Next() {
+		var article models.ArticleListItem
+		err := rows.Scan(
+			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
+			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
+			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan related article: %w", err)
+		}
+		articles = append(articles, article)
+	}
+
+	return articles, nil
+}

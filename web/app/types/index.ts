@@ -174,6 +174,7 @@ export interface User {
   id: string
   email: string
   name: string
+  avatar?: string
   role_id?: string
   role: string
   created_at: string
@@ -287,6 +288,75 @@ export interface UpdateAuthorRequest {
   social_links?: SocialLinks
   role_id?: string
   role?: string
+}
+
+// Comment types
+export type CommentStatus = 'active' | 'under_review' | 'spam' | 'hidden'
+
+export interface CommentAuthor {
+  id: string
+  name: string
+  avatar?: string
+  is_system?: boolean // True for verified/staff users
+}
+
+export interface ReactionSummary {
+  reaction: string
+  count: number
+  has_reacted: boolean
+}
+
+export interface Comment {
+  id: string
+  article_id: string
+  user_id: string
+  parent_id?: string
+  content: string
+  status: CommentStatus
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+  // Moderation fields
+  moderated_by?: string
+  moderated_at?: string
+  moderation_reason?: string
+  // Relations
+  author?: CommentAuthor
+  reactions?: ReactionSummary[]
+  reply_count?: number
+}
+
+export interface CreateCommentRequest {
+  content: string
+  parent_id?: string
+}
+
+export interface UpdateCommentRequest {
+  content: string
+}
+
+export interface AddReactionRequest {
+  reaction: string
+}
+
+export interface ModerateCommentRequest {
+  status: CommentStatus
+  reason?: string
+}
+
+export interface CommentCountResponse {
+  count: number
+}
+
+// User profile types
+export interface UserProfile {
+  id: string
+  name: string
+  slug: string
+  avatar?: string
+  created_at: string
+  comment_count: number
+  reply_count: number
 }
 
 // Metrics types

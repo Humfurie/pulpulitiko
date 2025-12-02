@@ -11,6 +11,7 @@ type User struct {
 	Email        string     `json:"email"`
 	PasswordHash string     `json:"-"`
 	Name         string     `json:"name"`
+	Avatar       *string    `json:"avatar,omitempty"`
 	RoleID       *uuid.UUID `json:"role_id,omitempty"`
 	RoleSlug     string     `json:"role"` // Populated from join with roles table
 	CreatedAt    time.Time  `json:"created_at"`
@@ -34,4 +35,32 @@ type CreateUserRequest struct {
 	Password string `json:"password" validate:"required,min=8"`
 	Name     string `json:"name" validate:"required,min=2,max=200"`
 	RoleID   string `json:"role_id" validate:"required"`
+}
+
+// RegisterRequest is for public user self-registration (always gets "user" role)
+type RegisterRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+	Name     string `json:"name" validate:"required,min=2,max=200"`
+}
+
+// PasswordResetToken represents a password reset token in the database
+type PasswordResetToken struct {
+	ID        uuid.UUID  `json:"id"`
+	UserID    uuid.UUID  `json:"user_id"`
+	Token     string     `json:"token"`
+	ExpiresAt time.Time  `json:"expires_at"`
+	UsedAt    *time.Time `json:"used_at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+// ForgotPasswordRequest is the request to initiate password reset
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// ResetPasswordRequest is the request to reset password with token
+type ResetPasswordRequest struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=8"`
 }

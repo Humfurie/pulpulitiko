@@ -3,9 +3,9 @@ const auth = useAuth()
 const route = useRoute()
 
 // Navigation items with role requirements
-// roles: undefined = all authenticated users, ['admin'] = admin only, ['admin', 'author'] = admin and author
+// roles: ['admin'] = admin only, ['admin', 'author'] = admin and author
 const allNavigation = [
-  { name: 'Dashboard', href: '/admin', icon: 'i-heroicons-home', roles: undefined },
+  { name: 'Dashboard', href: '/admin', icon: 'i-heroicons-home', roles: ['admin', 'author'] },
   { name: 'Articles', href: '/admin/articles', icon: 'i-heroicons-document-text', roles: ['admin', 'author'] },
   { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
   { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
@@ -19,10 +19,12 @@ const navigation = computed(() => {
   if (!userRole) return []
 
   return allNavigation.filter(item => {
-    if (!item.roles) return true // Visible to all authenticated users
     return item.roles.includes(userRole)
   })
 })
+
+// Check if user is a regular user (not admin/author)
+const isRegularUser = computed(() => auth.user.value?.role === 'user')
 
 function isActive(href: string) {
   if (href === '/admin') {
@@ -34,8 +36,8 @@ function isActive(href: string) {
 
 <template>
   <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
-    <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
+    <!-- Sidebar for admin/author -->
+    <aside v-if="!isRegularUser" class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
       <div class="flex flex-col h-full">
         <!-- Logo -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-800">
@@ -65,10 +67,10 @@ function isActive(href: string) {
         <!-- User section -->
         <div class="p-4 border-t border-gray-200 dark:border-gray-800">
           <NuxtLink
-            to="/admin/account"
+            to="/account"
             class="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           >
-            <UAvatar :alt="auth.user.value?.name" size="sm" />
+            <UAvatar :src="auth.user.value?.avatar" :alt="auth.user.value?.name" size="sm" />
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
@@ -112,9 +114,35 @@ function isActive(href: string) {
       </div>
     </aside>
 
+    <!-- Simple header for regular users -->
+    <header v-else class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <NuxtLink to="/" class="text-xl font-bold text-primary">
+          Pulpulitiko
+        </NuxtLink>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <UAvatar :src="auth.user.value?.avatar" :alt="auth.user.value?.name" size="sm" />
+            <span class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ auth.user.value?.name }}
+            </span>
+          </div>
+          <UButton
+            variant="ghost"
+            size="sm"
+            color="error"
+            icon="i-heroicons-arrow-right-on-rectangle"
+            @click="auth.logout()"
+          >
+            Logout
+          </UButton>
+        </div>
+      </div>
+    </header>
+
     <!-- Main content -->
-    <main class="pl-64">
-      <div class="p-8">
+    <main :class="isRegularUser ? '' : 'pl-64'">
+      <div :class="isRegularUser ? 'max-w-4xl mx-auto px-4 py-8' : 'p-8'">
         <slot />
       </div>
     </main>

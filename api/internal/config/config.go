@@ -11,6 +11,8 @@ type Config struct {
 	DatabaseURL string
 	RedisURL    string
 	JWTSecret   string
+	SiteURL     string
+	FrontendURL string
 
 	MinioEndpoint       string
 	MinioPublicEndpoint string
@@ -18,6 +20,11 @@ type Config struct {
 	MinioSecretKey      string
 	MinioBucket         string
 	MinioUseSSL         bool
+
+	// Email (Resend)
+	ResendAPIKey   string
+	EmailFromEmail string
+	EmailFromName  string
 }
 
 func Load() *Config {
@@ -28,12 +35,17 @@ func Load() *Config {
 		DatabaseURL:         getEnv("DATABASE_URL", "postgres://politics:localdev@localhost:5432/politics_db"),
 		RedisURL:            getEnv("REDIS_URL", "redis://localhost:6379"),
 		JWTSecret:           getEnv("JWT_SECRET", "your-secret-key"),
+		SiteURL:             getEnv("SITE_URL", "https://pulpulitiko.com"),
+		FrontendURL:         getEnv("FRONTEND_URL", "http://localhost:3000"),
 		MinioEndpoint:       minioEndpoint,
 		MinioPublicEndpoint: getEnv("MINIO_PUBLIC_ENDPOINT", minioEndpoint),
 		MinioAccessKey:      getEnv("MINIO_ACCESS_KEY", "minioadmin"),
 		MinioSecretKey:      getEnv("MINIO_SECRET_KEY", "minioadmin"),
 		MinioBucket:         getEnv("MINIO_BUCKET", "politics-media"),
 		MinioUseSSL:         getEnvBool("MINIO_USE_SSL", false),
+		ResendAPIKey:        getEnv("RESEND_API_KEY", ""),
+		EmailFromEmail:      getEnv("EMAIL_FROM_EMAIL", "noreply@pulpulitiko.com"),
+		EmailFromName:       getEnv("EMAIL_FROM_NAME", "Pulpulitiko"),
 	}
 }
 

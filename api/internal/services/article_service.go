@@ -299,6 +299,34 @@ func (s *ArticleService) IncrementViewCount(ctx context.Context, slug string) er
 	return s.repo.IncrementViewCountBySlug(ctx, slug)
 }
 
+func (s *ArticleService) GetRelatedArticles(ctx context.Context, articleID uuid.UUID, categoryID *uuid.UUID, tagIDs []uuid.UUID, limit int) ([]models.ArticleListItem, error) {
+	if limit < 1 || limit > 10 {
+		limit = 4
+	}
+
+	cacheKey := fmt.Sprintf("related:%s", articleID.String())
+
+	var articles []models.ArticleListItem
+	if err := s.cache.Get(ctx, cacheKey, &articles); err == nil {
+		if len(articles) > limit {
+			return articles[:limit], nil
+		}
+		return articles, nil
+	}
+
+	articles, err := s.repo.GetRelatedArticles(ctx, articleID, categoryID, tagIDs, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.cache.Set(ctx, cacheKey, articles, ArticleCacheTTL)
+
+	if len(articles) > limit {
+		return articles[:limit], nil
+	}
+	return articles, nil
+}
+
 func (s *ArticleService) invalidateArticleCache(ctx context.Context, id uuid.UUID) {
 	_ = s.cache.Delete(ctx, cache.ArticleKey(id.String()))
 	_ = s.cache.Delete(ctx, cache.TrendingKey())

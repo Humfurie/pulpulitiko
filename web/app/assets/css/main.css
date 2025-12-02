@@ -11,6 +11,14 @@ body {
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  overflow-y: scroll; /* Always show scrollbar to prevent layout shift when modals/dropdowns open */
+  scrollbar-gutter: stable; /* Reserve space for scrollbar to prevent layout shift */
+}
+
+/* Prevent Radix/Nuxt UI scroll lock from adding padding - use !important to override inline styles */
+body {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* Custom easing functions for natural feel */

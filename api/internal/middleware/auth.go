@@ -58,6 +58,46 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 	})
 }
 
+// OptionalAuth extracts user claims if a valid token is present, but doesn't require authentication
+func (m *AuthMiddleware) OptionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			// No token - continue without user context
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			// Invalid format - continue without user context
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		claims, err := m.authService.ValidateToken(parts[1])
+		if err != nil {
+			// Invalid token - continue without user context
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Valid token - add user context
+		ctx := context.WithValue(r.Context(), UserContextKey, claims)
+
+		// Load permissions for the user's role
+		if claims.RoleID != "" {
+			roleID, err := uuid.Parse(claims.RoleID)
+			if err == nil {
+				permissions, _ := m.authService.GetPermissionsByRoleID(r.Context(), roleID)
+				ctx = context.WithValue(ctx, PermissionsContextKey, permissions)
+			}
+		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // RequireAdmin checks if user has admin role
 func (m *AuthMiddleware) RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

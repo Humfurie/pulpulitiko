@@ -9,10 +9,20 @@ const { data: article, error, status } = await useAsyncData(
   () => api.getArticleBySlug(slug.value)
 )
 
-const { data: trendingArticles } = await useAsyncData(
-  'article-trending',
-  () => api.getTrendingArticles()
+const { data: relatedArticles } = await useAsyncData(
+  `article-related-${slug.value}`,
+  () => api.getRelatedArticles(slug.value),
+  { watch: [slug] }
 )
+
+// Calculate reading time (average 200 words per minute)
+const readingTime = computed(() => {
+  if (!article.value?.content) return 0
+  // Strip HTML tags and count words
+  const text = article.value.content.replace(/<[^>]*>/g, '')
+  const words = text.trim().split(/\s+/).length
+  return Math.max(1, Math.ceil(words / 200))
+})
 
 // Track article view (only on client-side)
 onMounted(() => {
@@ -26,9 +36,7 @@ function formatDate(dateString?: string): string {
   return new Date(dateString).toLocaleDateString('en-PH', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    day: 'numeric'
   })
 }
 
@@ -54,12 +62,20 @@ useSeoMeta({
   ogImageHeight: 630,
   ogType: 'article',
   ogUrl: () => `${siteUrl}/article/${slug.value}`,
+  ogLocale: 'en_PH',
   articlePublishedTime: computed(() => article.value?.published_at),
   articleAuthor: computed(() => article.value?.author?.name ? [article.value.author.name] : undefined),
   twitterCard: 'summary_large_image',
   twitterTitle: () => article.value?.title,
   twitterDescription: () => article.value?.summary || '',
   twitterImage: () => ogImageUrl.value
+})
+
+// Canonical URL
+useHead({
+  link: [
+    { rel: 'canonical', href: `${siteUrl}/article/${slug.value}` }
+  ]
 })
 
 // Schema.org structured data
@@ -70,11 +86,15 @@ useHead({
       innerHTML: computed(() => JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': `${siteUrl}/article/${slug.value}`
+        },
         headline: article.value?.title,
         description: article.value?.summary,
-        image: article.value?.featured_image,
+        image: ogImageUrl.value,
         datePublished: article.value?.published_at,
-        dateModified: article.value?.updated_at,
+        dateModified: article.value?.updated_at || article.value?.published_at,
         author: article.value?.author ? {
           '@type': 'Person',
           name: article.value.author.name
@@ -84,7 +104,7 @@ useHead({
           name: 'Pulpulitiko',
           logo: {
             '@type': 'ImageObject',
-            url: '/logo.png'
+            url: `${siteUrl}/logo.png`
           }
         }
       }))
@@ -94,193 +114,457 @@ useHead({
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
     <!-- Loading State -->
-    <UContainer v-if="status === 'pending'" class="py-8">
-      <div class="max-w-4xl mx-auto animate-pulse">
-        <div class="h-8 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-4" />
-        <div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4 mb-8" />
-        <div class="h-96 bg-gray-200 dark:bg-gray-800 rounded mb-8" />
+    <div v-if="status === 'pending'" class="max-w-3xl mx-auto px-4 py-16">
+      <div class="animate-pulse">
+        <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded-full w-24 mx-auto mb-6" />
+        <div class="h-12 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mx-auto mb-4" />
+        <div class="h-12 bg-gray-200 dark:bg-gray-800 rounded w-1/2 mx-auto mb-8" />
+        <div class="h-80 bg-gray-200 dark:bg-gray-800 rounded-2xl mb-8" />
         <div class="space-y-4">
           <div class="h-4 bg-gray-200 dark:bg-gray-800 rounded" />
           <div class="h-4 bg-gray-200 dark:bg-gray-800 rounded" />
           <div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
         </div>
       </div>
-    </UContainer>
+    </div>
 
     <!-- Error State -->
-    <UContainer v-else-if="error" class="py-8">
-      <div class="max-w-4xl mx-auto">
-        <UAlert
-          color="error"
-          icon="i-heroicons-exclamation-triangle"
-          title="Article not found"
-          description="The article you're looking for doesn't exist or has been removed."
-        />
-        <div class="mt-6">
-          <UButton to="/" variant="outline">
-            Back to Home
-          </UButton>
+    <div v-else-if="error" class="max-w-3xl mx-auto px-4 py-16">
+      <div class="text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+          <UIcon name="i-heroicons-exclamation-triangle" class="w-10 h-10 text-red-500" />
         </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Article not found</h1>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">
+          The article you're looking for doesn't exist or has been removed.
+        </p>
+        <UButton to="/" color="primary" size="lg">
+          Back to Home
+        </UButton>
       </div>
-    </UContainer>
+    </div>
 
     <!-- Article Content -->
-    <article v-else-if="article">
-      <!-- Hero Image -->
-      <div v-if="article.featured_image" class="relative h-[400px] md:h-[500px] w-full">
-        <NuxtImg
-          :src="article.featured_image"
-          :alt="article.title"
-          class="w-full h-full object-cover"
-        />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      </div>
+    <article v-else-if="article" class="pb-16">
+      <!-- Header Section -->
+      <header class="max-w-3xl mx-auto px-4 pt-12 pb-8 text-center">
+        <!-- Category Tags -->
+        <div class="flex items-center justify-center gap-2 mb-6">
+          <NuxtLink
+            v-if="article.category"
+            :to="`/category/${article.category.slug}`"
+            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            {{ article.category.name }}
+          </NuxtLink>
+          <template v-if="article.tags?.length">
+            <NuxtLink
+              v-for="tag in article.tags.slice(0, 2)"
+              :key="tag.id"
+              :to="`/tag/${tag.slug}`"
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              {{ tag.name }}
+            </NuxtLink>
+          </template>
+        </div>
 
-      <UContainer class="py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <!-- Main Content -->
-          <div class="lg:col-span-2">
-            <div class="max-w-none">
-              <!-- Category -->
-              <NuxtLink
-                v-if="article.category"
-                :to="`/category/${article.category.slug}`"
-                class="inline-block mb-4"
-              >
-                <UBadge color="primary" variant="subtle" size="lg">
-                  {{ article.category.name }}
-                </UBadge>
-              </NuxtLink>
+        <!-- Title -->
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-8">
+          {{ article.title }}
+        </h1>
 
-              <!-- Title -->
-              <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
-                {{ article.title }}
-              </h1>
-
-              <!-- Meta -->
-              <div class="flex flex-wrap items-center gap-4 mt-6 text-gray-500 dark:text-gray-400">
-                <div v-if="article.author" class="flex items-center gap-2">
-                  <NuxtImg
-                    v-if="article.author.avatar"
-                    :src="article.author.avatar"
-                    :alt="article.author.name"
-                    class="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div v-else class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <UIcon name="i-heroicons-user" class="w-5 h-5 text-primary" />
-                  </div>
-                  <span class="font-medium text-gray-900 dark:text-white">
-                    {{ article.author.name }}
-                  </span>
-                </div>
-                <span v-if="article.published_at" class="flex items-center gap-1">
-                  <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
-                  {{ formatDate(article.published_at) }}
-                </span>
-              </div>
-
-              <!-- Share Buttons -->
-              <div class="mt-6 pb-6 border-b border-gray-200 dark:border-gray-800">
-                <ShareButtons :title="article.title" />
-              </div>
-
-              <!-- Summary -->
-              <p
-                v-if="article.summary"
-                class="mt-6 text-xl text-gray-600 dark:text-gray-300 leading-relaxed"
-              >
-                {{ article.summary }}
+        <!-- Author & Meta -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+          <!-- Author -->
+          <NuxtLink
+            v-if="article.author"
+            :to="`/user/${article.author.slug}`"
+            class="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <NuxtImg
+              v-if="article.author.avatar"
+              :src="article.author.avatar"
+              :alt="article.author.name"
+              class="w-12 h-12 rounded-full object-cover ring-2 ring-white dark:ring-gray-900 shadow-md"
+            />
+            <div v-else class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center ring-2 ring-white dark:ring-gray-900 shadow-md">
+              <span class="text-white font-semibold text-lg">{{ article.author.name.charAt(0) }}</span>
+            </div>
+            <div class="text-left">
+              <p class="font-semibold text-gray-900 dark:text-white hover:text-primary transition-colors">
+                {{ article.author.name }}
               </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Contributor
+              </p>
+            </div>
+          </NuxtLink>
 
-              <!-- Content -->
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <div
-                class="mt-8 prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary"
-                v-html="article.content"
-              />
+          <!-- Divider (visible on larger screens) -->
+          <div class="hidden sm:block w-px h-10 bg-gray-200 dark:bg-gray-700" />
 
-              <!-- Tags -->
-              <div v-if="article.tags?.length" class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
-                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">
-                  Tags
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                  <NuxtLink
-                    v-for="tag in article.tags"
-                    :key="tag.id"
-                    :to="`/tag/${tag.slug}`"
-                  >
-                    <UBadge variant="outline">
-                      {{ tag.name }}
-                    </UBadge>
-                  </NuxtLink>
-                </div>
-              </div>
-
-              <!-- Share Buttons (Bottom) -->
-              <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                  Enjoyed this article? Share it!
-                </p>
-                <ShareButtons :title="article.title" />
-              </div>
+          <!-- Date & Reading Time -->
+          <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <div class="flex items-center gap-1.5">
+              <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
+              <span>{{ formatDate(article.published_at) }}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+              <span>{{ readingTime }} min read</span>
             </div>
           </div>
-
-          <!-- Sidebar -->
-          <aside class="lg:col-span-1">
-            <div class="sticky top-24">
-              <!-- Author Bio -->
-              <div v-if="article.author" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">About the Author</h3>
-                <div class="flex items-center gap-4">
-                  <NuxtImg
-                    v-if="article.author.avatar"
-                    :src="article.author.avatar"
-                    :alt="article.author.name"
-                    class="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div v-else class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <UIcon name="i-heroicons-user" class="w-8 h-8 text-primary" />
-                  </div>
-                  <div>
-                    <p class="font-medium text-gray-900 dark:text-white">
-                      {{ article.author.name }}
-                    </p>
-                  </div>
-                </div>
-                <p v-if="article.author.bio" class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  {{ article.author.bio }}
-                </p>
-              </div>
-
-              <!-- Trending Articles -->
-              <div>
-                <h3 class="font-semibold text-gray-900 dark:text-white mb-4">
-                  Trending Articles
-                </h3>
-                <div v-if="trendingArticles?.length" class="space-y-4">
-                  <NuxtLink
-                    v-for="trending in trendingArticles.filter(a => a.slug !== article.slug).slice(0, 5)"
-                    :key="trending.id"
-                    :to="`/article/${trending.slug}`"
-                    class="block group"
-                  >
-                    <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-2">
-                      {{ trending.title }}
-                    </h4>
-                    <p v-if="trending.category_name" class="text-sm text-gray-500 mt-1">
-                      {{ trending.category_name }}
-                    </p>
-                  </NuxtLink>
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
-      </UContainer>
+      </header>
+
+      <!-- Featured Image -->
+      <div v-if="article.featured_image" class="max-w-4xl mx-auto px-4 mb-12">
+        <div class="relative overflow-hidden rounded-2xl shadow-2xl">
+          <NuxtImg
+            :src="article.featured_image"
+            :alt="article.title"
+            class="w-full h-auto object-cover"
+          />
+        </div>
+      </div>
+
+      <!-- Article Body -->
+      <div class="max-w-3xl mx-auto px-4">
+        <!-- Summary/Lead -->
+        <p
+          v-if="article.summary"
+          class="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed mb-10 font-medium"
+        >
+          {{ article.summary }}
+        </p>
+
+        <!-- Content -->
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div
+          class="article-content prose prose-lg dark:prose-invert max-w-none"
+          v-html="article.content"
+        />
+
+        <!-- Tags Section -->
+        <div v-if="article.tags?.length" class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400 mr-2">Tags:</span>
+            <NuxtLink
+              v-for="tag in article.tags"
+              :key="tag.id"
+              :to="`/tag/${tag.slug}`"
+              class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+              #{{ tag.name }}
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- Share Section -->
+        <div class="mt-10 pt-8 border-t border-gray-200 dark:border-gray-800">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="text-gray-600 dark:text-gray-400 font-medium">
+              Enjoyed this article? Share it with others!
+            </p>
+            <ShareButtons :title="article.title" />
+          </div>
+        </div>
+
+        <!-- Author Card -->
+        <NuxtLink
+          v-if="article.author"
+          :to="`/user/${article.author.slug}`"
+          class="block mt-10 p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:border-primary/30 hover:shadow-md transition-all"
+        >
+          <div class="flex items-start gap-4">
+            <NuxtImg
+              v-if="article.author.avatar"
+              :src="article.author.avatar"
+              :alt="article.author.name"
+              class="w-16 h-16 rounded-full object-cover flex-shrink-0"
+            />
+            <div v-else class="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
+              <span class="text-white font-bold text-2xl">{{ article.author.name.charAt(0) }}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="font-bold text-gray-900 dark:text-white text-lg group-hover:text-primary transition-colors">
+                  {{ article.author.name }}
+                </h3>
+                <span class="px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
+                  Author
+                </span>
+              </div>
+              <p v-if="article.author.bio" class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                {{ article.author.bio }}
+              </p>
+              <p v-else class="text-gray-500 dark:text-gray-500 text-sm">
+                Contributing writer at Pulpulitiko
+              </p>
+            </div>
+            <UIcon name="i-heroicons-arrow-right" class="w-5 h-5 text-gray-400 flex-shrink-0" />
+          </div>
+        </NuxtLink>
+
+        <!-- Related Articles -->
+        <div v-if="relatedArticles?.length" class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            Related Articles
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <NuxtLink
+              v-for="related in relatedArticles.slice(0, 4)"
+              :key="related.id"
+              :to="`/article/${related.slug}`"
+              class="group block"
+            >
+              <div class="bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+                <div class="relative h-40 overflow-hidden">
+                  <NuxtImg
+                    v-if="related.featured_image"
+                    :src="related.featured_image"
+                    :alt="related.title"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div v-else class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+                </div>
+                <div class="p-4">
+                  <p v-if="related.category_name" class="text-xs font-semibold text-primary mb-2">
+                    {{ related.category_name }}
+                  </p>
+                  <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors line-clamp-2">
+                    {{ related.title }}
+                  </h3>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- Comments Section -->
+        <CommentSection :article-slug="slug" />
+      </div>
     </article>
   </div>
 </template>
+
+<style scoped>
+/* Article Content Styling - Lively inspired */
+.article-content {
+  color: #374151;
+}
+
+:global(.dark) .article-content {
+  color: #d1d5db;
+}
+
+.article-content :deep(h1),
+.article-content :deep(h2),
+.article-content :deep(h3),
+.article-content :deep(h4),
+.article-content :deep(h5),
+.article-content :deep(h6) {
+  font-weight: 700;
+  color: #111827;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+:global(.dark) .article-content :deep(h1),
+:global(.dark) .article-content :deep(h2),
+:global(.dark) .article-content :deep(h3),
+:global(.dark) .article-content :deep(h4),
+:global(.dark) .article-content :deep(h5),
+:global(.dark) .article-content :deep(h6) {
+  color: #ffffff;
+}
+
+.article-content :deep(h2) {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.article-content :deep(h3) {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.article-content :deep(p) {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.article-content :deep(a) {
+  color: var(--ui-primary);
+  font-weight: 500;
+}
+
+.article-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.article-content :deep(strong) {
+  font-weight: 600;
+  color: #111827;
+}
+
+:global(.dark) .article-content :deep(strong) {
+  color: #ffffff;
+}
+
+.article-content :deep(em) {
+  font-style: italic;
+}
+
+.article-content :deep(ul),
+.article-content :deep(ol) {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.article-content :deep(li) {
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+}
+
+.article-content :deep(ul li) {
+  list-style-type: disc;
+}
+
+.article-content :deep(ol li) {
+  list-style-type: decimal;
+}
+
+/* Blockquote - Lively style with left accent */
+.article-content :deep(blockquote) {
+  position: relative;
+  margin: 2rem 0;
+  padding: 1.5rem 2rem;
+  background-color: #f9fafb;
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--ui-primary);
+  font-style: italic;
+  color: #4b5563;
+}
+
+:global(.dark) .article-content :deep(blockquote) {
+  background-color: #111827;
+  color: #9ca3af;
+}
+
+.article-content :deep(blockquote p) {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  margin-bottom: 0;
+}
+
+.article-content :deep(blockquote)::before {
+  content: '"';
+  position: absolute;
+  top: -0.5rem;
+  left: 1rem;
+  font-size: 3.75rem;
+  color: var(--ui-primary);
+  opacity: 0.2;
+  font-family: serif;
+}
+
+/* Images */
+.article-content :deep(img) {
+  border-radius: 0.75rem;
+  margin: 2rem 0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.article-content :deep(figure) {
+  margin: 2rem 0;
+}
+
+.article-content :deep(figcaption) {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+:global(.dark) .article-content :deep(figcaption) {
+  color: #9ca3af;
+}
+
+/* Code blocks */
+.article-content :deep(pre) {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: #111827;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+}
+
+:global(.dark) .article-content :deep(pre) {
+  background-color: #1f2937;
+}
+
+.article-content :deep(code) {
+  font-size: 0.875rem;
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  color: var(--ui-primary);
+}
+
+:global(.dark) .article-content :deep(code) {
+  background-color: #1f2937;
+}
+
+.article-content :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+  color: #f3f4f6;
+}
+
+/* Horizontal rule */
+.article-content :deep(hr) {
+  margin: 2.5rem 0;
+  border-color: #e5e7eb;
+}
+
+:global(.dark) .article-content :deep(hr) {
+  border-color: #1f2937;
+}
+
+/* Tables */
+.article-content :deep(table) {
+  width: 100%;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+}
+
+.article-content :deep(th) {
+  background-color: #f3f4f6;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #111827;
+}
+
+:global(.dark) .article-content :deep(th) {
+  background-color: #1f2937;
+  color: #ffffff;
+}
+
+.article-content :deep(td) {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+}
+
+:global(.dark) .article-content :deep(td) {
+  border-bottom-color: #374151;
+}
+</style>

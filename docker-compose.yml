@@ -68,6 +68,15 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-politics-media}
       MINIO_USE_SSL: "false"
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      # Email (Resend)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM_EMAIL: ${EMAIL_FROM_EMAIL:-onboarding@resend.dev}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Pulpulitiko}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Admin seeding configuration
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@pulpulitiko.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      ADMIN_NAME: ${ADMIN_NAME:-Super Admin}
     ports:
       - "8080:8080"
     depends_on:
@@ -91,8 +100,8 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       NUXT_VITE_HMR_CLIENT_PORT: "3000"
     volumes:
-      - ./web:/app
-      - /app/node_modules
+      - ./web:/src
+      - /src/node_modules
     ports:
       - "3000:3000"
     depends_on:

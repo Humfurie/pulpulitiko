@@ -28,7 +28,8 @@ type Author struct {
 	Address     *string      `json:"address,omitempty"`
 	SocialLinks *SocialLinks `json:"social_links,omitempty"`
 	RoleID      *uuid.UUID   `json:"role_id,omitempty"`
-	Role        string       `json:"role"` // Role slug from join with roles table
+	Role        string       `json:"role"`      // Role slug from join with roles table
+	IsSystem    bool         `json:"is_system"` // System users cannot be deleted
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   time.Time    `json:"updated_at"`
 	DeletedAt   *time.Time   `json:"deleted_at,omitempty"`
@@ -58,4 +59,16 @@ type UpdateAuthorRequest struct {
 	SocialLinks *SocialLinks `json:"social_links,omitempty"`
 	RoleID      *string      `json:"role_id,omitempty"`
 	Role        *string      `json:"role,omitempty"` // Role slug for convenience
+}
+
+// UserProfile represents a public user profile with comment activity
+type UserProfile struct {
+	ID           uuid.UUID  `json:"id"`
+	Name         string     `json:"name"`
+	Slug         string     `json:"slug"`
+	Avatar       *string    `json:"avatar,omitempty"`
+	Bio          *string    `json:"bio,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	CommentCount int        `json:"comment_count"`
+	ReplyCount   int        `json:"reply_count"`
 }

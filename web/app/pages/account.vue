@@ -2,8 +2,8 @@
 import type { Author, ApiResponse, UpdateAuthorRequest, SocialLinks } from '~/types'
 
 definePageMeta({
-  layout: 'admin',
-  middleware: 'admin'
+  layout: 'default',
+  middleware: 'auth'
 })
 
 const auth = useAuth()
@@ -245,14 +245,14 @@ useSeoMeta({
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <UFormField label="Name" name="name" required class="w-full">
-                  <UInput v-model="form.name" placeholder="Your name" size="lg" />
+                  <UInput v-model="form.name" placeholder="Your name" size="lg" class="w-full" />
                 </UFormField>
 
                 <UFormField label="Slug" name="slug" required class="w-full">
                   <template #hint>
                     <span class="text-xs text-gray-400">URL-friendly identifier</span>
                   </template>
-                  <UInput v-model="form.slug" placeholder="your-slug" />
+                  <UInput v-model="form.slug" placeholder="your-slug" size="lg" class="w-full" />
                 </UFormField>
 
                 <UFormField label="Email" name="email" class="w-full">
@@ -261,6 +261,8 @@ useSeoMeta({
                     type="email"
                     placeholder="your@email.com"
                     icon="i-heroicons-envelope"
+                    size="lg"
+                    class="w-full"
                   />
                 </UFormField>
 
@@ -270,6 +272,8 @@ useSeoMeta({
                     type="tel"
                     placeholder="+1 234 567 8900"
                     icon="i-heroicons-phone"
+                    size="lg"
+                    class="w-full"
                   />
                 </UFormField>
               </div>
@@ -280,6 +284,7 @@ useSeoMeta({
                   placeholder="Enter your address..."
                   :rows="2"
                   autoresize
+                  class="w-full"
                 />
               </UFormField>
 
@@ -292,6 +297,7 @@ useSeoMeta({
                   placeholder="Write a brief bio..."
                   :rows="3"
                   autoresize
+                  class="w-full"
                 />
               </UFormField>
             </div>
@@ -312,59 +318,73 @@ useSeoMeta({
             </template>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <UFormField label="Website" name="website">
+              <UFormField label="Website" name="website" class="w-full">
                 <UInput
                   v-model="form.social_links!.website"
                   placeholder="https://example.com"
                   icon="i-heroicons-globe-alt"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="Twitter / X" name="twitter">
+              <UFormField label="Twitter / X" name="twitter" class="w-full">
                 <UInput
                   v-model="form.social_links!.twitter"
                   placeholder="https://twitter.com/username"
                   icon="i-simple-icons-x"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="Facebook" name="facebook">
+              <UFormField label="Facebook" name="facebook" class="w-full">
                 <UInput
                   v-model="form.social_links!.facebook"
                   placeholder="https://facebook.com/username"
                   icon="i-simple-icons-facebook"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="LinkedIn" name="linkedin">
+              <UFormField label="LinkedIn" name="linkedin" class="w-full">
                 <UInput
                   v-model="form.social_links!.linkedin"
                   placeholder="https://linkedin.com/in/username"
                   icon="i-simple-icons-linkedin"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="Instagram" name="instagram">
+              <UFormField label="Instagram" name="instagram" class="w-full">
                 <UInput
                   v-model="form.social_links!.instagram"
                   placeholder="https://instagram.com/username"
                   icon="i-simple-icons-instagram"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="YouTube" name="youtube">
+              <UFormField label="YouTube" name="youtube" class="w-full">
                 <UInput
                   v-model="form.social_links!.youtube"
                   placeholder="https://youtube.com/@username"
                   icon="i-simple-icons-youtube"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
 
-              <UFormField label="TikTok" name="tiktok">
+              <UFormField label="TikTok" name="tiktok" class="w-full">
                 <UInput
                   v-model="form.social_links!.tiktok"
                   placeholder="https://tiktok.com/@username"
                   icon="i-simple-icons-tiktok"
+                  size="lg"
+                  class="w-full"
                 />
               </UFormField>
             </div>

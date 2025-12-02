@@ -1,7 +1,7 @@
 # Development Dockerfile for Nuxt with hot reload
 FROM node:22-alpine
 
-WORKDIR /app
+WORKDIR /src
 
 # Install dependencies first (cached layer)
 COPY web/package.json web/package-lock.json ./

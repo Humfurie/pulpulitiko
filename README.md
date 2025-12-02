@@ -50,36 +50,92 @@ pulpulitiko/
 
 ### Prerequisites
 
-- Go 1.21+
-- Node.js 20+
 - Docker & Docker Compose
+- Node.js 20+ (for local frontend development)
+- Go 1.21+ (for local API development)
 
-### Development Setup
+### Quick Start (Docker)
 
 1. Clone the repository
 
-2. Start the infrastructure services:
+2. Set up environment variables:
    ```bash
+   cp .env.example .env
+   ```
+
+3. (Optional) Customize admin credentials in `.env`:
+   ```env
+   ADMIN_EMAIL=your-email@example.com
+   ADMIN_PASSWORD=your-secure-password
+   ADMIN_NAME=Your Name
+   ```
+
+4. Build and start all services:
+   ```bash
+   docker-compose build
    docker-compose up -d
    ```
 
-3. Set up environment variables:
+5. Run database migrations and seed:
+   ```bash
+   # Run migrations
+   docker-compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
+
+   # Seed the database (creates admin user, roles, categories, tags, sample articles)
+   docker-compose exec api ./seed
+   ```
+
+6. Access the application:
+   - **Frontend**: http://localhost:3000
+   - **Admin Panel**: http://localhost:3000/admin
+   - **API**: http://localhost:8080
+   - **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+
+### Default Admin Credentials
+
+If you didn't customize the `.env` file:
+- **Email**: `admin@pulpulitiko.com`
+- **Password**: `changeme`
+
+### Database Commands
+
+```bash
+# Fresh migration (drop all tables and re-migrate)
+docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" drop -f
+docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
+docker compose exec api ./seed
+
+# Check migration version
+docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" version
+
+# Rollback one migration
+docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" down 1
+```
+
+### Local Development (without Docker)
+
+1. Start infrastructure services only:
+   ```bash
+   docker-compose up -d postgres redis minio
+   ```
+
+2. Set up environment variables:
    ```bash
    cp .env.example .env
    cp api/.env.example api/.env
    ```
 
-4. Run database migrations:
+3. Run database migrations:
    ```bash
    cd api && make migrate-up
    ```
 
-5. Start the API server:
+4. Start the API server:
    ```bash
    cd api && make dev
    ```
 
-6. Start the frontend:
+5. Start the frontend:
    ```bash
    cd web && npm install && npm run dev
    ```

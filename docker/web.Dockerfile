@@ -1,7 +1,7 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-WORKDIR /app
+WORKDIR /src
 
 # Copy package files
 COPY web/package.json web/package-lock.json ./
@@ -18,10 +18,10 @@ RUN npm run build
 # Runtime stage
 FROM node:22-alpine
 
-WORKDIR /app
+WORKDIR /src
 
 # Copy built application
-COPY --from=builder /app/.output ./.output
+COPY --from=builder /src/.output ./.output
 
 ENV HOST=0.0.0.0
 ENV PORT=3000

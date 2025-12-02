@@ -17,19 +17,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const userRole = auth.user.value?.role
 
-  // Define route permissions
+  // Regular users (role: "user") cannot access admin panel at all
+  // Redirect them to their account page
+  if (userRole === 'user') {
+    return navigateTo('/account')
+  }
+
+  // Define route permissions for admin/author roles
   const adminOnlyRoutes = ['/admin/users', '/admin/roles']
-  const authorRoutes = ['/admin/articles', '/admin/categories', '/admin/tags']
 
   // Check if route requires admin access
   const isAdminRoute = adminOnlyRoutes.some(route => to.path.startsWith(route))
   if (isAdminRoute && userRole !== 'admin') {
-    return navigateTo('/admin')
-  }
-
-  // Check if route requires at least author access
-  const isAuthorRoute = authorRoutes.some(route => to.path.startsWith(route))
-  if (isAuthorRoute && !['admin', 'author'].includes(userRole || '')) {
     return navigateTo('/admin')
   }
 })

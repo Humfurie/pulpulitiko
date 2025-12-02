@@ -53,7 +53,7 @@ func (r *AuthorRepository) Create(ctx context.Context, author *models.Author) er
 func (r *AuthorRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Author, error) {
 	query := `
 		SELECT a.id, a.name, a.slug, a.bio, a.avatar, a.email, a.phone, a.address, a.social_links,
-		       a.role_id, COALESCE(r.slug, '') as role_slug, a.created_at, a.updated_at, a.deleted_at
+		       a.role_id, COALESCE(r.slug, '') as role_slug, COALESCE(a.is_system, false), a.created_at, a.updated_at, a.deleted_at
 		FROM authors a
 		LEFT JOIN roles r ON a.role_id = r.id
 		WHERE a.id = $1 AND a.deleted_at IS NULL
@@ -64,7 +64,7 @@ func (r *AuthorRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.A
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&author.ID, &author.Name, &author.Slug, &author.Bio, &author.Avatar,
 		&author.Email, &author.Phone, &author.Address, &socialLinksJSON,
-		&author.RoleID, &author.Role, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
+		&author.RoleID, &author.Role, &author.IsSystem, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -87,7 +87,7 @@ func (r *AuthorRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.A
 func (r *AuthorRepository) GetBySlug(ctx context.Context, slug string) (*models.Author, error) {
 	query := `
 		SELECT a.id, a.name, a.slug, a.bio, a.avatar, a.email, a.phone, a.address, a.social_links,
-		       a.role_id, COALESCE(r.slug, '') as role_slug, a.created_at, a.updated_at, a.deleted_at
+		       a.role_id, COALESCE(r.slug, '') as role_slug, COALESCE(a.is_system, false), a.created_at, a.updated_at, a.deleted_at
 		FROM authors a
 		LEFT JOIN roles r ON a.role_id = r.id
 		WHERE a.slug = $1 AND a.deleted_at IS NULL
@@ -98,7 +98,7 @@ func (r *AuthorRepository) GetBySlug(ctx context.Context, slug string) (*models.
 	err := r.db.QueryRow(ctx, query, slug).Scan(
 		&author.ID, &author.Name, &author.Slug, &author.Bio, &author.Avatar,
 		&author.Email, &author.Phone, &author.Address, &socialLinksJSON,
-		&author.RoleID, &author.Role, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
+		&author.RoleID, &author.Role, &author.IsSystem, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -121,7 +121,7 @@ func (r *AuthorRepository) GetBySlug(ctx context.Context, slug string) (*models.
 func (r *AuthorRepository) List(ctx context.Context) ([]models.Author, error) {
 	query := `
 		SELECT a.id, a.name, a.slug, a.bio, a.avatar, a.email, a.phone, a.address, a.social_links,
-		       a.role_id, COALESCE(r.slug, '') as role_slug, a.created_at, a.updated_at, a.deleted_at
+		       a.role_id, COALESCE(r.slug, '') as role_slug, COALESCE(a.is_system, false), a.created_at, a.updated_at, a.deleted_at
 		FROM authors a
 		LEFT JOIN roles r ON a.role_id = r.id
 		WHERE a.deleted_at IS NULL
@@ -141,7 +141,7 @@ func (r *AuthorRepository) List(ctx context.Context) ([]models.Author, error) {
 		err := rows.Scan(
 			&author.ID, &author.Name, &author.Slug, &author.Bio, &author.Avatar,
 			&author.Email, &author.Phone, &author.Address, &socialLinksJSON,
-			&author.RoleID, &author.Role, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
+			&author.RoleID, &author.Role, &author.IsSystem, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan author: %w", err)
@@ -210,7 +210,21 @@ func (r *AuthorRepository) Update(ctx context.Context, id uuid.UUID, req *models
 }
 
 func (r *AuthorRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := "UPDATE authors SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
+	// Check if this is a system user (cannot be deleted)
+	var isSystem bool
+	checkQuery := "SELECT COALESCE(is_system, false) FROM authors WHERE id = $1 AND deleted_at IS NULL"
+	err := r.db.QueryRow(ctx, checkQuery, id).Scan(&isSystem)
+	if err == pgx.ErrNoRows {
+		return fmt.Errorf("author not found")
+	}
+	if err != nil {
+		return fmt.Errorf("failed to check author: %w", err)
+	}
+	if isSystem {
+		return fmt.Errorf("system users cannot be deleted")
+	}
+
+	query := "UPDATE authors SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL AND COALESCE(is_system, false) = false"
 
 	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {
@@ -218,7 +232,7 @@ func (r *AuthorRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("author not found")
+		return fmt.Errorf("author not found or is a system user")
 	}
 
 	return nil
@@ -273,7 +287,7 @@ func (r *AuthorRepository) GetRoleIDBySlug(ctx context.Context, slug string) (*u
 func (r *AuthorRepository) GetByEmail(ctx context.Context, email string) (*models.Author, error) {
 	query := `
 		SELECT a.id, a.name, a.slug, a.bio, a.avatar, a.email, a.phone, a.address, a.social_links,
-		       a.role_id, COALESCE(r.slug, '') as role_slug, a.created_at, a.updated_at, a.deleted_at
+		       a.role_id, COALESCE(r.slug, '') as role_slug, COALESCE(a.is_system, false), a.created_at, a.updated_at, a.deleted_at
 		FROM authors a
 		LEFT JOIN roles r ON a.role_id = r.id
 		WHERE a.email = $1 AND a.deleted_at IS NULL
@@ -284,7 +298,7 @@ func (r *AuthorRepository) GetByEmail(ctx context.Context, email string) (*model
 	err := r.db.QueryRow(ctx, query, email).Scan(
 		&author.ID, &author.Name, &author.Slug, &author.Bio, &author.Avatar,
 		&author.Email, &author.Phone, &author.Address, &socialLinksJSON,
-		&author.RoleID, &author.Role, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
+		&author.RoleID, &author.Role, &author.IsSystem, &author.CreatedAt, &author.UpdatedAt, &author.DeletedAt,
 	)
 
 	if err == pgx.ErrNoRows {

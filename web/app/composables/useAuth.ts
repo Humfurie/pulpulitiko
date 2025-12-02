@@ -46,6 +46,30 @@ export function useAuth() {
     }
   }
 
+  async function register(name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await $fetch<ApiResponse<LoginResponse>>(`${baseUrl}/auth/register`, {
+        method: 'POST',
+        body: { name, email, password }
+      })
+
+      if (response.success) {
+        token.value = response.data.token
+        user.value = response.data.user
+        permissions.value = response.data.permissions || []
+        return { success: true }
+      }
+
+      return { success: false, error: 'Registration failed' }
+    } catch (e: unknown) {
+      const err = e as { data?: { error?: { message?: string }; code?: string } }
+      if (err?.data?.code === 'EMAIL_EXISTS') {
+        return { success: false, error: 'A user with this email already exists' }
+      }
+      return { success: false, error: err?.data?.error?.message || 'Registration failed' }
+    }
+  }
+
   async function logout() {
     token.value = null
     user.value = null
@@ -79,6 +103,38 @@ export function useAuth() {
     return { Authorization: `Bearer ${tokenVal}` }
   }
 
+  async function forgotPassword(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await $fetch<ApiResponse<{ message: string }>>(`${baseUrl}/auth/forgot-password`, {
+        method: 'POST',
+        body: { email }
+      })
+      return { success: true }
+    } catch (e: unknown) {
+      const err = e as { data?: { error?: { message?: string }; code?: string } }
+      if (err?.data?.code === 'EMAIL_NOT_CONFIGURED') {
+        return { success: false, error: 'Password reset is temporarily unavailable' }
+      }
+      return { success: false, error: err?.data?.error?.message || 'Failed to send reset email' }
+    }
+  }
+
+  async function resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await $fetch<ApiResponse<{ message: string }>>(`${baseUrl}/auth/reset-password`, {
+        method: 'POST',
+        body: { token, new_password: newPassword }
+      })
+      return { success: true }
+    } catch (e: unknown) {
+      const err = e as { data?: { error?: { message?: string }; code?: string } }
+      if (err?.data?.code === 'INVALID_TOKEN') {
+        return { success: false, error: 'Invalid or expired reset link' }
+      }
+      return { success: false, error: err?.data?.error?.message || 'Failed to reset password' }
+    }
+  }
+
   return {
     user: readonly(user),
     token: readonly(token),
@@ -87,10 +143,13 @@ export function useAuth() {
     isAdmin,
     isAuthor,
     login,
+    register,
     logout,
     fetchCurrentUser,
     getAuthHeaders,
     hasPermission,
-    hasAnyPermission
+    hasAnyPermission,
+    forgotPassword,
+    resetPassword
   }
 }
