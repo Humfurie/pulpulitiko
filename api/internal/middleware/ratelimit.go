@@ -40,7 +40,7 @@ func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
 		// Set expiry on first request
 		if count == 1 {
 			ttl := time.Duration(rl.windowSecs) * time.Second
-			rl.cache.Set(ctx, key, count, ttl)
+			_ = rl.cache.Set(ctx, key, count, ttl)
 		}
 
 		if count > rl.maxReqs {

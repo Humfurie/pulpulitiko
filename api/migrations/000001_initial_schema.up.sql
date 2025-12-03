@@ -253,3 +253,42 @@ CREATE TRIGGER enforce_single_level_threading
     BEFORE INSERT OR UPDATE ON comments
     FOR EACH ROW
     EXECUTE FUNCTION check_single_level_threading();
+
+-- =====================================================
+-- MESSAGING SYSTEM (User-Admin Support Chat)
+-- =====================================================
+
+-- Conversations between users and admins
+CREATE TABLE conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subject VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'open' NOT NULL, -- open, closed, archived
+    last_message_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Messages within conversations
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    read_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for messaging
+CREATE INDEX idx_conversations_user ON conversations(user_id);
+CREATE INDEX idx_conversations_status ON conversations(status);
+CREATE INDEX idx_conversations_last_message ON conversations(last_message_at DESC);
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
+CREATE INDEX idx_messages_is_read ON messages(is_read);
+
+-- Trigger for conversations updated_at
+CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON conversations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

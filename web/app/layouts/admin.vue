@@ -10,7 +10,8 @@ const allNavigation = [
   { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
   { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
   { name: 'Users', href: '/admin/users', icon: 'i-heroicons-users', roles: ['admin'] },
-  { name: 'Roles', href: '/admin/roles', icon: 'i-heroicons-shield-check', roles: ['admin'] }
+  { name: 'Roles', href: '/admin/roles', icon: 'i-heroicons-shield-check', roles: ['admin'] },
+  { name: 'Messages', href: '/admin/messages', icon: 'i-heroicons-chat-bubble-left-right', roles: ['admin'] }
 ]
 
 // Filter navigation based on user role

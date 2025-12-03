@@ -25,6 +25,17 @@ const showReplies = ref(props.isExpanded || false)
 const replies = ref<Comment[]>([])
 const loadingReplies = ref(false)
 
+// Local reactions state for replies (to avoid prop mutation)
+const localReactions = ref<{ reaction: string; count: number; has_reacted: boolean }[]>([])
+
+// Initialize local reactions from prop
+watch(() => props.comment.reactions, (newReactions) => {
+  localReactions.value = newReactions ? [...newReactions.map(r => ({ ...r }))] : []
+}, { immediate: true, deep: true })
+
+// Get reactions - use local state for replies, prop for root comments
+const reactions = computed(() => props.isReply ? localReactions.value : props.comment.reactions)
+
 // Sync with parent's expanded state
 watch(() => props.isExpanded, (expanded) => {
   showReplies.value = expanded || false
@@ -35,22 +46,22 @@ watch(() => props.isExpanded, (expanded) => {
 
 // Get thumbs up and thumbs down counts
 const thumbsUpCount = computed(() => {
-  const reaction = props.comment.reactions?.find(r => r.reaction === 'thumbsup')
+  const reaction = reactions.value?.find(r => r.reaction === 'thumbsup')
   return reaction?.count || 0
 })
 
 const thumbsDownCount = computed(() => {
-  const reaction = props.comment.reactions?.find(r => r.reaction === 'thumbsdown')
+  const reaction = reactions.value?.find(r => r.reaction === 'thumbsdown')
   return reaction?.count || 0
 })
 
 const hasThumbsUp = computed(() => {
-  const reaction = props.comment.reactions?.find(r => r.reaction === 'thumbsup')
+  const reaction = reactions.value?.find(r => r.reaction === 'thumbsup')
   return reaction?.has_reacted || false
 })
 
 const hasThumbsDown = computed(() => {
-  const reaction = props.comment.reactions?.find(r => r.reaction === 'thumbsdown')
+  const reaction = reactions.value?.find(r => r.reaction === 'thumbsdown')
   return reaction?.has_reacted || false
 })
 
@@ -118,7 +129,7 @@ function formatDate(dateString: string): string {
 
 function formatContent(content: string): string {
   // Parse markdown-like syntax
-  let formatted = content
+  const formatted = content
     // Bold: **text** or __text__
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/__(.*?)__/g, '<strong>$1</strong>')
@@ -187,14 +198,13 @@ function handleDelete() {
 async function handleReactionClick(reaction: string) {
   if (!auth.isAuthenticated.value) return
 
-  const existingReaction = props.comment.reactions?.find(r => r.reaction === reaction)
+  const existingReaction = reactions.value?.find(r => r.reaction === reaction)
   const hasReacted = existingReaction?.has_reacted || false
 
   // For replies, handle locally since parent doesn't track reply data
   if (props.isReply) {
-    // Optimistic update
-    if (!props.comment.reactions) props.comment.reactions = []
-    const reactionObj = props.comment.reactions.find(r => r.reaction === reaction)
+    // Optimistic update using local state
+    const reactionObj = localReactions.value.find(r => r.reaction === reaction)
     let removedOpposite: string | null = null
 
     if (hasReacted) {
@@ -207,7 +217,7 @@ async function handleReactionClick(reaction: string) {
       // Remove opposite reaction first (like/dislike are mutually exclusive)
       const oppositeReaction = reaction === 'thumbsup' ? 'thumbsdown' : reaction === 'thumbsdown' ? 'thumbsup' : null
       if (oppositeReaction) {
-        const opposite = props.comment.reactions.find(r => r.reaction === oppositeReaction)
+        const opposite = localReactions.value.find(r => r.reaction === oppositeReaction)
         if (opposite?.has_reacted) {
           opposite.count = Math.max(0, opposite.count - 1)
           opposite.has_reacted = false
@@ -220,7 +230,7 @@ async function handleReactionClick(reaction: string) {
         reactionObj.count++
         reactionObj.has_reacted = true
       } else {
-        props.comment.reactions.push({ reaction, count: 1, has_reacted: true })
+        localReactions.value.push({ reaction, count: 1, has_reacted: true })
       }
     }
 
@@ -236,7 +246,7 @@ async function handleReactionClick(reaction: string) {
       }
     } catch (e) {
       // Revert on error
-      const revertReaction = props.comment.reactions?.find(r => r.reaction === reaction)
+      const revertReaction = localReactions.value.find(r => r.reaction === reaction)
       if (revertReaction) {
         if (hasReacted) {
           revertReaction.count++
@@ -248,7 +258,7 @@ async function handleReactionClick(reaction: string) {
       }
       // Revert opposite too
       if (removedOpposite) {
-        const opposite = props.comment.reactions?.find(r => r.reaction === removedOpposite)
+        const opposite = localReactions.value.find(r => r.reaction === removedOpposite)
         if (opposite) {
           opposite.count++
           opposite.has_reacted = true
@@ -401,7 +411,7 @@ defineExpose({ loadReplies })
             :current-user-id="currentUserId"
             @edit="emit('edit', $event)"
             @delete="emit('delete', $event)"
-            @reaction-toggle="emit('reactionToggle', $event[0], $event[1], $event[2])"
+            @reaction-toggle="(commentId: string, reaction: string, hasReacted: boolean) => emit('reactionToggle', commentId, reaction, hasReacted)"
           />
         </div>
 

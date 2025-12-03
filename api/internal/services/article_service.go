@@ -276,7 +276,7 @@ func (s *ArticleService) GetTrending(ctx context.Context, limit int) ([]models.A
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, articles, TrendingCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, articles, TrendingCacheTTL)
 
 	if len(articles) > limit {
 		return articles[:limit], nil

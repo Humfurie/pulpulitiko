@@ -198,7 +198,7 @@ async function handleReactionToggle(commentId: string, reaction: string, hasReac
   }
 }
 
-function handleCommentSubmitted(comment: Comment) {
+function handleCommentSubmitted(_comment: Comment) {
   // If it was a reply, close the reply form
   if (replyingTo.value) {
     replyingTo.value = null
@@ -325,7 +325,7 @@ onMounted(() => {
     <!-- Comments list -->
     <div v-else-if="comments.length > 0" class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
       <div class="divide-y divide-gray-100 dark:divide-gray-800">
-        <template v-for="(comment, index) in comments" :key="comment.id">
+        <template v-for="comment in comments" :key="comment.id">
           <div class="p-4 sm:p-6">
             <CommentItem
               :comment="comment"

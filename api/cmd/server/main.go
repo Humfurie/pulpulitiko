@@ -93,6 +93,7 @@ func main() {
 	roleRepo := repository.NewRoleRepository(db)
 	permissionRepo := repository.NewPermissionRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
+	messageRepo := repository.NewMessageRepository(db)
 
 	// Initialize services
 	articleService := services.NewArticleService(articleRepo, redisCache)
@@ -103,6 +104,11 @@ func main() {
 	authorService := services.NewAuthorService(authorRepo)
 	roleService := services.NewRoleService(roleRepo, permissionRepo)
 	commentService := services.NewCommentService(commentRepo, articleRepo)
+	messageService := services.NewMessageService(messageRepo)
+
+	// Initialize WebSocket hub
+	wsHub := handlers.NewHub()
+	go wsHub.Run()
 
 	// Initialize handlers
 	articleHandler := handlers.NewArticleHandler(articleService)
@@ -117,6 +123,8 @@ func main() {
 	commentHandler := handlers.NewCommentHandler(commentService)
 	rssHandler := handlers.NewRSSHandler(articleService, cfg.SiteURL)
 	userHandler := handlers.NewUserHandler(userRepo)
+	messageHandler := handlers.NewMessageHandler(messageService, wsHub)
+	wsHandler := handlers.NewWebSocketHandler(wsHub, authService, messageService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -148,6 +156,9 @@ func main() {
 	// RSS Feed
 	r.Get("/rss", rssHandler.Feed)
 	r.Get("/feed", rssHandler.Feed)
+
+	// WebSocket endpoint
+	r.Get("/ws", wsHandler.HandleWebSocket)
 
 	// Public API routes
 	r.Route("/api", func(r chi.Router) {
@@ -201,6 +212,18 @@ func main() {
 		r.Get("/users/{slug}/profile", userHandler.GetUserProfile)
 		r.Get("/users/{slug}/comments", userHandler.GetUserComments)
 		r.Get("/users/{slug}/replies", userHandler.GetUserReplies)
+
+		// Messaging (authenticated users)
+		r.Route("/messages", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+			r.Get("/unread", messageHandler.GetUnreadCounts)
+			r.Get("/conversations", messageHandler.GetMyConversations)
+			r.Post("/conversations", messageHandler.CreateConversation)
+			r.Get("/conversations/{id}", messageHandler.GetConversation)
+			r.Get("/conversations/{id}/messages", messageHandler.GetMessages)
+			r.Post("/conversations/{id}/messages", messageHandler.SendMessage)
+			r.Post("/conversations/{id}/read", messageHandler.MarkAsRead)
+		})
 	})
 
 	// Admin API routes (authenticated)
@@ -267,6 +290,17 @@ func main() {
 			r.Use(authMiddleware.RequireAdmin)
 			r.Get("/", commentHandler.ListAllComments)
 			r.Put("/{id}/moderate", commentHandler.ModerateComment)
+		})
+
+		// Messaging management (admin only)
+		r.Route("/messages", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Get("/conversations", messageHandler.AdminListConversations)
+			r.Get("/conversations/{id}", messageHandler.GetConversation)
+			r.Get("/conversations/{id}/messages", messageHandler.GetMessages)
+			r.Post("/conversations/{id}/messages", messageHandler.SendMessage)
+			r.Post("/conversations/{id}/read", messageHandler.MarkAsRead)
+			r.Patch("/conversations/{id}/status", messageHandler.AdminUpdateConversationStatus)
 		})
 	})
 

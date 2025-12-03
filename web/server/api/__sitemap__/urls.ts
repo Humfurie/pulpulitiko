@@ -1,5 +1,5 @@
-import { defineSitemapEventHandler } from '#imports'
-import type { SitemapUrl } from '#sitemap/types'
+// @ts-expect-error Sitemap module types
+import { defineSitemapEventHandler } from '#sitemap/runtime/utils'
 
 interface ArticleListItem {
   slug: string
@@ -27,11 +27,18 @@ interface PaginatedArticles {
   articles: ArticleListItem[]
 }
 
+interface SitemapUrlEntry {
+  loc: string
+  lastmod?: string
+  changefreq?: string
+  priority?: number
+}
+
 export default defineSitemapEventHandler(async () => {
   const config = useRuntimeConfig()
   const apiUrl = config.apiInternalUrl || 'http://localhost:8080/api'
 
-  const urls: SitemapUrl[] = []
+  const urls: SitemapUrlEntry[] = []
 
   try {
     // Fetch articles

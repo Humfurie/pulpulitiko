@@ -55,7 +55,7 @@ useSeoMeta({
         <!-- Hero Grid: Featured + Side cards -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           <!-- Main Featured Article -->
-          <div class="lg:col-span-2">
+          <div v-if="articlesData.articles[0]" class="lg:col-span-2">
             <ArticleCard :article="articlesData.articles[0]" featured />
           </div>
 

@@ -86,7 +86,7 @@ watch(() => props.replyToAuthor, (author) => {
 }, { immediate: true })
 
 const formattedPreview = computed(() => {
-  let formatted = content.value
+  const formatted = content.value
     // Bold: **text** or __text__
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/__(.*?)__/g, '<strong>$1</strong>')
@@ -147,7 +147,7 @@ function handleInput(event: Event) {
   const mentionMatch = textBeforeCursor.match(/@([a-zA-Z0-9_-]*)$/)
 
   if (mentionMatch) {
-    mentionSearch.value = mentionMatch[1]
+    mentionSearch.value = mentionMatch[1] || ''
     showMentionDropdown.value = true
     selectedMentionIndex.value = 0
 
@@ -218,8 +218,9 @@ function handleKeydown(event: KeyboardEvent) {
     selectedMentionIndex.value = (selectedMentionIndex.value - 1 + users.length) % users.length
   } else if (event.key === 'Enter' && showMentionDropdown.value) {
     event.preventDefault()
-    if (users[selectedMentionIndex.value]) {
-      insertMention(users[selectedMentionIndex.value])
+    const selectedUser = users[selectedMentionIndex.value]
+    if (selectedUser) {
+      insertMention(selectedUser)
     }
   } else if (event.key === 'Escape') {
     showMentionDropdown.value = false
@@ -274,7 +275,7 @@ const placeholder = computed(() => {
   return 'Add comment...'
 })
 
-const submitLabel = computed(() => {
+const _submitLabel = computed(() => {
   if (isSubmitting.value) return 'Submitting...'
   if (props.editingComment) return 'Update'
   return props.parentId ? 'Reply' : 'Comment'
@@ -538,7 +539,7 @@ function handleCancel() {
               <div class="p-2 max-h-48 overflow-y-auto">
                 <div class="grid grid-cols-8 gap-1">
                   <button
-                    v-for="emoji in emojiCategories[selectedEmojiCategory].emojis"
+                    v-for="emoji in emojiCategories[selectedEmojiCategory]?.emojis ?? []"
                     :key="emoji"
                     type="button"
                     class="w-8 h-8 flex items-center justify-center text-xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"

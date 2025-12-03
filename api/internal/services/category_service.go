@@ -35,7 +35,7 @@ func (s *CategoryService) Create(ctx context.Context, req *models.CreateCategory
 		return nil, err
 	}
 
-	s.cache.Delete(ctx, cache.CategoriesKey())
+	_ = s.cache.Delete(ctx, cache.CategoriesKey())
 
 	return category, nil
 }
@@ -56,7 +56,7 @@ func (s *CategoryService) GetByID(ctx context.Context, id uuid.UUID) (*models.Ca
 		return nil, nil
 	}
 
-	s.cache.Set(ctx, cacheKey, result, CategoryCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, CategoryCacheTTL)
 
 	return result, nil
 }
@@ -78,7 +78,7 @@ func (s *CategoryService) List(ctx context.Context) ([]models.Category, error) {
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, result, CategoryCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, CategoryCacheTTL)
 
 	return result, nil
 }
@@ -88,8 +88,8 @@ func (s *CategoryService) Update(ctx context.Context, id uuid.UUID, req *models.
 		return nil, err
 	}
 
-	s.cache.Delete(ctx, cache.CategoryKey(id.String()))
-	s.cache.Delete(ctx, cache.CategoriesKey())
+	_ = s.cache.Delete(ctx, cache.CategoryKey(id.String()))
+	_ = s.cache.Delete(ctx, cache.CategoriesKey())
 
 	return s.repo.GetByID(ctx, id)
 }
@@ -99,8 +99,8 @@ func (s *CategoryService) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	s.cache.Delete(ctx, cache.CategoryKey(id.String()))
-	s.cache.Delete(ctx, cache.CategoriesKey())
+	_ = s.cache.Delete(ctx, cache.CategoryKey(id.String()))
+	_ = s.cache.Delete(ctx, cache.CategoriesKey())
 
 	return nil
 }
@@ -110,7 +110,7 @@ func (s *CategoryService) Restore(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
-	s.cache.Delete(ctx, cache.CategoriesKey())
+	_ = s.cache.Delete(ctx, cache.CategoriesKey())
 
 	return nil
 }

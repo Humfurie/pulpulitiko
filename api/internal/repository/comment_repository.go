@@ -215,9 +215,9 @@ func (r *CommentRepository) Update(ctx context.Context, id uuid.UUID, content st
 	// Update mentions
 	mentions := extractMentions(content)
 	// Clear old mentions and save new ones
-	r.db.Exec(ctx, `DELETE FROM comment_mentions WHERE comment_id = $1`, id)
+	_, _ = r.db.Exec(ctx, `DELETE FROM comment_mentions WHERE comment_id = $1`, id)
 	if len(mentions) > 0 {
-		r.saveMentions(ctx, id, mentions)
+		_ = r.saveMentions(ctx, id, mentions)
 	}
 
 	return nil
@@ -379,7 +379,7 @@ func (r *CommentRepository) GetReactionSummary(ctx context.Context, commentID uu
 		// Check if current user has this reaction
 		if currentUserID != nil {
 			var hasReacted bool
-			r.db.QueryRow(ctx, `
+			_ = r.db.QueryRow(ctx, `
 				SELECT EXISTS(SELECT 1 FROM comment_reactions WHERE comment_id = $1 AND user_id = $2 AND reaction = $3)
 			`, commentID, *currentUserID, summary.Reaction).Scan(&hasReacted)
 			summary.HasReacted = hasReacted

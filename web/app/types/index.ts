@@ -324,6 +324,9 @@ export interface Comment {
   author?: CommentAuthor
   reactions?: ReactionSummary[]
   reply_count?: number
+  // For user profile page - article context
+  article_slug?: string
+  article_title?: string
 }
 
 export interface CreateCommentRequest {
@@ -392,4 +395,83 @@ export interface DashboardMetrics {
   top_articles: TopArticle[]
   category_metrics: CategoryMetric[]
   tag_metrics: TagMetric[]
+}
+
+// Messaging types
+export type ConversationStatus = 'open' | 'closed' | 'archived'
+
+export interface Conversation {
+  id: string
+  user_id: string
+  user?: User
+  subject?: string
+  status: ConversationStatus
+  last_message_at?: string
+  last_message?: Message
+  unread_count?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Message {
+  id: string
+  conversation_id: string
+  sender_id: string
+  sender?: User
+  content: string
+  is_read: boolean
+  read_at?: string
+  created_at: string
+}
+
+export interface CreateConversationRequest {
+  subject?: string
+  message: string
+}
+
+export interface CreateMessageRequest {
+  content: string
+}
+
+export interface UpdateConversationRequest {
+  status: ConversationStatus
+}
+
+export interface PaginatedConversations {
+  conversations: Conversation[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+export interface PaginatedMessages {
+  messages: Message[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+export interface UnreadCounts {
+  total: number
+  conversations: number
+}
+
+// WebSocket types
+export type WSMessageType =
+  | 'new_message'
+  | 'message_read'
+  | 'typing'
+  | 'stop_typing'
+  | 'user_online'
+  | 'user_offline'
+  | 'conversation_update'
+
+export interface WSMessage {
+  type: WSMessageType
+  conversation_id?: string
+  message?: Message
+  user_id?: string
+  timestamp: string
 }

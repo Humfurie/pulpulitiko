@@ -51,7 +51,7 @@ const editor = useEditor({
     handleDrop: (view, event, _slice, moved) => {
       if (!moved && event.dataTransfer?.files?.length) {
         const file = event.dataTransfer.files[0]
-        if (file.type.startsWith('image/')) {
+        if (file && file.type.startsWith('image/')) {
           event.preventDefault()
           uploadAndInsertImage(file)
           return true

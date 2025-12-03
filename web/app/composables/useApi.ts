@@ -17,10 +17,15 @@ import type {
   UserProfile
 } from '~/types'
 
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RequestBody = Record<string, any> | FormData | null | undefined
+
 interface FetchOptions {
-  method?: string
+  method?: HttpMethod
   headers?: Record<string, string>
-  body?: unknown
+  body?: RequestBody
 }
 
 export function useApi() {

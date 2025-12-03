@@ -51,8 +51,11 @@ async function loadRoles() {
       const authorRole = roles.value.find(r => r.slug === 'author')
       if (authorRole) {
         form.role_id = authorRole.id
-      } else if (roles.value.length > 0) {
-        form.role_id = roles.value[0].id
+      } else {
+        const firstRole = roles.value[0]
+        if (firstRole) {
+          form.role_id = firstRole.id
+        }
       }
     }
   } catch (e: unknown) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Article, Category, Tag, ApiResponse, UpdateArticleRequest } from '~/types'
+import type { Article, Category, Tag, ApiResponse } from '~/types'
 
 definePageMeta({
   layout: 'admin',
@@ -21,15 +21,15 @@ const uploadingFeaturedImage = ref(false)
 const error = ref('')
 const featuredImageInput = ref<HTMLInputElement | null>(null)
 
-const form = reactive<UpdateArticleRequest>({
+const form = reactive({
   slug: '',
   title: '',
   summary: '',
   content: '',
   featured_image: '',
   category_id: null as string | null,
-  status: 'draft',
-  tag_ids: []
+  status: 'draft' as 'draft' | 'published' | 'archived',
+  tag_ids: [] as string[]
 })
 
 const categories = ref<Category[]>([])

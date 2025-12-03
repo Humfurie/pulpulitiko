@@ -1,5 +1,10 @@
 -- Rollback: 000001_initial_schema
 
+-- Drop messaging system first
+DROP TRIGGER IF EXISTS update_conversations_updated_at ON conversations;
+DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS conversations;
+
 -- Drop comment system triggers and functions first
 DROP TRIGGER IF EXISTS enforce_single_level_threading ON comments;
 DROP FUNCTION IF EXISTS check_single_level_threading();
