@@ -1,5 +1,3 @@
-import { defineSitemapEventHandler } from '#imports'
-
 interface ArticleListItem {
   slug: string
   published_at?: string
@@ -33,7 +31,7 @@ interface SitemapUrlEntry {
   priority?: number
 }
 
-export default defineSitemapEventHandler(async () => {
+export default defineEventHandler(async () => {
   const config = useRuntimeConfig()
   const apiUrl = config.apiInternalUrl || 'http://localhost:8080/api'
 
