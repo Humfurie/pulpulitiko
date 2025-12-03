@@ -25,27 +25,27 @@ func NewMessageHandler(service *services.MessageService, hub *Hub) *MessageHandl
 // CreateConversation creates a new conversation with an initial message
 // POST /api/messages/conversations
 func (h *MessageHandler) CreateConversation(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
 	userID, err := uuid.Parse(claims.UserID)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid user ID")
+		WriteBadRequest(w, "Invalid user ID")
 		return
 	}
 
 	var req models.CreateConversationRequest
 	if err := DecodeAndValidate(r, &req); err != nil {
-		WriteError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	conversation, message, err := h.service.CreateConversation(r.Context(), userID, &req)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -61,21 +61,21 @@ func (h *MessageHandler) CreateConversation(w http.ResponseWriter, r *http.Reque
 // GetMyConversations gets the current user's conversations
 // GET /api/messages/conversations
 func (h *MessageHandler) GetMyConversations(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
 	userID, err := uuid.Parse(claims.UserID)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid user ID")
+		WriteBadRequest(w, "Invalid user ID")
 		return
 	}
 
 	conversations, err := h.service.GetUserConversations(r.Context(), userID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -85,15 +85,15 @@ func (h *MessageHandler) GetMyConversations(w http.ResponseWriter, r *http.Reque
 // GetConversation retrieves a specific conversation
 // GET /api/messages/conversations/{id}
 func (h *MessageHandler) GetConversation(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
 	conversationID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid conversation ID")
+		WriteBadRequest(w, "Invalid conversation ID")
 		return
 	}
 
@@ -103,21 +103,21 @@ func (h *MessageHandler) GetConversation(w http.ResponseWriter, r *http.Request)
 	// Check access
 	canAccess, err := h.service.CanAccessConversation(r.Context(), conversationID, userID, isAdmin)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 	if !canAccess {
-		WriteError(w, http.StatusForbidden, "Access denied")
+		WriteForbidden(w, "Access denied")
 		return
 	}
 
 	conversation, err := h.service.GetConversation(r.Context(), conversationID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 	if conversation == nil {
-		WriteError(w, http.StatusNotFound, "Conversation not found")
+		WriteNotFound(w, "Conversation not found")
 		return
 	}
 
@@ -127,15 +127,15 @@ func (h *MessageHandler) GetConversation(w http.ResponseWriter, r *http.Request)
 // GetMessages retrieves messages in a conversation
 // GET /api/messages/conversations/{id}/messages
 func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
 	conversationID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid conversation ID")
+		WriteBadRequest(w, "Invalid conversation ID")
 		return
 	}
 
@@ -145,18 +145,18 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	// Check access
 	canAccess, err := h.service.CanAccessConversation(r.Context(), conversationID, userID, isAdmin)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 	if !canAccess {
-		WriteError(w, http.StatusForbidden, "Access denied")
+		WriteForbidden(w, "Access denied")
 		return
 	}
 
 	page, perPage := GetPaginationParams(r)
 	messages, err := h.service.GetMessages(r.Context(), conversationID, page, perPage)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -166,15 +166,15 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 // SendMessage sends a message in a conversation
 // POST /api/messages/conversations/{id}/messages
 func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
 	conversationID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid conversation ID")
+		WriteBadRequest(w, "Invalid conversation ID")
 		return
 	}
 
@@ -184,23 +184,23 @@ func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	// Check access
 	canAccess, err := h.service.CanAccessConversation(r.Context(), conversationID, userID, isAdmin)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 	if !canAccess {
-		WriteError(w, http.StatusForbidden, "Access denied")
+		WriteForbidden(w, "Access denied")
 		return
 	}
 
 	var req models.CreateMessageRequest
 	if err := DecodeAndValidate(r, &req); err != nil {
-		WriteError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	message, err := h.service.SendMessage(r.Context(), conversationID, userID, &req)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -216,15 +216,15 @@ func (h *MessageHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 // MarkAsRead marks all messages in a conversation as read
 // POST /api/messages/conversations/{id}/read
 func (h *MessageHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
 	conversationID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid conversation ID")
+		WriteBadRequest(w, "Invalid conversation ID")
 		return
 	}
 
@@ -234,17 +234,17 @@ func (h *MessageHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
 	// Check access
 	canAccess, err := h.service.CanAccessConversation(r.Context(), conversationID, userID, isAdmin)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 	if !canAccess {
-		WriteError(w, http.StatusForbidden, "Access denied")
+		WriteForbidden(w, "Access denied")
 		return
 	}
 
 	err = h.service.MarkAsRead(r.Context(), conversationID, userID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -254,9 +254,9 @@ func (h *MessageHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
 // GetUnreadCounts gets unread message counts for the current user
 // GET /api/messages/unread
 func (h *MessageHandler) GetUnreadCounts(w http.ResponseWriter, r *http.Request) {
-	claims := middleware.GetUserFromContext(r.Context())
+	claims := middleware.GetUserClaims(r.Context())
 	if claims == nil {
-		WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		WriteUnauthorized(w, "Unauthorized")
 		return
 	}
 
@@ -265,7 +265,7 @@ func (h *MessageHandler) GetUnreadCounts(w http.ResponseWriter, r *http.Request)
 
 	counts, err := h.service.GetUnreadCounts(r.Context(), userID, isAdmin)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -289,7 +289,7 @@ func (h *MessageHandler) AdminListConversations(w http.ResponseWriter, r *http.R
 
 	conversations, err := h.service.ListConversations(r.Context(), filter, page, perPage)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
@@ -301,19 +301,19 @@ func (h *MessageHandler) AdminListConversations(w http.ResponseWriter, r *http.R
 func (h *MessageHandler) AdminUpdateConversationStatus(w http.ResponseWriter, r *http.Request) {
 	conversationID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "Invalid conversation ID")
+		WriteBadRequest(w, "Invalid conversation ID")
 		return
 	}
 
 	var req models.UpdateConversationRequest
 	if err := DecodeAndValidate(r, &req); err != nil {
-		WriteError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	err = h.service.UpdateConversationStatus(r.Context(), conversationID, req.Status)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		WriteInternalError(w, err.Error())
 		return
 	}
 
