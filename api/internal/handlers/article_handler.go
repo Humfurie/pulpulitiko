@@ -27,10 +27,9 @@ func (h *ArticleHandler) List(w http.ResponseWriter, r *http.Request) {
 	status := models.ArticleStatusPublished
 	filter.Status = &status
 
-	if categorySlug := r.URL.Query().Get("category"); categorySlug != "" {
-		// This would need to be resolved to ID via category service
-		// For simplicity, we'll skip this filter in the handler
-	}
+	// Note: category filtering by slug would need to be resolved to ID via category service
+	// For simplicity, we skip this filter in the handler - use /categories/:slug endpoint instead
+	_ = r.URL.Query().Get("category")
 
 	articles, err := h.service.List(r.Context(), filter, page, perPage)
 	if err != nil {

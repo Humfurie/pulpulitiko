@@ -279,7 +279,7 @@ func (r *CommentRepository) ListAllComments(ctx context.Context, filter *models.
 	if filter != nil && filter.Status != nil {
 		query += fmt.Sprintf(" AND c.status = $%d", argNum)
 		args = append(args, *filter.Status)
-		argNum++
+		_ = argNum // Mark as used for future filter additions
 	}
 
 	query += " ORDER BY c.created_at DESC LIMIT 100"

@@ -124,7 +124,7 @@ func (h *RSSHandler) Feed(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=900") // 15 minutes cache
 
-	w.Write([]byte(xml.Header))
+	_, _ = w.Write([]byte(xml.Header))
 	encoder := xml.NewEncoder(w)
 	encoder.Indent("", "  ")
 	if err := encoder.Encode(rss); err != nil {

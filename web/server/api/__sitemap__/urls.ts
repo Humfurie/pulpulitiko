@@ -1,5 +1,4 @@
-// @ts-expect-error Sitemap module types
-import { defineSitemapEventHandler } from '#sitemap/runtime/utils'
+import { defineSitemapEventHandler } from '#imports'
 
 interface ArticleListItem {
   slug: string
