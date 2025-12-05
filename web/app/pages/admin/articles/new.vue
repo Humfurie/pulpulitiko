@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Category, Tag, ApiResponse } from '~/types'
+import type { Category, Tag, Politician, ApiResponse } from '~/types'
+import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({
   layout: 'admin',
@@ -24,30 +25,69 @@ const form = reactive({
   content: '',
   featured_image: '',
   category_id: null as string | null,
+  primary_politician_id: null as string | null,
   status: 'draft' as 'draft' | 'published' | 'archived',
-  tag_ids: [] as string[]
+  tag_ids: [] as string[],
+  politician_ids: [] as string[]
 })
 
 const categories = ref<Category[]>([])
 const tags = ref<Tag[]>([])
+const politicians = ref<Politician[]>([])
+const politicianSearch = ref('')
+const searchingPoliticians = ref(false)
 
 const categoryOptions = computed(() => [
   { label: 'No category', value: null },
   ...categories.value.map(c => ({ label: c.name, value: c.id }))
 ])
 
+const politicianOptions = computed(() => [
+  { label: 'No primary politician', value: null },
+  ...politicians.value.map(p => ({ label: `${p.name}${p.position ? ` - ${p.position}` : ''}`, value: p.id }))
+])
+
 async function loadData() {
   try {
-    const [catRes, tagRes] = await Promise.all([
+    const [catRes, tagRes, polRes] = await Promise.all([
       $fetch<ApiResponse<Category[]>>(`${baseUrl}/categories`),
-      $fetch<ApiResponse<Tag[]>>(`${baseUrl}/tags`)
+      $fetch<ApiResponse<Tag[]>>(`${baseUrl}/tags`),
+      $fetch<ApiResponse<Politician[]>>(`${baseUrl}/politicians`)
     ])
     if (catRes.success) categories.value = catRes.data
     if (tagRes.success) tags.value = tagRes.data
+    if (polRes.success) politicians.value = polRes.data
   } catch (e) {
-    console.error('Failed to load categories/tags', e)
+    console.error('Failed to load categories/tags/politicians', e)
   }
 }
+
+async function searchPoliticians(query: string) {
+  if (!query || query.length < 2) return
+  searchingPoliticians.value = true
+  try {
+    const results = await api.searchPoliticians(query, 20)
+    // Merge with existing politicians, avoiding duplicates
+    const existingIds = new Set(politicians.value.map(p => p.id))
+    const newPoliticians = results.filter(p => !existingIds.has(p.id))
+    politicians.value = [...politicians.value, ...newPoliticians]
+  } catch (e) {
+    console.error('Failed to search politicians', e)
+  }
+  searchingPoliticians.value = false
+}
+
+function togglePolitician(politicianId: string) {
+  if (!form.politician_ids) form.politician_ids = []
+  const index = form.politician_ids.indexOf(politicianId)
+  if (index === -1) {
+    form.politician_ids.push(politicianId)
+  } else {
+    form.politician_ids.splice(index, 1)
+  }
+}
+
+const debouncedSearchPoliticians = useDebounceFn(searchPoliticians, 300)
 
 function generateSlug() {
   form.slug = form.title
@@ -134,9 +174,19 @@ async function handleSubmit() {
       payload.category_id = form.category_id
     }
 
+    // Only include primary_politician_id if it's a valid non-empty value
+    if (form.primary_politician_id && form.primary_politician_id !== 'null') {
+      payload.primary_politician_id = form.primary_politician_id
+    }
+
     // Only include tag_ids if there are any
     if (form.tag_ids?.length) {
       payload.tag_ids = form.tag_ids
+    }
+
+    // Only include politician_ids if there are any
+    if (form.politician_ids?.length) {
+      payload.politician_ids = form.politician_ids
     }
 
     await $fetch(`${baseUrl}/admin/articles`, {
@@ -331,6 +381,7 @@ useSeoMeta({
             <USelect
               v-model="form.category_id"
               :items="categoryOptions"
+              label-key="label"
               value-key="value"
               placeholder="Select a category"
               size="xl"
@@ -380,6 +431,85 @@ useSeoMeta({
               <UButton to="/admin/tags" variant="link" size="sm" class="mt-2">
                 Create tags
               </UButton>
+            </div>
+          </UCard>
+
+          <!-- Primary Politician Card -->
+          <UCard class="shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+            <template #header>
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                  <UIcon name="i-heroicons-user-circle" class="size-5 text-amber-500" />
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">Primary Politician</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Main subject of article</p>
+                </div>
+              </div>
+            </template>
+
+            <USelect
+              v-model="form.primary_politician_id"
+              :items="politicianOptions"
+              label-key="label"
+              value-key="value"
+              placeholder="Select a politician"
+              size="xl"
+              class="w-full"
+            />
+          </UCard>
+
+          <!-- Mentioned Politicians Card -->
+          <UCard class="shadow-sm ring-1 ring-gray-200 dark:ring-gray-800">
+            <template #header>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 rounded-lg bg-teal-50 dark:bg-teal-900/20">
+                    <UIcon name="i-heroicons-users" class="size-5 text-teal-500" />
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">Mentioned Politicians</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Other politicians in article</p>
+                  </div>
+                </div>
+                <UBadge v-if="form.politician_ids?.length" color="primary" variant="soft" size="sm">
+                  {{ form.politician_ids.length }} selected
+                </UBadge>
+              </div>
+            </template>
+
+            <div class="space-y-4">
+              <UInput
+                v-model="politicianSearch"
+                placeholder="Search politicians..."
+                icon="i-heroicons-magnifying-glass"
+                :loading="searchingPoliticians"
+                @input="debouncedSearchPoliticians(politicianSearch)"
+              />
+              <div v-if="politicians.length" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                <UButton
+                  v-for="politician in politicians"
+                  :key="politician.id"
+                  size="sm"
+                  :variant="form.politician_ids?.includes(politician.id) ? 'solid' : 'soft'"
+                  :color="form.politician_ids?.includes(politician.id) ? 'primary' : 'neutral'"
+                  class="transition-all duration-200"
+                  @click="togglePolitician(politician.id)"
+                >
+                  <UIcon
+                    :name="form.politician_ids?.includes(politician.id) ? 'i-heroicons-check' : 'i-heroicons-plus'"
+                    class="size-3.5 mr-1"
+                  />
+                  {{ politician.name }}
+                </UButton>
+              </div>
+              <div v-else class="text-center py-4">
+                <UIcon name="i-heroicons-users" class="size-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p class="text-sm text-gray-500 dark:text-gray-400">No politicians available</p>
+                <UButton to="/admin/politicians" variant="link" size="sm" class="mt-2">
+                  Add politicians
+                </UButton>
+              </div>
             </div>
           </UCard>
 

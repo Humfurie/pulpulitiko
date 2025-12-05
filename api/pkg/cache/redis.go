@@ -97,13 +97,34 @@ func (c *RedisCache) SetNX(ctx context.Context, key string, value interface{}, t
 
 // Cache key generators
 const (
-	KeyPrefixArticle     = "article:"
-	KeyPrefixArticleSlug = "article:slug:"
-	KeyPrefixArticleList = "articles:list:"
-	KeyPrefixTrending    = "articles:trending"
-	KeyPrefixCategory    = "category:"
-	KeyPrefixCategories  = "categories:all"
-	KeyPrefixRateLimit   = "ratelimit:"
+	KeyPrefixArticle        = "article:"
+	KeyPrefixArticleSlug    = "article:slug:"
+	KeyPrefixArticleList    = "articles:list:"
+	KeyPrefixTrending       = "articles:trending"
+	KeyPrefixCategory       = "category:"
+	KeyPrefixCategories     = "categories:all"
+	KeyPrefixPolitician     = "politician:"
+	KeyPrefixPoliticianSlug = "politician:slug:"
+	KeyPrefixPoliticians    = "politicians:all"
+	KeyPrefixPoliticianList = "politicians:list:"
+	KeyPrefixRateLimit      = "ratelimit:"
+
+	// Location cache keys
+	KeyPrefixRegion           = "region:"
+	KeyPrefixRegionSlug       = "region:slug:"
+	KeyPrefixRegions          = "regions:all"
+	KeyPrefixProvince         = "province:"
+	KeyPrefixProvinceSlug     = "province:slug:"
+	KeyPrefixProvinces        = "provinces:"
+	KeyPrefixAllProvinces     = "provinces:all"
+	KeyPrefixCity             = "city:"
+	KeyPrefixCitySlug         = "city:slug:"
+	KeyPrefixCities           = "cities:"
+	KeyPrefixBarangay         = "barangay:"
+	KeyPrefixBarangaySlug     = "barangay:slug:"
+	KeyPrefixBarangays        = "barangays:"
+	KeyPrefixDistrict         = "district:"
+	KeyPrefixLocationHierarchy = "location:hierarchy:"
 )
 
 func ArticleKey(id string) string {
@@ -132,4 +153,81 @@ func CategoriesKey() string {
 
 func RateLimitKey(ip string) string {
 	return KeyPrefixRateLimit + ip
+}
+
+func PoliticianKey(id string) string {
+	return KeyPrefixPolitician + id
+}
+
+func PoliticianSlugKey(slug string) string {
+	return KeyPrefixPoliticianSlug + slug
+}
+
+func PoliticiansKey() string {
+	return KeyPrefixPoliticians
+}
+
+func PoliticianListKey(page, perPage int, filter string) string {
+	return fmt.Sprintf("%s%d:%d:%s", KeyPrefixPoliticianList, page, perPage, filter)
+}
+
+// Location cache key functions
+func RegionKey(id string) string {
+	return KeyPrefixRegion + id
+}
+
+func RegionSlugKey(slug string) string {
+	return KeyPrefixRegionSlug + slug
+}
+
+func RegionsKey() string {
+	return KeyPrefixRegions
+}
+
+func ProvinceKey(id string) string {
+	return KeyPrefixProvince + id
+}
+
+func ProvinceSlugKey(slug string) string {
+	return KeyPrefixProvinceSlug + slug
+}
+
+func ProvincesKey(regionID string) string {
+	return KeyPrefixProvinces + regionID
+}
+
+func AllProvincesKey() string {
+	return KeyPrefixAllProvinces
+}
+
+func CityKey(id string) string {
+	return KeyPrefixCity + id
+}
+
+func CitySlugKey(slug string) string {
+	return KeyPrefixCitySlug + slug
+}
+
+func CitiesKey(provinceID string) string {
+	return KeyPrefixCities + provinceID
+}
+
+func BarangayKey(id string) string {
+	return KeyPrefixBarangay + id
+}
+
+func BarangaySlugKey(slug string) string {
+	return KeyPrefixBarangaySlug + slug
+}
+
+func BarangaysKey(cityID string) string {
+	return KeyPrefixBarangays + cityID
+}
+
+func DistrictKey(id string) string {
+	return KeyPrefixDistrict + id
+}
+
+func LocationHierarchyKey(barangayID string) string {
+	return KeyPrefixLocationHierarchy + barangayID
 }

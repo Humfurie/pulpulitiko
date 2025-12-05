@@ -9,6 +9,10 @@ const allNavigation = [
   { name: 'Articles', href: '/admin/articles', icon: 'i-heroicons-document-text', roles: ['admin', 'author'] },
   { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
   { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
+  { name: 'Politicians', href: '/admin/politicians', icon: 'i-heroicons-user-circle', roles: ['admin', 'author'] },
+  { name: 'Legislation', href: '/admin/legislation', icon: 'i-heroicons-scale', roles: ['admin'] },
+  { name: 'Locations', href: '/admin/locations', icon: 'i-heroicons-map-pin', roles: ['admin'] },
+  { name: 'Analytics', href: '/admin/analytics', icon: 'i-heroicons-chart-bar', roles: ['admin'] },
   { name: 'Users', href: '/admin/users', icon: 'i-heroicons-users', roles: ['admin'] },
   { name: 'Roles', href: '/admin/roles', icon: 'i-heroicons-shield-check', roles: ['admin'] },
   { name: 'Messages', href: '/admin/messages', icon: 'i-heroicons-chat-bubble-left-right', roles: ['admin'] }
@@ -31,7 +35,8 @@ function isActive(href: string) {
   if (href === '/admin') {
     return route.path === '/admin'
   }
-  return route.path.startsWith(href)
+  // Check exact match or match with subpath (e.g., /admin/articles matches /admin/articles/123)
+  return route.path === href || route.path.startsWith(href + '/')
 }
 </script>
 

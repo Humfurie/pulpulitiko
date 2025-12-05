@@ -15,6 +15,7 @@ export function useMessaging() {
   const config = useRuntimeConfig()
   const auth = useAuth()
   const ws = useWebSocket()
+  const { playNotificationSound, playMessageSentSound } = useNotificationSound()
 
   const baseUrl = config.public.apiUrl as string
 
@@ -170,6 +171,9 @@ export function useMessaging() {
       const message = await fetchApi<Message>(endpoint, { method: 'POST', body: data })
       messages.value.push(message)
 
+      // Play sent sound
+      playMessageSentSound()
+
       // Update conversation's last message
       const conversation = conversations.value.find(c => c.id === conversationId)
       if (conversation) {
@@ -269,6 +273,8 @@ export function useMessaging() {
         if (wsMsg.message.sender_id !== auth.user.value?.id) {
           conversation.unread_count = (conversation.unread_count || 0) + 1
           unreadCounts.value.total++
+          // Play notification sound for incoming messages
+          playNotificationSound()
         }
       }
     }

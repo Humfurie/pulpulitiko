@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -479,6 +480,69 @@ func extractMentions(content string) []string {
 		}
 	}
 	return mentions
+}
+
+// SaveMentions saves @mentions for a comment and returns the mentioned user IDs
+func (r *CommentRepository) SaveMentions(ctx context.Context, commentID uuid.UUID, content string) ([]uuid.UUID, error) {
+	// Get all users to match against
+	rows, err := r.db.Query(ctx, `SELECT id, name FROM users WHERE deleted_at IS NULL`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	type userInfo struct {
+		ID   uuid.UUID
+		Name string
+	}
+	var users []userInfo
+	for rows.Next() {
+		var u userInfo
+		if err := rows.Scan(&u.ID, &u.Name); err != nil {
+			continue
+		}
+		users = append(users, u)
+	}
+
+	// Sort users by name length (longest first) to match longest names first
+	sort.Slice(users, func(i, j int) bool {
+		return len(users[i].Name) > len(users[j].Name)
+	})
+
+	var mentionedUserIDs []uuid.UUID
+	contentLower := strings.ToLower(content)
+	seen := make(map[uuid.UUID]bool)
+
+	// Find all @ positions and try to match user names
+	for i := 0; i < len(contentLower); i++ {
+		if contentLower[i] == '@' && i+1 < len(contentLower) {
+			remaining := contentLower[i+1:]
+			for _, user := range users {
+				nameLower := strings.ToLower(user.Name)
+				if strings.HasPrefix(remaining, nameLower) {
+					// Check that it's a complete word (followed by space, punctuation, or end)
+					afterName := i + 1 + len(nameLower)
+					if afterName >= len(contentLower) || !isAlphanumeric(contentLower[afterName]) {
+						if !seen[user.ID] {
+							seen[user.ID] = true
+							// Save mention to user mentions table
+							_, err = r.db.Exec(ctx, `
+								INSERT INTO comment_user_mentions (comment_id, mentioned_user_id)
+								VALUES ($1, $2)
+								ON CONFLICT DO NOTHING
+							`, commentID, user.ID)
+							if err == nil {
+								mentionedUserIDs = append(mentionedUserIDs, user.ID)
+							}
+						}
+						break // Found longest match, move on
+					}
+				}
+			}
+		}
+	}
+
+	return mentionedUserIDs, nil
 }
 
 // GetMentions gets all mentions for a comment

@@ -20,14 +20,16 @@ const (
 )
 
 type ArticleService struct {
-	repo  *repository.ArticleRepository
-	cache *cache.RedisCache
+	repo           *repository.ArticleRepository
+	politicianRepo *repository.PoliticianRepository
+	cache          *cache.RedisCache
 }
 
-func NewArticleService(repo *repository.ArticleRepository, cache *cache.RedisCache) *ArticleService {
+func NewArticleService(repo *repository.ArticleRepository, politicianRepo *repository.PoliticianRepository, cache *cache.RedisCache) *ArticleService {
 	return &ArticleService{
-		repo:  repo,
-		cache: cache,
+		repo:           repo,
+		politicianRepo: politicianRepo,
+		cache:          cache,
 	}
 }
 
@@ -61,6 +63,14 @@ func (s *ArticleService) Create(ctx context.Context, req *models.CreateArticleRe
 		article.CategoryID = &id
 	}
 
+	if req.PrimaryPoliticianID != nil {
+		id, err := uuid.Parse(*req.PrimaryPoliticianID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid primary politician ID: %w", err)
+		}
+		article.PrimaryPoliticianID = &id
+	}
+
 	if err := s.repo.Create(ctx, article); err != nil {
 		return nil, err
 	}
@@ -76,6 +86,21 @@ func (s *ArticleService) Create(ctx context.Context, req *models.CreateArticleRe
 			tagUUIDs[i] = id
 		}
 		if err := s.repo.SetArticleTags(ctx, article.ID, tagUUIDs); err != nil {
+			return nil, err
+		}
+	}
+
+	// Set mentioned politicians if provided
+	if len(req.PoliticianIDs) > 0 {
+		politicianUUIDs := make([]uuid.UUID, len(req.PoliticianIDs))
+		for i, politicianID := range req.PoliticianIDs {
+			id, err := uuid.Parse(politicianID)
+			if err != nil {
+				return nil, fmt.Errorf("invalid politician ID: %w", err)
+			}
+			politicianUUIDs[i] = id
+		}
+		if err := s.politicianRepo.SetArticleMentionedPoliticians(ctx, article.ID, politicianUUIDs); err != nil {
 			return nil, err
 		}
 	}
@@ -186,6 +211,13 @@ func (s *ArticleService) Update(ctx context.Context, id uuid.UUID, req *models.U
 		}
 		updates["category_id"] = categoryID
 	}
+	if req.PrimaryPoliticianID != nil {
+		politicianID, err := uuid.Parse(*req.PrimaryPoliticianID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid primary politician ID: %w", err)
+		}
+		updates["primary_politician_id"] = politicianID
+	}
 	if req.Status != nil {
 		updates["status"] = *req.Status
 		if *req.Status == string(models.ArticleStatusPublished) {
@@ -208,6 +240,21 @@ func (s *ArticleService) Update(ctx context.Context, id uuid.UUID, req *models.U
 			tagUUIDs[i] = tid
 		}
 		if err := s.repo.SetArticleTags(ctx, id, tagUUIDs); err != nil {
+			return nil, err
+		}
+	}
+
+	// Update mentioned politicians if provided
+	if req.PoliticianIDs != nil {
+		politicianUUIDs := make([]uuid.UUID, len(req.PoliticianIDs))
+		for i, politicianID := range req.PoliticianIDs {
+			pid, err := uuid.Parse(politicianID)
+			if err != nil {
+				return nil, fmt.Errorf("invalid politician ID: %w", err)
+			}
+			politicianUUIDs[i] = pid
+		}
+		if err := s.politicianRepo.SetArticleMentionedPoliticians(ctx, id, politicianUUIDs); err != nil {
 			return nil, err
 		}
 	}
@@ -339,11 +386,12 @@ func hashFilter(filter *models.ArticleFilter) string {
 		return "nil"
 	}
 
-	data := fmt.Sprintf("%v:%v:%v:%v:%v",
+	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v",
 		filter.Status,
 		filter.CategoryID,
 		filter.TagID,
 		filter.AuthorID,
+		filter.PoliticianID,
 		filter.Search,
 	)
 

@@ -1,6 +1,10 @@
 -- Rollback: 000001_initial_schema
 
--- Drop messaging system first
+-- Drop search analytics first
+DROP TABLE IF EXISTS search_clicks;
+DROP TABLE IF EXISTS search_queries;
+
+-- Drop messaging system
 DROP TRIGGER IF EXISTS update_conversations_updated_at ON conversations;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS conversations;
@@ -20,6 +24,7 @@ DROP TYPE IF EXISTS comment_status;
 
 -- Drop other triggers
 DROP TRIGGER IF EXISTS update_articles_updated_at ON articles;
+DROP TRIGGER IF EXISTS update_politicians_updated_at ON politicians;
 DROP TRIGGER IF EXISTS update_tags_updated_at ON tags;
 DROP TRIGGER IF EXISTS update_categories_updated_at ON categories;
 DROP TRIGGER IF EXISTS update_authors_updated_at ON authors;
@@ -28,8 +33,10 @@ DROP TRIGGER IF EXISTS update_roles_updated_at ON roles;
 
 DROP FUNCTION IF EXISTS update_updated_at_column();
 
+DROP TABLE IF EXISTS article_politicians;
 DROP TABLE IF EXISTS article_tags;
 DROP TABLE IF EXISTS articles;
+DROP TABLE IF EXISTS politicians;
 DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS authors;

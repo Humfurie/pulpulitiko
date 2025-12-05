@@ -128,6 +128,13 @@ func main() {
 	}
 	fmt.Println("Tags seeded successfully")
 
+	// Seed politicians
+	fmt.Println("Seeding politicians...")
+	if err := seedPoliticians(ctx, conn); err != nil {
+		log.Fatalf("Failed to seed politicians: %v", err)
+	}
+	fmt.Println("Politicians seeded successfully")
+
 	// Seed sample articles
 	fmt.Println("Seeding articles...")
 	if err := seedArticles(ctx, conn, email); err != nil {
@@ -345,6 +352,148 @@ func generateSlug(name string) string {
 	reg := regexp.MustCompile("[^a-z0-9-]")
 	slug = reg.ReplaceAllString(slug, "")
 	return slug
+}
+
+func seedPoliticians(ctx context.Context, conn *pgx.Conn) error {
+	politicians := []struct {
+		name       string
+		slug       string
+		position   string
+		party      string
+		shortBio   string
+		termStart  string
+		termEnd    string
+	}{
+		// =====================================================
+		// EXECUTIVE BRANCH
+		// =====================================================
+		{name: "Ferdinand Marcos Jr.", slug: "bongbong-marcos", position: "President of the Philippines", party: "Partido Federal ng Pilipinas", shortBio: "Ferdinand Romualdez Marcos Jr., commonly known as Bongbong Marcos or BBM, is the 17th President of the Philippines.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Sara Duterte", slug: "sara-duterte", position: "Vice President of the Philippines", party: "Lakas-CMD", shortBio: "Sara Zimmerman Duterte is the 15th Vice President of the Philippines.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+
+		// =====================================================
+		// CABINET SECRETARIES (Updated 2025)
+		// =====================================================
+		{name: "Lucas Bersamin", slug: "lucas-bersamin", position: "Executive Secretary", party: "Independent", shortBio: "Former Chief Justice, now serving as Executive Secretary.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Jonvic Remulla", slug: "jonvic-remulla", position: "Secretary of the Interior and Local Government", party: "Lakas-CMD", shortBio: "Juanito Victor Remulla serves as DILG Secretary, former Governor of Cavite.", termStart: "2025-05-22", termEnd: "2028-06-30"},
+		{name: "Ma. Theresa Lazaro", slug: "theresa-lazaro", position: "Secretary of Foreign Affairs", party: "Independent", shortBio: "Career diplomat serving as Secretary of Foreign Affairs.", termStart: "2025-05-22", termEnd: "2028-06-30"},
+		{name: "Gilberto Teodoro", slug: "gilberto-teodoro", position: "Secretary of National Defense", party: "Lakas-CMD", shortBio: "Gilberto Teodoro Jr. serves as Secretary of National Defense. He previously held the same position under President Gloria Arroyo.", termStart: "2023-06-12", termEnd: "2028-06-30"},
+		{name: "Jesus Crispin Remulla", slug: "boying-remulla", position: "Secretary of Justice", party: "Lakas-CMD", shortBio: "Jesus Crispin Remulla serves as Secretary of Justice. He previously served as Governor of Cavite.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Ralph Recto", slug: "ralph-recto", position: "Secretary of Finance", party: "Lakas-CMD", shortBio: "Ralph Guevarra Recto serves as Secretary of Finance. He previously served as Senator.", termStart: "2024-07-01", termEnd: "2028-06-30"},
+		{name: "Amenah Pangandaman", slug: "amenah-pangandaman", position: "Secretary of Budget and Management", party: "Independent", shortBio: "Amenah Fuertes Pangandaman serves as DBM Secretary, the first Muslim woman to hold a Cabinet position.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Arsenio Balisacan", slug: "arsenio-balisacan", position: "Secretary of Socioeconomic Planning (NEDA)", party: "Independent", shortBio: "Arsenio Balisacan serves as NEDA Director-General. He is an economist and former NEDA head.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Juan Edgardo Angara", slug: "sonny-angara", position: "Secretary of Education", party: "LDP", shortBio: "Sonny Angara serves as DepEd Secretary since July 2024. Former Senator.", termStart: "2024-07-18", termEnd: "2028-06-30"},
+		{name: "Teodoro Herbosa", slug: "ted-herbosa", position: "Secretary of Health", party: "Independent", shortBio: "Dr. Ted Herbosa serves as Secretary of Health, former UP Manila Chancellor.", termStart: "2023-01-09", termEnd: "2028-06-30"},
+		{name: "Rex Gatchalian", slug: "rex-gatchalian", position: "Secretary of Social Welfare and Development", party: "NPC", shortBio: "Rex Gatchalian serves as DSWD Secretary, former Valenzuela Mayor.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Bienvenido Laguesma", slug: "bienvenido-laguesma", position: "Secretary of Labor and Employment", party: "Independent", shortBio: "Bienvenido Laguesma serves as DOLE Secretary, veteran labor official.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Vince Dizon", slug: "vince-dizon", position: "Secretary of Public Works and Highways", party: "Independent", shortBio: "Vince Dizon serves as DPWH Secretary, former bases conversion chief.", termStart: "2025-05-22", termEnd: "2028-06-30"},
+		{name: "Giovanni Lopez", slug: "giovanni-lopez", position: "Secretary of Transportation", party: "Independent", shortBio: "Giovanni Lopez serves as DOTr Secretary.", termStart: "2025-05-22", termEnd: "2028-06-30"},
+		{name: "Francisco Tiu Laurel", slug: "francis-tiu-laurel", position: "Secretary of Agriculture", party: "Independent", shortBio: "Francisco Tiu Laurel Jr. serves as DA Secretary, prominent agribusinessman.", termStart: "2023-11-03", termEnd: "2028-06-30"},
+		{name: "Ma. Cristina Roque", slug: "cristina-roque", position: "Secretary of Trade and Industry", party: "Independent", shortBio: "Cristina Roque serves as DTI Secretary.", termStart: "2023-07-01", termEnd: "2028-06-30"},
+		{name: "Sharon Garin", slug: "sharon-garin", position: "Secretary of Energy", party: "Independent", shortBio: "Sharon Garin serves as DOE Secretary, former party-list representative.", termStart: "2025-07-10", termEnd: "2028-06-30"},
+		{name: "Raphael Lotilla", slug: "raphael-lotilla", position: "Secretary of Environment and Natural Resources", party: "Independent", shortBio: "Raphael Perpetuo Lotilla serves as DENR Secretary.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Renato Solidum Jr.", slug: "renato-solidum", position: "Secretary of Science and Technology", party: "Independent", shortBio: "Dr. Renato Solidum Jr. serves as DOST Secretary, former PHIVOLCS director.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Christina Frasco", slug: "christina-frasco", position: "Secretary of Tourism", party: "One Cebu", shortBio: "Ma. Esperanza Christina Frasco serves as DOT Secretary, former Liloan Mayor.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Conrado Estrella III", slug: "conrado-estrella", position: "Secretary of Agrarian Reform", party: "Independent", shortBio: "Conrado Estrella III serves as DAR Secretary.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Henry Aguda", slug: "henry-aguda", position: "Secretary of Information and Communications Technology", party: "Independent", shortBio: "Henry Aguda serves as DICT Secretary.", termStart: "2024-09-01", termEnd: "2028-06-30"},
+		{name: "Jose Ramon Aliling", slug: "jose-aliling", position: "Secretary of Human Settlements and Urban Development", party: "Independent", shortBio: "Jose Ramon Aliling serves as DHSUD Secretary.", termStart: "2025-05-22", termEnd: "2028-06-30"},
+		{name: "Hans Leo Cacdac", slug: "hans-cacdac", position: "Secretary of Migrant Workers", party: "Independent", shortBio: "Hans Leo Cacdac serves as DMW Secretary.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Dave Gomez", slug: "dave-gomez", position: "Secretary of Presidential Communications", party: "Independent", shortBio: "Dave Gomez serves as PCO Secretary, former PMFTC executive.", termStart: "2025-07-10", termEnd: "2028-06-30"},
+		{name: "Eduardo Año", slug: "eduardo-ano", position: "National Security Adviser", party: "Independent", shortBio: "Eduardo Año serves as National Security Adviser, former AFP Chief of Staff.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Eli Remolona Jr.", slug: "eli-remolona", position: "BSP Governor", party: "Independent", shortBio: "Eli Remolona Jr. serves as Governor of the Bangko Sentral ng Pilipinas.", termStart: "2023-07-03", termEnd: "2029-07-03"},
+
+		// =====================================================
+		// LEGISLATIVE - SENATE (24 Senators)
+		// =====================================================
+		// 2022 Election Winners (Term ends: June 30, 2028)
+		{name: "Robin Padilla", slug: "robin-padilla", position: "Senator", party: "PDP-Laban", shortBio: "Action star who topped the 2022 senatorial race with over 26 million votes.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Loren Legarda", slug: "loren-legarda", position: "Senate President Pro Tempore", party: "NPC", shortBio: "Veteran senator and broadcast journalist, known for environmental advocacy.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Raffy Tulfo", slug: "raffy-tulfo", position: "Senator", party: "Independent", shortBio: "Broadcast journalist and social media personality who garnered over 23 million votes.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Win Gatchalian", slug: "win-gatchalian", position: "Senator", party: "NPC", shortBio: "Chairman of the Senate Committee on Basic Education, former Valenzuela Mayor.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Francis Escudero", slug: "chiz-escudero", position: "Senate President", party: "NPC", shortBio: "Francis Joseph Guevara Escudero elected as Senate President in 2024.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Mark Villar", slug: "mark-villar", position: "Senator", party: "Nacionalista Party", shortBio: "Former Secretary of Public Works, son of Manny and Cynthia Villar.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Alan Peter Cayetano", slug: "alan-cayetano", position: "Senator", party: "Independent", shortBio: "Former Secretary of Foreign Affairs and Speaker of the House.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Juan Miguel Zubiri", slug: "migz-zubiri", position: "Senator", party: "Independent", shortBio: "Former Senate President (2022-2024) representing Bukidnon.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Joel Villanueva", slug: "joel-villanueva", position: "Senator", party: "Nacionalista Party", shortBio: "Former TESDA Director-General and labor advocate.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "JV Ejercito", slug: "jv-ejercito", position: "Senator", party: "NPC", shortBio: "Son of former President Joseph Estrada, former San Juan Mayor.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Risa Hontiveros", slug: "risa-hontiveros", position: "Senator", party: "Akbayan", shortBio: "Progressive senator known for advocating human rights and women's issues.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+		{name: "Jinggoy Estrada", slug: "jinggoy-estrada", position: "Senate President Pro Tempore (2024)", party: "PMP", shortBio: "Son of former President Joseph Estrada, former San Juan Mayor.", termStart: "2022-06-30", termEnd: "2028-06-30"},
+
+		// 2019 Election Winners (Term ends: June 30, 2025)
+		{name: "Cynthia Villar", slug: "cynthia-villar", position: "Senator", party: "Nacionalista Party", shortBio: "Top vote-getter in 2019 elections. Wife of former Senator Manny Villar, businesswoman.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Grace Poe", slug: "grace-poe", position: "Senator", party: "Independent", shortBio: "Adopted daughter of action star Fernando Poe Jr., 2016 presidential candidate.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Bong Go", slug: "bong-go", position: "Senator", party: "PDP-Laban", shortBio: "Former Special Assistant to President Duterte.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Pia Cayetano", slug: "pia-cayetano", position: "Senator", party: "Nacionalista Party", shortBio: "Health and sports advocate, sister of Alan Peter Cayetano.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Ronald dela Rosa", slug: "bato-dela-rosa", position: "Senator", party: "PDP-Laban", shortBio: "Former PNP Chief who led the war on drugs under Duterte.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Lito Lapid", slug: "lito-lapid", position: "Senator", party: "NPC", shortBio: "Actor and former Governor of Pampanga, serving fourth term as Senator.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Imee Marcos", slug: "imee-marcos", position: "Senator", party: "Nacionalista Party", shortBio: "Sister of President Marcos Jr., former Governor of Ilocos Norte.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Francis Tolentino", slug: "francis-tolentino", position: "Senator", party: "PFP", shortBio: "Former MMDA Chairman and presidential adviser.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Koko Pimentel", slug: "koko-pimentel", position: "Senator", party: "PDP-Laban", shortBio: "Former Senate President, son of Aquilino Pimentel Jr., PDP-Laban founder.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Bong Revilla", slug: "bong-revilla", position: "Senator", party: "Lakas-CMD", shortBio: "Action star and former Cavite Governor, acquitted in the PDAF scam.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Nancy Binay", slug: "nancy-binay", position: "Senator", party: "UNA", shortBio: "Daughter of former Vice President Jejomar Binay.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+
+		// =====================================================
+		// LEGISLATIVE - HOUSE OF REPRESENTATIVES
+		// =====================================================
+		{name: "Martin Romualdez", slug: "martin-romualdez", position: "Speaker of the House", party: "Lakas-CMD", shortBio: "Ferdinand Martin Romualdez is a cousin of President Marcos Jr.", termStart: "2022-07-25", termEnd: "2025-06-30"},
+		{name: "Gloria Macapagal Arroyo", slug: "gloria-arroyo", position: "Representative, Pampanga 2nd District", party: "Lakas-CMD", shortBio: "14th President of the Philippines (2001-2010), now serving as Representative.", termStart: "2022-06-30", termEnd: "2025-06-30"},
+
+		// Party-List Representatives (19th Congress)
+		{name: "Arlene Brosas", slug: "arlene-brosas", position: "Party-list Representative (Gabriela)", party: "Makabayan Coalition", shortBio: "Represents Gabriela Women's Party, advocates for women's rights.", termStart: "2022-06-30", termEnd: "2025-06-30"},
+		{name: "France Castro", slug: "france-castro", position: "Party-list Representative (ACT Teachers)", party: "Makabayan Coalition", shortBio: "Represents ACT Teachers Party-list, advocates for teachers and education.", termStart: "2022-06-30", termEnd: "2025-06-30"},
+		{name: "Raoul Manuel", slug: "raoul-manuel", position: "Party-list Representative (Kabataan)", party: "Makabayan Coalition", shortBio: "Represents Kabataan Party-list, advocates for youth issues.", termStart: "2022-06-30", termEnd: "2025-06-30"},
+
+		// Party-List Representatives (20th Congress - 2025 elections)
+		{name: "Antonio Tinio", slug: "antonio-tinio", position: "Party-list Representative (ACT Teachers)", party: "Makabayan Coalition", shortBio: "Returning legislator for ACT Teachers, longtime education advocate.", termStart: "2025-06-30", termEnd: "2028-06-30"},
+		{name: "Renee Co", slug: "renee-co", position: "Party-list Representative (Kabataan)", party: "Makabayan Coalition", shortBio: "Lawyer representing Kabataan Party-list, youth rights advocate.", termStart: "2025-06-30", termEnd: "2028-06-30"},
+
+		// =====================================================
+		// CONSTITUTIONAL COMMISSION HEADS
+		// =====================================================
+		{name: "George Garcia", slug: "george-garcia", position: "COMELEC Chairman", party: "Independent", shortBio: "Chairman of the Commission on Elections since 2022.", termStart: "2022-05-17", termEnd: "2029-02-02"},
+		{name: "Gamaliel Cordoba", slug: "gamaliel-cordoba", position: "COA Chairman", party: "Independent", shortBio: "Chairman of the Commission on Audit.", termStart: "2022-02-16", termEnd: "2029-02-02"},
+		{name: "Karlo Nograles", slug: "karlo-nograles", position: "CSC Chairman", party: "Independent", shortBio: "Chairman of the Civil Service Commission, former Cabinet Secretary.", termStart: "2022-08-22", termEnd: "2029-02-02"},
+		{name: "Richard Palpal-latoc", slug: "richard-palpal-latoc", position: "CHR Chairman", party: "Independent", shortBio: "Chairman of the Commission on Human Rights.", termStart: "2022-05-02", termEnd: "2029-05-02"},
+
+		// =====================================================
+		// JUDICIARY
+		// =====================================================
+		{name: "Alexander Gesmundo", slug: "alexander-gesmundo", position: "Chief Justice of the Supreme Court", party: "Independent", shortBio: "27th Chief Justice of the Supreme Court of the Philippines.", termStart: "2021-04-05", termEnd: "2026-11-08"},
+
+		// =====================================================
+		// KEY LOCAL GOVERNMENT OFFICIALS
+		// =====================================================
+		{name: "Honey Lacuna", slug: "honey-lacuna", position: "Mayor of Manila", party: "Aksyon Demokratiko", shortBio: "First female Mayor of Manila, physician by profession.", termStart: "2022-06-30", termEnd: "2025-06-30"},
+		{name: "Vico Sotto", slug: "vico-sotto", position: "Mayor of Pasig", party: "Aksyon Demokratiko", shortBio: "Known for transparency and good governance reforms in Pasig City.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Joy Belmonte", slug: "joy-belmonte", position: "Mayor of Quezon City", party: "Serbisyo sa Bayan Party", shortBio: "Daughter of former House Speaker Feliciano Belmonte.", termStart: "2019-06-30", termEnd: "2025-06-30"},
+		{name: "Abby Binay", slug: "abby-binay", position: "Mayor of Makati", party: "UNA", shortBio: "Daughter of former Vice President Jejomar Binay, Mayor of the Philippines' financial center.", termStart: "2016-06-30", termEnd: "2025-06-30"},
+
+		// =====================================================
+		// BANGSAMORO AUTONOMOUS REGION
+		// =====================================================
+		{name: "Ahod Ebrahim", slug: "ahod-ebrahim", position: "Chief Minister of BARMM", party: "UBJP", shortBio: "Al Hajj Murad Ebrahim, Chief Minister of the Bangsamoro Autonomous Region.", termStart: "2019-02-26", termEnd: "2025-06-30"},
+
+		// =====================================================
+		// FORMER OFFICIALS (for historical coverage)
+		// =====================================================
+		{name: "Rodrigo Duterte", slug: "rodrigo-duterte", position: "Former President", party: "PDP-Laban", shortBio: "16th President (2016-2022), Mayor of Davao for 22 years.", termStart: "2016-06-30", termEnd: "2022-06-30"},
+		{name: "Leni Robredo", slug: "leni-robredo", position: "Former Vice President", party: "Liberal Party", shortBio: "14th Vice President (2016-2022), 2022 presidential candidate.", termStart: "2016-06-30", termEnd: "2022-06-30"},
+		{name: "Benhur Abalos", slug: "benhur-abalos", position: "Former DILG Secretary", party: "Independent", shortBio: "Benjamin Abalos Jr. served as DILG Secretary (2022-2025). Former COMELEC Chairman and Mayor of Mandaluyong.", termStart: "2022-06-30", termEnd: "2025-05-22"},
+		{name: "Enrique Manalo", slug: "enrique-manalo", position: "Former Secretary of Foreign Affairs", party: "Independent", shortBio: "Career diplomat who served as Secretary of Foreign Affairs (2022-2025).", termStart: "2022-06-30", termEnd: "2025-05-22"},
+	}
+
+	for _, pol := range politicians {
+		_, err := conn.Exec(ctx, `
+			INSERT INTO politicians (name, slug, position, party, short_bio, term_start, term_end)
+			VALUES ($1, $2, $3, $4, $5, $6::date, $7::date)
+			ON CONFLICT (slug) DO NOTHING
+		`, pol.name, pol.slug, pol.position, pol.party, pol.shortBio, pol.termStart, pol.termEnd)
+		if err != nil {
+			return fmt.Errorf("failed to seed politician %s: %w", pol.slug, err)
+		}
+		fmt.Printf("  - Politician '%s' seeded\n", pol.name)
+	}
+
+	return nil
 }
 
 func seedArticles(ctx context.Context, conn *pgx.Conn, authorEmail string) error {

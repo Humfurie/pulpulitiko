@@ -19,27 +19,15 @@ func NewMessageService(repo *repository.MessageRepository) *MessageService {
 
 // CreateConversation creates a new conversation with an initial message
 func (s *MessageService) CreateConversation(ctx context.Context, userID uuid.UUID, req *models.CreateConversationRequest) (*models.Conversation, *models.Message, error) {
-	// Check if user already has an open conversation
-	existing, err := s.repo.GetConversationByUserID(ctx, userID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to check existing conversation: %w", err)
+	// Always create a new conversation (allows multiple conversations per user)
+	var subject *string
+	if req.Subject != "" {
+		subject = &req.Subject
 	}
 
-	var conversation *models.Conversation
-	if existing != nil {
-		// Use existing open conversation
-		conversation = existing
-	} else {
-		// Create new conversation
-		var subject *string
-		if req.Subject != "" {
-			subject = &req.Subject
-		}
-
-		conversation, err = s.repo.CreateConversation(ctx, userID, subject)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create conversation: %w", err)
-		}
+	conversation, err := s.repo.CreateConversation(ctx, userID, subject)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create conversation: %w", err)
 	}
 
 	// Create the initial message

@@ -6,16 +6,55 @@ const api = useApi()
 const searchQuery = ref((route.query.q as string) || '')
 const currentPage = computed(() => Number(route.query.page) || 1)
 
+// Search analytics tracking
+const searchQueryId = ref<string | null>(null)
+const sessionId = ref<string | null>(null)
+
+// Generate or retrieve session ID for anonymous tracking
+onMounted(() => {
+  let storedSessionId = sessionStorage.getItem('search_session_id')
+  if (!storedSessionId) {
+    storedSessionId = crypto.randomUUID()
+    sessionStorage.setItem('search_session_id', storedSessionId)
+  }
+  sessionId.value = storedSessionId
+})
+
 const { data, error, status, refresh } = await useAsyncData(
   `search-${searchQuery.value}-page-${currentPage.value}`,
-  () => {
+  async () => {
     if (!searchQuery.value.trim()) {
-      return Promise.resolve(null)
+      return null
     }
-    return api.searchArticles(searchQuery.value, currentPage.value, 10)
+    const results = await api.searchArticles(searchQuery.value, currentPage.value, 10)
+
+    // Track search on client side only, and only for first page
+    if (import.meta.client && currentPage.value === 1) {
+      try {
+        const trackResponse = await api.trackSearch(
+          searchQuery.value,
+          results.total,
+          sessionId.value || undefined
+        )
+        searchQueryId.value = trackResponse.search_query_id
+      } catch {
+        // Silently fail - analytics shouldn't break search
+      }
+    }
+
+    return results
   },
   { watch: [() => route.query.q, currentPage] }
 )
+
+// Track article clicks from search results
+function handleArticleClick(articleId: string, position: number) {
+  if (searchQueryId.value) {
+    api.trackClick(searchQueryId.value, articleId, position).catch(() => {
+      // Silently fail
+    })
+  }
+}
 
 function handleSearch() {
   if (searchQuery.value.trim()) {
@@ -106,11 +145,13 @@ useSeoMeta({
 
         <!-- Results Grid -->
         <div v-if="data.articles?.length" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ArticleCard
-            v-for="article in data.articles"
+          <div
+            v-for="(article, index) in data.articles"
             :key="article.id"
-            :article="article"
-          />
+            @click="handleArticleClick(article.id, index + 1)"
+          >
+            <ArticleCard :article="article" />
+          </div>
         </div>
 
         <!-- No Results -->

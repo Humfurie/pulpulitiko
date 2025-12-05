@@ -31,14 +31,16 @@ func containsProfanity(content string) bool {
 }
 
 type CommentService struct {
-	repo        *repository.CommentRepository
-	articleRepo *repository.ArticleRepository
+	repo                *repository.CommentRepository
+	articleRepo         *repository.ArticleRepository
+	notificationService *NotificationService
 }
 
-func NewCommentService(repo *repository.CommentRepository, articleRepo *repository.ArticleRepository) *CommentService {
+func NewCommentService(repo *repository.CommentRepository, articleRepo *repository.ArticleRepository, notificationService *NotificationService) *CommentService {
 	return &CommentService{
-		repo:        repo,
-		articleRepo: articleRepo,
+		repo:                repo,
+		articleRepo:         articleRepo,
+		notificationService: notificationService,
 	}
 }
 
@@ -53,21 +55,22 @@ func (s *CommentService) CreateComment(ctx context.Context, articleSlug string, 
 		return nil, fmt.Errorf("article not found")
 	}
 
-	// If this is a reply, verify the parent comment exists and belongs to same article
+	// Check if this is a reply and get parent comment
+	var parentComment *models.Comment
 	if req.ParentID != nil && *req.ParentID != "" {
 		parentID, err := uuid.Parse(*req.ParentID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid parent_id")
 		}
 
-		parent, err := s.repo.GetByID(ctx, parentID)
+		parentComment, err = s.repo.GetByID(ctx, parentID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get parent comment: %w", err)
 		}
-		if parent == nil {
+		if parentComment == nil {
 			return nil, fmt.Errorf("parent comment not found")
 		}
-		if parent.ArticleID != article.ID {
+		if parentComment.ArticleID != article.ID {
 			return nil, fmt.Errorf("parent comment belongs to different article")
 		}
 		// Single-level threading is enforced at DB level
@@ -82,6 +85,40 @@ func (s *CommentService) CreateComment(ctx context.Context, articleSlug string, 
 	comment, err := s.repo.Create(ctx, article.ID, userID, req, status)
 	if err != nil {
 		return nil, err
+	}
+
+	// Process mentions and create notifications
+	if s.notificationService != nil {
+		// Save mentions and get mentioned user IDs
+		mentionedUserIDs, _ := s.repo.SaveMentions(ctx, comment.ID, req.Content)
+
+		// Create notifications for mentions
+		for _, mentionedUserID := range mentionedUserIDs {
+			_ = s.notificationService.CreateMentionNotification(
+				ctx,
+				mentionedUserID,
+				userID,
+				"article",
+				&article.ID,
+				nil,
+				&comment.ID,
+				article.Title,
+			)
+		}
+
+		// Create notification for reply
+		if parentComment != nil {
+			_ = s.notificationService.CreateReplyNotification(
+				ctx,
+				parentComment.UserID,
+				userID,
+				"article",
+				&article.ID,
+				nil,
+				&comment.ID,
+				article.Title,
+			)
+		}
 	}
 
 	// Fetch full comment with user info

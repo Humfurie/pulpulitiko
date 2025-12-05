@@ -94,17 +94,31 @@ func main() {
 	permissionRepo := repository.NewPermissionRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
+	politicianRepo := repository.NewPoliticianRepository(db)
+	searchAnalyticsRepo := repository.NewSearchAnalyticsRepository(db)
+	politicianCommentRepo := repository.NewPoliticianCommentRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
+	locationRepo := repository.NewLocationRepository(db)
+	politicalPartyRepo := repository.NewPoliticalPartyRepository(db)
+	billRepo := repository.NewBillRepository(db)
 
 	// Initialize services
-	articleService := services.NewArticleService(articleRepo, redisCache)
+	politicianService := services.NewPoliticianService(politicianRepo, redisCache)
+	articleService := services.NewArticleService(articleRepo, politicianRepo, redisCache)
 	categoryService := services.NewCategoryService(categoryRepo, redisCache)
 	tagService := services.NewTagService(tagRepo)
 	authService := services.NewAuthService(userRepo, roleRepo, authorRepo, emailService, cfg.JWTSecret)
 	uploadService := services.NewUploadService(minioStorage)
 	authorService := services.NewAuthorService(authorRepo)
 	roleService := services.NewRoleService(roleRepo, permissionRepo)
-	commentService := services.NewCommentService(commentRepo, articleRepo)
 	messageService := services.NewMessageService(messageRepo)
+	searchAnalyticsService := services.NewSearchAnalyticsService(searchAnalyticsRepo)
+	notificationService := services.NewNotificationService(notificationRepo, userRepo)
+	commentService := services.NewCommentService(commentRepo, articleRepo, notificationService)
+	politicianCommentService := services.NewPoliticianCommentService(politicianCommentRepo, politicianRepo, notificationService)
+	locationService := services.NewLocationService(locationRepo, redisCache)
+	politicalPartyService := services.NewPoliticalPartyService(politicalPartyRepo, redisCache)
+	billService := services.NewBillService(billRepo, redisCache)
 
 	// Initialize WebSocket hub
 	wsHub := handlers.NewHub()
@@ -125,6 +139,13 @@ func main() {
 	userHandler := handlers.NewUserHandler(userRepo)
 	messageHandler := handlers.NewMessageHandler(messageService, wsHub)
 	wsHandler := handlers.NewWebSocketHandler(wsHub, authService, messageService)
+	politicianHandler := handlers.NewPoliticianHandler(politicianService, articleService)
+	searchAnalyticsHandler := handlers.NewSearchAnalyticsHandler(searchAnalyticsService)
+	politicianCommentHandler := handlers.NewPoliticianCommentHandler(politicianCommentService)
+	notificationHandler := handlers.NewNotificationHandler(notificationService)
+	locationHandler := handlers.NewLocationHandler(locationService)
+	politicalPartyHandler := handlers.NewPoliticalPartyHandler(politicalPartyService)
+	billHandler := handlers.NewBillHandler(billService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -187,8 +208,82 @@ func main() {
 		r.Get("/authors", authorHandler.List)
 		r.Get("/authors/{slug}", authorHandler.GetArticlesBySlug)
 
+		// Politicians
+		r.Get("/politicians", politicianHandler.List)
+		r.Get("/politicians/search", politicianHandler.Search)
+		r.Route("/politicians/{slug}", func(r chi.Router) {
+			r.Get("/", politicianHandler.GetBySlug)
+			// Politician comments
+			r.With(authMiddleware.OptionalAuth).Get("/comments", politicianCommentHandler.ListComments)
+			r.Get("/comments/count", politicianCommentHandler.GetCommentCount)
+			r.With(authMiddleware.Authenticate).Post("/comments", politicianCommentHandler.CreateComment)
+		})
+
+		// Locations (Philippine Geographic Hierarchy)
+		r.Route("/locations", func(r chi.Router) {
+			r.Get("/regions", locationHandler.ListRegions)
+			r.Get("/regions/{slug}", locationHandler.GetRegionBySlug)
+			r.Get("/provinces", locationHandler.ListAllProvinces)
+			r.Get("/provinces/{slug}", locationHandler.GetProvinceBySlug)
+			r.Get("/provinces/by-region/{region_id}", locationHandler.GetProvincesByRegion)
+			r.Get("/cities/{slug}", locationHandler.GetCityBySlug)
+			r.Get("/cities/by-province/{province_id}", locationHandler.GetCitiesByProvince)
+			r.Get("/barangays/{slug}", locationHandler.GetBarangayBySlug)
+			r.Get("/barangays/by-city/{city_id}", locationHandler.GetBarangaysByCity)
+			r.Get("/districts/{slug}", locationHandler.GetDistrictBySlug)
+			r.Get("/districts/by-province/{province_id}", locationHandler.GetDistrictsByProvince)
+			r.Get("/search", locationHandler.SearchLocations)
+			r.Get("/hierarchy/{barangay_id}", locationHandler.GetHierarchy)
+		})
+
+		// Political Parties
+		r.Route("/parties", func(r chi.Router) {
+			r.Get("/", politicalPartyHandler.GetParties)
+			r.Get("/all", politicalPartyHandler.GetAllParties)
+			r.Get("/{slug}", politicalPartyHandler.GetPartyBySlug)
+		})
+
+		// Government Positions
+		r.Route("/positions", func(r chi.Router) {
+			r.Get("/", politicalPartyHandler.GetAllPositions)
+			r.Get("/level/{level}", politicalPartyHandler.GetPositionsByLevel)
+			r.Get("/{slug}", politicalPartyHandler.GetPositionBySlug)
+		})
+
+		// Find My Representatives
+		r.Get("/my-representatives", politicalPartyHandler.FindMyRepresentatives)
+
+		// Legislation / Bills
+		r.Route("/legislation", func(r chi.Router) {
+			// Sessions
+			r.Get("/sessions", billHandler.ListSessions)
+			r.Get("/sessions/current", billHandler.GetCurrentSession)
+
+			// Committees
+			r.Get("/committees", billHandler.ListCommittees)
+			r.Get("/committees/{slug}", billHandler.GetCommitteeBySlug)
+
+			// Topics
+			r.Get("/topics", billHandler.ListAllTopics)
+
+			// Bills
+			r.Get("/bills", billHandler.ListBills)
+			r.Get("/bills/{slug}", billHandler.GetBillBySlug)
+			r.Get("/bills/id/{id}", billHandler.GetBillByID)
+			r.Get("/bills/{id}/votes", billHandler.GetBillVotes)
+			r.Get("/votes/{voteId}/politicians", billHandler.GetPoliticianVotesForBillVote)
+
+			// Politician voting records
+			r.Get("/politicians/{id}/votes", billHandler.GetPoliticianVotingHistory)
+			r.Get("/politicians/{id}/voting-record", billHandler.GetPoliticianVotingRecord)
+		})
+
 		// Search
 		r.Get("/search", articleHandler.Search)
+
+		// Search analytics tracking (public, uses OptionalAuth to identify user)
+		r.With(authMiddleware.OptionalAuth).Post("/search/track", searchAnalyticsHandler.TrackSearch)
+		r.Post("/search/click", searchAnalyticsHandler.TrackClick)
 
 		// Comments - standalone routes (by ID) - use OptionalAuth for reaction status
 		r.With(authMiddleware.OptionalAuth).Get("/comments/{id}", commentHandler.GetComment)
@@ -197,6 +292,14 @@ func main() {
 		r.With(authMiddleware.Authenticate).Delete("/comments/{id}", commentHandler.DeleteComment)
 		r.With(authMiddleware.Authenticate).Post("/comments/{id}/reactions", commentHandler.AddReaction)
 		r.With(authMiddleware.Authenticate).Delete("/comments/{id}/reactions/{reaction}", commentHandler.RemoveReaction)
+
+		// Politician comments - standalone routes (by ID)
+		r.With(authMiddleware.OptionalAuth).Get("/politician-comments/{id}", politicianCommentHandler.GetComment)
+		r.With(authMiddleware.OptionalAuth).Get("/politician-comments/{id}/replies", politicianCommentHandler.GetReplies)
+		r.With(authMiddleware.Authenticate).Put("/politician-comments/{id}", politicianCommentHandler.UpdateComment)
+		r.With(authMiddleware.Authenticate).Delete("/politician-comments/{id}", politicianCommentHandler.DeleteComment)
+		r.With(authMiddleware.Authenticate).Post("/politician-comments/{id}/reactions", politicianCommentHandler.AddReaction)
+		r.With(authMiddleware.Authenticate).Delete("/politician-comments/{id}/reactions/{reaction}", politicianCommentHandler.RemoveReaction)
 
 		// Auth
 		r.Post("/auth/login", authHandler.Login)
@@ -224,6 +327,16 @@ func main() {
 			r.Post("/conversations/{id}/messages", messageHandler.SendMessage)
 			r.Post("/conversations/{id}/read", messageHandler.MarkAsRead)
 		})
+
+		// Notifications (authenticated users)
+		r.Route("/notifications", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+			r.Get("/", notificationHandler.ListNotifications)
+			r.Get("/unread-count", notificationHandler.GetUnreadCount)
+			r.Post("/{id}/read", notificationHandler.MarkAsRead)
+			r.Post("/read-all", notificationHandler.MarkAllAsRead)
+			r.Delete("/{id}", notificationHandler.DeleteNotification)
+		})
 	})
 
 	// Admin API routes (authenticated)
@@ -235,6 +348,9 @@ func main() {
 		r.Get("/metrics/top-articles", metricsHandler.GetTopArticles)
 		r.Get("/metrics/categories", metricsHandler.GetCategoryMetrics)
 		r.Get("/metrics/tags", metricsHandler.GetTagMetrics)
+
+		// Search Analytics (admin only)
+		r.Get("/analytics/search", searchAnalyticsHandler.GetAnalytics)
 
 		// Articles
 		r.Get("/articles", articleHandler.AdminList)
@@ -258,6 +374,71 @@ func main() {
 		r.Put("/tags/{id}", tagHandler.Update)
 		r.Delete("/tags/{id}", tagHandler.Delete)
 		r.Post("/tags/{id}/restore", tagHandler.Restore)
+
+		// Politicians
+		r.Get("/politicians", politicianHandler.AdminList)
+		r.Get("/politicians/{id}", politicianHandler.AdminGetByID)
+		r.Post("/politicians", politicianHandler.Create)
+		r.Put("/politicians/{id}", politicianHandler.Update)
+		r.Delete("/politicians/{id}", politicianHandler.Delete)
+		r.Post("/politicians/{id}/restore", politicianHandler.Restore)
+
+		// Locations management (admin only)
+		r.Route("/locations", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			// Regions
+			r.Get("/regions/{id}", locationHandler.AdminGetRegionByID)
+			r.Post("/regions", locationHandler.CreateRegion)
+			r.Put("/regions/{id}", locationHandler.UpdateRegion)
+			r.Delete("/regions/{id}", locationHandler.DeleteRegion)
+			// Provinces
+			r.Get("/provinces/{id}", locationHandler.AdminGetProvinceByID)
+			r.Post("/provinces", locationHandler.CreateProvince)
+			r.Put("/provinces/{id}", locationHandler.UpdateProvince)
+			r.Delete("/provinces/{id}", locationHandler.DeleteProvince)
+			// Cities
+			r.Get("/cities/{id}", locationHandler.AdminGetCityByID)
+			r.Post("/cities", locationHandler.CreateCity)
+			r.Put("/cities/{id}", locationHandler.UpdateCity)
+			r.Delete("/cities/{id}", locationHandler.DeleteCity)
+			// Barangays
+			r.Get("/barangays/{id}", locationHandler.AdminGetBarangayByID)
+			r.Post("/barangays", locationHandler.CreateBarangay)
+			r.Put("/barangays/{id}", locationHandler.UpdateBarangay)
+			r.Delete("/barangays/{id}", locationHandler.DeleteBarangay)
+			// Districts
+			r.Get("/districts/{id}", locationHandler.AdminGetDistrictByID)
+			r.Post("/districts", locationHandler.CreateDistrict)
+		})
+
+		// Political Parties management (admin only)
+		r.Route("/parties", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Post("/", politicalPartyHandler.CreateParty)
+			r.Put("/{id}", politicalPartyHandler.UpdateParty)
+			r.Delete("/{id}", politicalPartyHandler.DeleteParty)
+		})
+
+		// Politician Jurisdictions management (admin only)
+		r.Route("/jurisdictions", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Post("/", politicalPartyHandler.CreateJurisdiction)
+			r.Get("/politician/{politicianId}", politicalPartyHandler.GetJurisdictionsByPolitician)
+			r.Delete("/{id}", politicalPartyHandler.DeleteJurisdiction)
+		})
+
+		// Legislation / Bills management (admin only)
+		r.Route("/legislation", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			// Bills CRUD
+			r.Post("/bills", billHandler.CreateBill)
+			r.Put("/bills/{id}", billHandler.UpdateBill)
+			r.Delete("/bills/{id}", billHandler.DeleteBill)
+			// Bill status updates
+			r.Post("/bills/{id}/status", billHandler.AddBillStatus)
+			// Bill votes
+			r.Post("/bills/{id}/votes", billHandler.AddBillVote)
+		})
 
 		// Upload
 		r.Post("/upload", uploadHandler.Upload)
@@ -290,6 +471,12 @@ func main() {
 			r.Use(authMiddleware.RequireAdmin)
 			r.Get("/", commentHandler.ListAllComments)
 			r.Put("/{id}/moderate", commentHandler.ModerateComment)
+		})
+
+		// Politician comments moderation (admin only)
+		r.Route("/politician-comments", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Put("/{id}/moderate", politicianCommentHandler.ModerateComment)
 		})
 
 		// Messaging management (admin only)

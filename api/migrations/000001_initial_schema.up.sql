@@ -96,6 +96,31 @@ CREATE TABLE tags (
     deleted_at TIMESTAMP DEFAULT NULL
 );
 
+-- Politicians (political figures that can be linked to articles)
+CREATE TABLE politicians (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(200) NOT NULL,
+    slug VARCHAR(200) UNIQUE NOT NULL,
+    photo VARCHAR(500),
+    position VARCHAR(200),
+    party VARCHAR(200),
+    short_bio TEXT,
+    full_bio TEXT,
+    mission TEXT,
+    vision TEXT,
+    achievements TEXT,
+    term_start DATE,
+    term_end DATE,
+    birth_date DATE,
+    birth_place VARCHAR(300),
+    education TEXT,
+    website VARCHAR(500),
+    social_links JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP DEFAULT NULL
+);
+
 -- Articles
 CREATE TABLE articles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -106,6 +131,7 @@ CREATE TABLE articles (
     featured_image VARCHAR(500),
     author_id UUID REFERENCES authors(id) ON DELETE SET NULL,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    primary_politician_id UUID REFERENCES politicians(id) ON DELETE SET NULL,
     status VARCHAR(20) DEFAULT 'draft', -- draft, published, archived
     view_count INTEGER DEFAULT 0 NOT NULL,
     published_at TIMESTAMP,
@@ -119,6 +145,13 @@ CREATE TABLE article_tags (
     article_id UUID REFERENCES articles(id) ON DELETE CASCADE,
     tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
     PRIMARY KEY (article_id, tag_id)
+);
+
+-- Article Politicians (many-to-many for mentioned politicians)
+CREATE TABLE article_politicians (
+    article_id UUID REFERENCES articles(id) ON DELETE CASCADE,
+    politician_id UUID REFERENCES politicians(id) ON DELETE CASCADE,
+    PRIMARY KEY (article_id, politician_id)
 );
 
 -- =====================================================
@@ -183,6 +216,10 @@ CREATE INDEX idx_categories_slug ON categories(slug);
 CREATE INDEX idx_categories_deleted_at ON categories(deleted_at);
 CREATE INDEX idx_tags_slug ON tags(slug);
 CREATE INDEX idx_tags_deleted_at ON tags(deleted_at);
+CREATE INDEX idx_politicians_slug ON politicians(slug);
+CREATE INDEX idx_politicians_deleted_at ON politicians(deleted_at);
+CREATE INDEX idx_politicians_name ON politicians(name);
+CREATE INDEX idx_articles_primary_politician ON articles(primary_politician_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role_id);
 CREATE INDEX idx_users_deleted_at ON users(deleted_at);
@@ -226,6 +263,9 @@ CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_tags_updated_at BEFORE UPDATE ON tags
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_politicians_updated_at BEFORE UPDATE ON politicians
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_articles_updated_at BEFORE UPDATE ON articles
@@ -292,3 +332,37 @@ CREATE INDEX idx_messages_is_read ON messages(is_read);
 -- Trigger for conversations updated_at
 CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON conversations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
+-- SEARCH ANALYTICS
+-- =====================================================
+
+-- Search queries tracking
+CREATE TABLE search_queries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    query VARCHAR(500) NOT NULL,
+    query_normalized VARCHAR(500) NOT NULL, -- Lowercase, trimmed for aggregation
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- NULL for anonymous users
+    session_id VARCHAR(100), -- For tracking anonymous users
+    matched_politician_id UUID REFERENCES politicians(id) ON DELETE SET NULL, -- If search matches a politician
+    results_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Search result clicks (which article was clicked from search results)
+CREATE TABLE search_clicks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    search_query_id UUID NOT NULL REFERENCES search_queries(id) ON DELETE CASCADE,
+    article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    position INTEGER, -- Position in search results (1-indexed)
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for search analytics
+CREATE INDEX idx_search_queries_created_at ON search_queries(created_at DESC);
+CREATE INDEX idx_search_queries_normalized ON search_queries(query_normalized);
+CREATE INDEX idx_search_queries_politician ON search_queries(matched_politician_id);
+CREATE INDEX idx_search_queries_user ON search_queries(user_id);
+CREATE INDEX idx_search_clicks_query ON search_clicks(search_query_id);
+CREATE INDEX idx_search_clicks_article ON search_clicks(article_id);
+CREATE INDEX idx_search_clicks_created_at ON search_clicks(created_at DESC);

@@ -22,8 +22,8 @@ func NewArticleRepository(db *pgxpool.Pool) *ArticleRepository {
 
 func (r *ArticleRepository) Create(ctx context.Context, article *models.Article) error {
 	query := `
-		INSERT INTO articles (slug, title, summary, content, featured_image, author_id, category_id, status, published_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO articles (slug, title, summary, content, featured_image, author_id, category_id, primary_politician_id, status, published_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -43,6 +43,7 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.Article)
 		article.FeaturedImage,
 		article.AuthorID,
 		article.CategoryID,
+		article.PrimaryPoliticianID,
 		article.Status,
 		publishedAt,
 	).Scan(&article.ID, &article.CreatedAt, &article.UpdatedAt)
@@ -58,25 +59,29 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.Article)
 func (r *ArticleRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Article, error) {
 	query := `
 		SELECT a.id, a.slug, a.title, a.summary, a.content, a.featured_image,
-			   a.author_id, a.category_id, a.status, a.view_count, a.published_at, a.created_at, a.updated_at,
+			   a.author_id, a.category_id, a.primary_politician_id, a.status, a.view_count, a.published_at, a.created_at, a.updated_at,
 			   au.id, au.name, au.slug, au.bio, au.avatar, au.email,
-			   c.id, c.name, c.slug, c.description
+			   c.id, c.name, c.slug, c.description,
+			   p.id, p.name, p.slug, p.photo, p.position, p.party, p.short_bio
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
 		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+		LEFT JOIN politicians p ON a.primary_politician_id = p.id AND p.deleted_at IS NULL
 		WHERE a.id = $1 AND a.deleted_at IS NULL
 	`
 
 	article := &models.Article{}
-	var authorID, categoryID *uuid.UUID
+	var authorID, categoryID, politicianID *uuid.UUID
 	var authorName, authorSlug, authorBio, authorAvatar, authorEmail *string
 	var categoryName, categorySlug, categoryDescription *string
+	var politicianName, politicianSlug, politicianPhoto, politicianPosition, politicianParty, politicianBio *string
 
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Content, &article.FeaturedImage,
-		&article.AuthorID, &article.CategoryID, &article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
+		&article.AuthorID, &article.CategoryID, &article.PrimaryPoliticianID, &article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
 		&authorID, &authorName, &authorSlug, &authorBio, &authorAvatar, &authorEmail,
 		&categoryID, &categoryName, &categorySlug, &categoryDescription,
+		&politicianID, &politicianName, &politicianSlug, &politicianPhoto, &politicianPosition, &politicianParty, &politicianBio,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -104,6 +109,17 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 			Description: categoryDescription,
 		}
 	}
+	if politicianID != nil {
+		article.PrimaryPolitician = &models.Politician{
+			ID:       *politicianID,
+			Name:     *politicianName,
+			Slug:     *politicianSlug,
+			Photo:    politicianPhoto,
+			Position: politicianPosition,
+			Party:    politicianParty,
+			ShortBio: politicianBio,
+		}
+	}
 
 	tags, err := r.GetArticleTags(ctx, article.ID)
 	if err != nil {
@@ -117,25 +133,29 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 func (r *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*models.Article, error) {
 	query := `
 		SELECT a.id, a.slug, a.title, a.summary, a.content, a.featured_image,
-			   a.author_id, a.category_id, a.status, a.view_count, a.published_at, a.created_at, a.updated_at,
+			   a.author_id, a.category_id, a.primary_politician_id, a.status, a.view_count, a.published_at, a.created_at, a.updated_at,
 			   au.id, au.name, au.slug, au.bio, au.avatar, au.email,
-			   c.id, c.name, c.slug, c.description
+			   c.id, c.name, c.slug, c.description,
+			   p.id, p.name, p.slug, p.photo, p.position, p.party, p.short_bio
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
 		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+		LEFT JOIN politicians p ON a.primary_politician_id = p.id AND p.deleted_at IS NULL
 		WHERE a.slug = $1 AND a.deleted_at IS NULL
 	`
 
 	article := &models.Article{}
-	var authorID, categoryID *uuid.UUID
+	var authorID, categoryID, politicianID *uuid.UUID
 	var authorName, authorSlug, authorBio, authorAvatar, authorEmail *string
 	var categoryName, categorySlug, categoryDescription *string
+	var politicianName, politicianSlug, politicianPhoto, politicianPosition, politicianParty, politicianBio *string
 
 	err := r.db.QueryRow(ctx, query, slug).Scan(
 		&article.ID, &article.Slug, &article.Title, &article.Summary, &article.Content, &article.FeaturedImage,
-		&article.AuthorID, &article.CategoryID, &article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
+		&article.AuthorID, &article.CategoryID, &article.PrimaryPoliticianID, &article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt, &article.UpdatedAt,
 		&authorID, &authorName, &authorSlug, &authorBio, &authorAvatar, &authorEmail,
 		&categoryID, &categoryName, &categorySlug, &categoryDescription,
+		&politicianID, &politicianName, &politicianSlug, &politicianPhoto, &politicianPosition, &politicianParty, &politicianBio,
 	)
 
 	if err == pgx.ErrNoRows {
@@ -161,6 +181,17 @@ func (r *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*models
 			Name:        *categoryName,
 			Slug:        *categorySlug,
 			Description: categoryDescription,
+		}
+	}
+	if politicianID != nil {
+		article.PrimaryPolitician = &models.Politician{
+			ID:       *politicianID,
+			Name:     *politicianName,
+			Slug:     *politicianSlug,
+			Photo:    politicianPhoto,
+			Position: politicianPosition,
+			Party:    politicianParty,
+			ShortBio: politicianBio,
 		}
 	}
 
@@ -199,6 +230,11 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 			args = append(args, *filter.TagID)
 			argNum++
 		}
+		if filter.PoliticianID != nil {
+			whereClause = append(whereClause, fmt.Sprintf("(a.primary_politician_id = $%d OR EXISTS (SELECT 1 FROM article_politicians ap WHERE ap.article_id = a.id AND ap.politician_id = $%d))", argNum, argNum))
+			args = append(args, *filter.PoliticianID)
+			argNum++
+		}
 		if filter.Search != nil && *filter.Search != "" {
 			whereClause = append(whereClause, fmt.Sprintf("to_tsvector('english', a.title || ' ' || COALESCE(a.summary, '') || ' ' || a.content) @@ plainto_tsquery('english', $%d)", argNum))
 			args = append(args, *filter.Search)
@@ -225,10 +261,11 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 
 	query := fmt.Sprintf(`
 		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.view_count, a.published_at, a.created_at,
-			   au.name, c.name, c.slug
+			   au.name, c.name, c.slug, p.name, p.slug
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id
 		LEFT JOIN categories c ON a.category_id = c.id
+		LEFT JOIN politicians p ON a.primary_politician_id = p.id
 		WHERE %s
 		ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
 		LIMIT $%d OFFSET $%d
@@ -247,6 +284,7 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
 			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
 			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+			&article.PrimaryPoliticianName, &article.PrimaryPoliticianSlug,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan article: %w", err)
@@ -435,10 +473,11 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 
 	query := fmt.Sprintf(`
 		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.view_count, a.published_at, a.created_at,
-			   au.name, c.name, c.slug
+			   au.name, c.name, c.slug, p.name, p.slug
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
 		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+		LEFT JOIN politicians p ON a.primary_politician_id = p.id AND p.deleted_at IS NULL
 		WHERE a.id IN (%s) AND a.deleted_at IS NULL
 	`, strings.Join(placeholders, ","))
 
@@ -455,6 +494,7 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
 			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
 			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+			&article.PrimaryPoliticianName, &article.PrimaryPoliticianSlug,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan article: %w", err)
@@ -519,6 +559,8 @@ func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uu
 				au.name as author_name,
 				c.name as category_name,
 				c.slug as category_slug,
+				p.name as primary_politician_name,
+				p.slug as primary_politician_slug,
 				COALESCE((
 					SELECT COUNT(*)
 					FROM article_tags at
@@ -529,12 +571,13 @@ func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uu
 			FROM articles a
 			LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
 			LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
+			LEFT JOIN politicians p ON a.primary_politician_id = p.id AND p.deleted_at IS NULL
 			WHERE a.id != $1
 				AND a.status = 'published'
 				AND a.deleted_at IS NULL
 		)
 		SELECT id, slug, title, summary, featured_image, status, view_count, published_at, created_at,
-			   author_name, category_name, category_slug
+			   author_name, category_name, category_slug, primary_politician_name, primary_politician_slug
 		FROM scored_articles
 		WHERE shared_tags > 0 OR same_category = 1
 		ORDER BY shared_tags DESC, same_category DESC, view_count DESC, published_at DESC NULLS LAST
@@ -554,6 +597,7 @@ func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uu
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
 			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
 			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+			&article.PrimaryPoliticianName, &article.PrimaryPoliticianSlug,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan related article: %w", err)
