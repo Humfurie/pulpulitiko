@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"pulpulitiko/internal/models"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
 )
 
 type PoliticalPartyRepository struct {

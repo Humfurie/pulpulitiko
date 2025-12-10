@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"pulpulitiko/internal/models"
-	"pulpulitiko/internal/repository"
-	"pulpulitiko/pkg/cache"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
+	"github.com/humfurie/pulpulitiko/api/internal/repository"
+	"github.com/humfurie/pulpulitiko/api/pkg/cache"
 )
 
 type PoliticalPartyService struct {

@@ -15,9 +15,16 @@ const { data: categories } = await useAsyncData('footer-categories', () => api.g
         <!-- Brand -->
         <div class="md:col-span-2">
           <NuxtLink to="/" class="inline-block group">
-            <span class="text-3xl font-extrabold tracking-tight">
-              <span class="text-stone-800 dark:text-white transition-colors duration-300">Pulpul</span><span class="text-orange-500 transition-colors duration-300">itiko</span>
-            </span>
+            <img
+              src="/pulpulitiko.png"
+              alt="Pulpulitiko"
+              class="h-10 w-auto dark:hidden"
+            />
+            <img
+              src="/pulpulitiko_dark.png"
+              alt="Pulpulitiko"
+              class="h-10 w-auto hidden dark:block"
+            />
           </NuxtLink>
           <p class="mt-5 text-stone-600 dark:text-stone-400 max-w-md leading-relaxed">
             Your trusted source for Philippine political news and commentary.

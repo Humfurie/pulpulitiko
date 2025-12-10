@@ -1383,3 +1383,545 @@ export interface BillFilter {
   author_id?: string
   search?: string
 }
+
+// =====================================================
+// ELECTION TYPES
+// =====================================================
+
+// Election Type constants
+export type ElectionType = 'national' | 'local' | 'barangay' | 'special' | 'plebiscite' | 'recall'
+
+// Election Status constants
+export type ElectionStatus = 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+
+// Candidate Status constants
+export type CandidateStatus = 'filed' | 'qualified' | 'disqualified' | 'withdrawn' | 'substituted'
+
+// Election
+export interface Election {
+  id: string
+  name: string
+  slug: string
+  election_type: ElectionType
+  description?: string
+  election_date: string
+  registration_start?: string
+  registration_end?: string
+  campaign_start?: string
+  campaign_end?: string
+  status: ElectionStatus
+  is_featured: boolean
+  voter_turnout_percentage?: number
+  total_registered_voters?: number
+  total_votes_cast?: number
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+  // Joined fields
+  positions?: ElectionPositionListItem[]
+  candidates?: CandidateListItem[]
+}
+
+export interface ElectionListItem {
+  id: string
+  name: string
+  slug: string
+  election_type: ElectionType
+  election_date: string
+  status: ElectionStatus
+  is_featured: boolean
+  voter_turnout_percentage?: number
+  position_count: number
+  candidate_count: number
+}
+
+// Election Position
+export interface ElectionPosition {
+  id: string
+  election_id: string
+  position_id: string
+  region_id?: string
+  province_id?: string
+  city_municipality_id?: string
+  barangay_id?: string
+  district_id?: string
+  seats_available: number
+  description?: string
+  created_at: string
+  // Joined fields
+  position?: GovernmentPositionInfo
+  location?: string // Human-readable location
+  candidates?: CandidateListItem[]
+}
+
+export interface ElectionPositionListItem {
+  id: string
+  position_id: string
+  seats_available: number
+  position?: GovernmentPositionInfo
+  location?: string
+  candidate_count: number
+}
+
+// Candidate
+export interface Candidate {
+  id: string
+  election_position_id: string
+  politician_id: string
+  party_id?: string
+  ballot_number?: number
+  ballot_name?: string
+  campaign_slogan?: string
+  platform?: string
+  status: CandidateStatus
+  filing_date?: string
+  is_incumbent: boolean
+  is_winner: boolean
+  votes_received?: number
+  vote_percentage?: number
+  created_at: string
+  updated_at: string
+  // Joined fields
+  politician?: PoliticianListItem
+  party?: PartyBrief
+}
+
+export interface CandidateListItem {
+  id: string
+  politician_id: string
+  ballot_number?: number
+  ballot_name?: string
+  status: CandidateStatus
+  is_incumbent: boolean
+  is_winner: boolean
+  votes_received?: number
+  vote_percentage?: number
+  politician?: PoliticianListItem
+  party?: PartyBrief
+}
+
+// Election Result
+export interface ElectionResult {
+  id: string
+  election_position_id: string
+  total_votes: number
+  valid_votes: number
+  invalid_votes: number
+  registered_voters?: number
+  turnout_percentage?: number
+  is_final: boolean
+  last_updated: string
+  created_at: string
+}
+
+// Precinct Result
+export interface PrecinctResult {
+  id: string
+  candidate_id: string
+  precinct_id: string
+  precinct_name?: string
+  barangay_id?: string
+  votes: number
+  created_at: string
+}
+
+// Voter Education
+export interface VoterEducation {
+  id: string
+  election_id?: string
+  title: string
+  slug: string
+  content: string
+  content_type: string // 'article' | 'faq' | 'guide' | 'video'
+  category?: string
+  is_featured: boolean
+  is_published: boolean
+  published_at?: string
+  view_count: number
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+  // Joined fields
+  election?: ElectionListItem
+}
+
+export interface VoterEducationListItem {
+  id: string
+  title: string
+  slug: string
+  content_type: string
+  category?: string
+  is_featured: boolean
+  view_count: number
+  published_at?: string
+}
+
+// Election Calendar Item
+export interface ElectionCalendarItem {
+  id: string
+  name: string
+  slug: string
+  election_type: ElectionType
+  election_date: string
+  status: ElectionStatus
+}
+
+// Paginated types
+export interface PaginatedElections {
+  elections: ElectionListItem[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+export interface PaginatedCandidates {
+  candidates: CandidateListItem[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+export interface PaginatedVoterEducation {
+  items: VoterEducationListItem[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+// Request types
+export interface CreateElectionRequest {
+  name: string
+  slug: string
+  election_type: ElectionType
+  description?: string
+  election_date: string // YYYY-MM-DD
+  registration_start?: string // YYYY-MM-DD
+  registration_end?: string // YYYY-MM-DD
+  campaign_start?: string // YYYY-MM-DD
+  campaign_end?: string // YYYY-MM-DD
+  status: ElectionStatus
+  is_featured: boolean
+}
+
+export interface UpdateElectionRequest {
+  name?: string
+  slug?: string
+  description?: string
+  election_date?: string // YYYY-MM-DD
+  registration_start?: string // YYYY-MM-DD
+  registration_end?: string // YYYY-MM-DD
+  campaign_start?: string // YYYY-MM-DD
+  campaign_end?: string // YYYY-MM-DD
+  status?: ElectionStatus
+  is_featured?: boolean
+  voter_turnout_percentage?: number
+  total_registered_voters?: number
+  total_votes_cast?: number
+}
+
+export interface CreateElectionPositionRequest {
+  election_id: string
+  position_id: string
+  region_id?: string
+  province_id?: string
+  city_municipality_id?: string
+  barangay_id?: string
+  district_id?: string
+  seats_available: number
+  description?: string
+}
+
+export interface CreateCandidateRequest {
+  election_position_id: string
+  politician_id: string
+  party_id?: string
+  ballot_number?: number
+  ballot_name?: string
+  campaign_slogan?: string
+  platform?: string
+  status: CandidateStatus
+  filing_date?: string // YYYY-MM-DD
+  is_incumbent: boolean
+}
+
+export interface UpdateCandidateRequest {
+  party_id?: string
+  ballot_number?: number
+  ballot_name?: string
+  campaign_slogan?: string
+  platform?: string
+  status?: CandidateStatus
+  is_incumbent?: boolean
+  is_winner?: boolean
+  votes_received?: number
+  vote_percentage?: number
+}
+
+export interface CreateVoterEducationRequest {
+  election_id?: string
+  title: string
+  slug: string
+  content: string
+  content_type: string
+  category?: string
+  is_featured: boolean
+  is_published: boolean
+}
+
+export interface UpdateVoterEducationRequest {
+  election_id?: string
+  title?: string
+  slug?: string
+  content?: string
+  content_type?: string
+  category?: string
+  is_featured?: boolean
+  is_published?: boolean
+}
+
+// Filter types
+export interface ElectionFilter {
+  election_type?: ElectionType
+  status?: ElectionStatus
+  year?: number
+  is_featured?: boolean
+  search?: string
+}
+
+export interface CandidateFilter {
+  election_id?: string
+  position_id?: string
+  politician_id?: string
+  party_id?: string
+  status?: CandidateStatus
+  is_winner?: boolean
+}
+
+// =====================================================
+// POLL TYPES
+// =====================================================
+
+// Poll Status constants
+export type PollStatus = 'draft' | 'pending_approval' | 'active' | 'closed' | 'rejected'
+
+// Poll Category constants
+export type PollCategory =
+  | 'general'
+  | 'election'
+  | 'legislation'
+  | 'politician'
+  | 'policy'
+  | 'local_issue'
+  | 'national_issue'
+
+// Poll Author
+export interface PollAuthor {
+  id: string
+  name: string
+  avatar?: string
+}
+
+// Brief types for poll associations
+export interface PoliticianBrief {
+  id: string
+  name: string
+  slug: string
+  photo?: string
+}
+
+export interface ElectionBrief {
+  id: string
+  name: string
+  slug: string
+}
+
+export interface BillBrief {
+  id: string
+  bill_number: string
+  title: string
+  slug: string
+}
+
+// Poll Option
+export interface PollOption {
+  id: string
+  poll_id: string
+  text: string
+  display_order: number
+  vote_count: number
+  percentage?: number // Calculated field
+  created_at: string
+}
+
+// Poll Vote (returned from backend for user's own vote)
+export interface PollVote {
+  id: string
+  poll_id: string
+  option_id: string
+  user_id?: string
+  created_at: string
+}
+
+// Poll Comment
+export interface PollComment {
+  id: string
+  poll_id: string
+  user_id: string
+  parent_id?: string
+  content: string
+  status: CommentStatus
+  moderated_by?: string
+  moderated_at?: string
+  moderation_reason?: string
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+  author?: CommentAuthor
+  reactions?: ReactionSummary[]
+  reply_count?: number
+}
+
+// Main Poll type
+export interface Poll {
+  id: string
+  user_id: string
+  title: string
+  slug: string
+  description?: string
+  category: PollCategory
+  status: PollStatus
+  politician_id?: string
+  election_id?: string
+  bill_id?: string
+  is_anonymous: boolean
+  allow_multiple_votes: boolean
+  show_results_before_vote: boolean
+  is_featured: boolean
+  starts_at?: string
+  ends_at?: string
+  approved_by?: string
+  approved_at?: string
+  rejection_reason?: string
+  total_votes: number
+  view_count: number
+  comment_count: number
+  created_at: string
+  updated_at: string
+  deleted_at?: string
+  // Joined fields
+  author?: PollAuthor
+  options?: PollOption[]
+  politician?: PoliticianBrief
+  election?: ElectionBrief
+  bill?: BillBrief
+  user_vote?: string // Option ID user voted for
+}
+
+// Poll List Item (for listings)
+export interface PollListItem {
+  id: string
+  title: string
+  slug: string
+  category: PollCategory
+  status: PollStatus
+  is_featured: boolean
+  total_votes: number
+  comment_count: number
+  ends_at?: string
+  created_at: string
+  author?: PollAuthor
+  option_count: number
+}
+
+// Poll Results
+export interface PollResults {
+  poll_id: string
+  total_votes: number
+  options: PollOption[]
+}
+
+// Vote Response
+export interface VoteResponse {
+  success: boolean
+  message: string
+  results?: PollResults
+}
+
+// Paginated types
+export interface PaginatedPolls {
+  polls: PollListItem[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+export interface PaginatedPollComments {
+  comments: PollComment[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
+// Request types
+export interface CreatePollRequest {
+  title: string
+  slug: string
+  description?: string
+  category: PollCategory
+  politician_id?: string
+  election_id?: string
+  bill_id?: string
+  is_anonymous: boolean
+  allow_multiple_votes: boolean
+  show_results_before_vote: boolean
+  starts_at?: string // ISO 8601
+  ends_at?: string // ISO 8601
+  options: string[] // Poll option texts
+}
+
+export interface UpdatePollRequest {
+  title?: string
+  slug?: string
+  description?: string
+  category?: PollCategory
+  is_anonymous?: boolean
+  allow_multiple_votes?: boolean
+  show_results_before_vote?: boolean
+  starts_at?: string
+  ends_at?: string
+}
+
+export interface AdminUpdatePollRequest extends UpdatePollRequest {
+  status?: PollStatus
+  is_featured?: boolean
+}
+
+export interface ApprovePollRequest {
+  approved: boolean
+  reason?: string // Required if not approved
+}
+
+export interface CastVoteRequest {
+  option_id: string
+}
+
+export interface CreatePollCommentRequest {
+  content: string
+  parent_id?: string
+}
+
+// Filter type
+export interface PollFilter {
+  category?: PollCategory
+  status?: PollStatus
+  user_id?: string
+  politician_id?: string
+  election_id?: string
+  is_featured?: boolean
+  search?: string
+}

@@ -101,6 +101,8 @@ func main() {
 	locationRepo := repository.NewLocationRepository(db)
 	politicalPartyRepo := repository.NewPoliticalPartyRepository(db)
 	billRepo := repository.NewBillRepository(db)
+	electionRepo := repository.NewElectionRepository(db)
+	pollRepo := repository.NewPollRepository(db)
 
 	// Initialize services
 	politicianService := services.NewPoliticianService(politicianRepo, redisCache)
@@ -119,6 +121,8 @@ func main() {
 	locationService := services.NewLocationService(locationRepo, redisCache)
 	politicalPartyService := services.NewPoliticalPartyService(politicalPartyRepo, redisCache)
 	billService := services.NewBillService(billRepo, redisCache)
+	electionService := services.NewElectionService(electionRepo, redisCache)
+	pollService := services.NewPollService(pollRepo, redisCache)
 
 	// Initialize WebSocket hub
 	wsHub := handlers.NewHub()
@@ -146,6 +150,8 @@ func main() {
 	locationHandler := handlers.NewLocationHandler(locationService)
 	politicalPartyHandler := handlers.NewPoliticalPartyHandler(politicalPartyService)
 	billHandler := handlers.NewBillHandler(billService)
+	electionHandler := handlers.NewElectionHandler(electionService)
+	pollHandler := handlers.NewPollHandler(pollService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -276,6 +282,53 @@ func main() {
 			// Politician voting records
 			r.Get("/politicians/{id}/votes", billHandler.GetPoliticianVotingHistory)
 			r.Get("/politicians/{id}/voting-record", billHandler.GetPoliticianVotingRecord)
+		})
+
+		// Elections
+		r.Route("/elections", func(r chi.Router) {
+			r.Get("/", electionHandler.ListElections)
+			r.Get("/upcoming", electionHandler.GetUpcomingElections)
+			r.Get("/featured", electionHandler.GetFeaturedElections)
+			r.Get("/calendar", electionHandler.GetElectionCalendar)
+			r.Get("/slug/{slug}", electionHandler.GetElectionBySlug)
+			r.Get("/{id}", electionHandler.GetElectionByID)
+			r.Get("/{id}/positions", electionHandler.GetElectionPositions)
+		})
+
+		// Candidates
+		r.Route("/candidates", func(r chi.Router) {
+			r.Get("/", electionHandler.ListCandidates)
+			r.Get("/{id}", electionHandler.GetCandidateByID)
+			r.Get("/position/{positionId}", electionHandler.GetCandidatesForPosition)
+		})
+
+		// Voter Education
+		r.Route("/voter-education", func(r chi.Router) {
+			r.Get("/", electionHandler.ListVoterEducation)
+			r.Get("/{slug}", electionHandler.GetVoterEducationBySlug)
+		})
+
+		// Polls
+		r.Route("/polls", func(r chi.Router) {
+			r.Get("/", pollHandler.ListPolls)
+			r.Get("/featured", pollHandler.GetFeaturedPolls)
+			r.Get("/slug/{slug}", pollHandler.GetPollBySlug)
+			r.Get("/{id}", pollHandler.GetPollByID)
+			r.Get("/{id}/results", pollHandler.GetPollResults)
+			r.With(authMiddleware.OptionalAuth).Post("/{id}/vote", pollHandler.CastVote)
+			// Poll comments
+			r.With(authMiddleware.OptionalAuth).Get("/{id}/comments", pollHandler.GetPollComments)
+			r.With(authMiddleware.Authenticate).Post("/{id}/comments", pollHandler.CreatePollComment)
+		})
+
+		// Authenticated user poll routes
+		r.Route("/my-polls", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+			r.Get("/", pollHandler.GetMyPolls)
+			r.Post("/", pollHandler.CreatePoll)
+			r.Put("/{id}", pollHandler.UpdatePoll)
+			r.Post("/{id}/submit", pollHandler.SubmitForApproval)
+			r.Delete("/{id}", pollHandler.DeletePoll)
 		})
 
 		// Search
@@ -438,6 +491,33 @@ func main() {
 			r.Post("/bills/{id}/status", billHandler.AddBillStatus)
 			// Bill votes
 			r.Post("/bills/{id}/votes", billHandler.AddBillVote)
+		})
+
+		// Elections management (admin only)
+		r.Route("/elections", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			// Elections CRUD
+			r.Post("/", electionHandler.CreateElection)
+			r.Put("/{id}", electionHandler.UpdateElection)
+			r.Delete("/{id}", electionHandler.DeleteElection)
+			// Election positions
+			r.Post("/positions", electionHandler.CreateElectionPosition)
+			// Candidates
+			r.Post("/candidates", electionHandler.CreateCandidate)
+			r.Put("/candidates/{id}", electionHandler.UpdateCandidate)
+			// Voter education
+			r.Post("/voter-education", electionHandler.CreateVoterEducation)
+		})
+
+		// Polls management (admin only)
+		r.Route("/polls", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Get("/", pollHandler.AdminListPolls)
+			r.Put("/{id}", pollHandler.AdminUpdatePoll)
+			r.Post("/{id}/approve", pollHandler.ApprovePoll)
+			r.Post("/{id}/close", pollHandler.ClosePoll)
+			r.Delete("/{id}", pollHandler.DeletePoll)
+			r.Delete("/comments/{id}", pollHandler.DeletePollComment)
 		})
 
 		// Upload

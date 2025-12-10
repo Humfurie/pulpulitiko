@@ -9,55 +9,27 @@ const api = useApi()
 const route = useRoute()
 const router = useRouter()
 
-// View mode from query param
+// View mode from query param (default: position)
 const viewMode = computed({
-  get: () => (route.query.view as string) || 'party',
+  get: () => (route.query.view as string) || 'position',
   set: (value: string) => router.replace({ query: { ...route.query, view: value } })
 })
 
 const { data: politicians, pending, error } = await useAsyncData('all-politicians', () => api.getPoliticians())
 
-// Position hierarchy definition (only current office holders)
-const positionHierarchy = [
-  {
-    branch: 'Executive Branch',
-    icon: 'i-heroicons-building-office-2',
-    levels: [
-      { title: 'President', keywords: ['President of the Philippines'], exclude: ['Vice President'] },
-      { title: 'Vice President', keywords: ['Vice President'] },
-      { title: 'Cabinet Secretaries', keywords: ['Secretary of', 'Executive Secretary'] },
-    ]
-  },
-  {
-    branch: 'Legislative Branch',
-    icon: 'i-heroicons-building-library',
-    levels: [
-      { title: 'Senate Leadership', keywords: ['Senate President', 'Senate President Pro Tempore'] },
-      { title: 'Senators', keywords: ['Senator'] },
-      { title: 'House Leadership', keywords: ['Speaker of the House', 'Speaker'] },
-      { title: 'Representatives', keywords: ['Representative', 'Party-list Representative'] },
-    ]
-  },
-  {
-    branch: 'Judicial Branch',
-    icon: 'i-heroicons-scale',
-    levels: [
-      { title: 'Supreme Court', keywords: ['Chief Justice', 'Associate Justice'] },
-    ]
-  },
-  {
-    branch: 'Constitutional Bodies',
-    icon: 'i-heroicons-shield-check',
-    levels: [
-      { title: 'Commission on Elections', keywords: ['COMELEC'] },
-      { title: 'Commission on Audit', keywords: ['COA'] },
-      { title: 'Civil Service Commission', keywords: ['CSC'] },
-      { title: 'Commission on Human Rights', keywords: ['CHR'] },
-      { title: 'Bangko Sentral ng Pilipinas', keywords: ['BSP Governor'] },
-      { title: 'Other Bodies', keywords: ['NEDA', 'National Security Adviser'] },
-    ]
-  },
-  ]
+// Position hierarchy definition (flat list, ordered by importance)
+const positionList = [
+  { title: 'President', keywords: ['President of the Philippines'], exclude: ['Vice President'], icon: 'i-heroicons-building-office-2' },
+  { title: 'Vice President', keywords: ['Vice President'], icon: 'i-heroicons-building-office-2' },
+  { title: 'Senate President', keywords: ['Senate President'], exclude: ['Pro Tempore'], icon: 'i-heroicons-building-library' },
+  { title: 'House Speaker', keywords: ['Speaker of the House', 'Speaker'], icon: 'i-heroicons-building-library' },
+  { title: 'Senators', keywords: ['Senator'], icon: 'i-heroicons-building-library' },
+  { title: 'Representatives', keywords: ['Representative', 'Party-list Representative'], icon: 'i-heroicons-building-library' },
+  { title: 'Cabinet Secretaries', keywords: ['Secretary of', 'Executive Secretary'], icon: 'i-heroicons-building-office-2' },
+  { title: 'Supreme Court', keywords: ['Chief Justice', 'Associate Justice'], icon: 'i-heroicons-scale' },
+  { title: 'Constitutional Commissions', keywords: ['COMELEC', 'COA', 'CSC', 'CHR'], icon: 'i-heroicons-shield-check' },
+  { title: 'Other Officials', keywords: ['BSP Governor', 'NEDA', 'National Security Adviser'], icon: 'i-heroicons-briefcase' },
+]
 
 // Helper to check if a position indicates a former official
 function isFormerOfficial(position: string | undefined): boolean {
@@ -65,7 +37,7 @@ function isFormerOfficial(position: string | undefined): boolean {
   return position.toLowerCase().includes('former')
 }
 
-// Group politicians by position hierarchy (only current office holders)
+// Group politicians by position (flat list, only current office holders)
 const politiciansByPosition = computed(() => {
   if (!politicians.value) return []
 
@@ -73,42 +45,29 @@ const politiciansByPosition = computed(() => {
   const currentOfficials = politicians.value.filter(p => !isFormerOfficial(p.position))
 
   const result: Array<{
-    branch: string
+    title: string
     icon: string
-    levels: Array<{
-      title: string
-      politicians: Politician[]
-    }>
+    politicians: Politician[]
   }> = []
 
-  for (const branchDef of positionHierarchy) {
-    const branchData = {
-      branch: branchDef.branch,
-      icon: branchDef.icon,
-      levels: [] as Array<{ title: string; politicians: Politician[] }>
-    }
+  for (const positionDef of positionList) {
+    const positionPoliticians = currentOfficials.filter(p => {
+      if (!p.position) return false
+      // Check if position matches any keyword
+      const matchesKeyword = positionDef.keywords.some(kw => p.position!.includes(kw))
+      if (!matchesKeyword) return false
+      // Check if position should be excluded
+      const excludeList = positionDef.exclude || []
+      const shouldExclude = excludeList.some(ex => p.position!.includes(ex))
+      return !shouldExclude
+    })
 
-    for (const levelDef of branchDef.levels) {
-      const levelPoliticians = currentOfficials.filter(p => {
-        if (!p.position) return false
-        // Check if position matches any keyword
-        const matchesKeyword = levelDef.keywords.some(kw => p.position!.includes(kw))
-        if (!matchesKeyword) return false
-        // Check if position should be excluded
-        const excludeList = (levelDef as { exclude?: string[] }).exclude || []
-        const shouldExclude = excludeList.some(ex => p.position!.includes(ex))
-        return !shouldExclude
+    if (positionPoliticians.length > 0) {
+      result.push({
+        title: positionDef.title,
+        icon: positionDef.icon,
+        politicians: positionPoliticians
       })
-      if (levelPoliticians.length > 0) {
-        branchData.levels.push({
-          title: levelDef.title,
-          politicians: levelPoliticians
-        })
-      }
-    }
-
-    if (branchData.levels.length > 0) {
-      result.push(branchData)
     }
   }
 
@@ -164,18 +123,6 @@ useHead({
         <button
           :class="[
             'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
-            viewMode === 'party'
-              ? 'bg-orange-500 text-white'
-              : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700'
-          ]"
-          @click="viewMode = 'party'"
-        >
-          <UIcon name="i-heroicons-flag" class="w-4 h-4 inline mr-1.5" />
-          By Party
-        </button>
-        <button
-          :class="[
-            'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
             viewMode === 'position'
               ? 'bg-orange-500 text-white'
               : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700'
@@ -184,6 +131,18 @@ useHead({
         >
           <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 inline mr-1.5" />
           By Position
+        </button>
+        <button
+          :class="[
+            'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
+            viewMode === 'party'
+              ? 'bg-orange-500 text-white'
+              : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-700'
+          ]"
+          @click="viewMode = 'party'"
+        >
+          <UIcon name="i-heroicons-flag" class="w-4 h-4 inline mr-1.5" />
+          By Party
         </button>
       </div>
 
@@ -250,62 +209,45 @@ useHead({
           </div>
         </template>
 
-        <!-- By Position View (Hierarchy) -->
+        <!-- By Position View (Flat list) -->
         <template v-else-if="viewMode === 'position'">
-          <div v-for="branch in politiciansByPosition" :key="branch.branch" class="mb-10">
-            <!-- Branch Header -->
-            <div class="flex items-center gap-3 mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">
-              <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <UIcon :name="branch.icon" class="w-6 h-6 text-orange-600 dark:text-orange-400" />
-              </div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ branch.branch }}
-              </h2>
-            </div>
+          <div v-for="position in politiciansByPosition" :key="position.title" class="mb-10">
+            <!-- Position Header -->
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <UIcon :name="position.icon" class="w-5 h-5 text-orange-500" />
+              {{ position.title }}
+              <span class="text-sm font-normal text-gray-500 dark:text-gray-400">({{ position.politicians.length }})</span>
+            </h2>
 
-            <!-- Levels within branch -->
-            <div class="space-y-6 pl-4 border-l-2 border-orange-200 dark:border-orange-900/50">
-              <div v-for="level in branch.levels" :key="level.title" class="relative">
-                <!-- Level connector dot -->
-                <div class="absolute -left-[calc(1rem+5px)] top-0 w-2.5 h-2.5 rounded-full bg-orange-400 dark:bg-orange-600" />
-
-                <!-- Level title -->
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                  {{ level.title }}
-                  <span class="text-sm font-normal text-gray-500 dark:text-gray-400">({{ level.politicians.length }})</span>
-                </h3>
-
-                <!-- Politicians grid -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  <NuxtLink
-                    v-for="politician in level.politicians"
-                    :key="politician.id"
-                    :to="`/politician/${politician.slug}`"
-                    class="group bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-md transition-all duration-200"
-                  >
-                    <div class="flex justify-center mb-3">
-                      <NuxtImg
-                        v-if="politician.photo"
-                        :src="politician.photo"
-                        :alt="politician.name"
-                        class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-orange-200 dark:group-hover:ring-orange-900 transition-all"
-                      />
-                      <div v-else class="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-orange-200 dark:group-hover:ring-orange-900 transition-all">
-                        <UIcon name="i-heroicons-user" class="w-8 h-8 text-orange-500" />
-                      </div>
-                    </div>
-                    <h3 class="text-sm font-medium text-gray-900 dark:text-white text-center group-hover:text-orange-500 transition-colors line-clamp-2">
-                      {{ politician.name }}
-                    </h3>
-                    <p v-if="politician.party" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-1 line-clamp-1">
-                      {{ politician.party }}
-                    </p>
-                    <p v-if="politician.article_count" class="text-xs text-orange-600 dark:text-orange-400 text-center mt-2">
-                      {{ politician.article_count }} {{ politician.article_count === 1 ? 'article' : 'articles' }}
-                    </p>
-                  </NuxtLink>
+            <!-- Politicians grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <NuxtLink
+                v-for="politician in position.politicians"
+                :key="politician.id"
+                :to="`/politician/${politician.slug}`"
+                class="group bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-md transition-all duration-200"
+              >
+                <div class="flex justify-center mb-3">
+                  <NuxtImg
+                    v-if="politician.photo"
+                    :src="politician.photo"
+                    :alt="politician.name"
+                    class="w-16 h-16 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-orange-200 dark:group-hover:ring-orange-900 transition-all"
+                  />
+                  <div v-else class="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-orange-200 dark:group-hover:ring-orange-900 transition-all">
+                    <UIcon name="i-heroicons-user" class="w-8 h-8 text-orange-500" />
+                  </div>
                 </div>
-              </div>
+                <h3 class="text-sm font-medium text-gray-900 dark:text-white text-center group-hover:text-orange-500 transition-colors line-clamp-2">
+                  {{ politician.name }}
+                </h3>
+                <p v-if="politician.party" class="text-xs text-gray-500 dark:text-gray-400 text-center mt-1 line-clamp-1">
+                  {{ politician.party }}
+                </p>
+                <p v-if="politician.article_count" class="text-xs text-orange-600 dark:text-orange-400 text-center mt-2">
+                  {{ politician.article_count }} {{ politician.article_count === 1 ? 'article' : 'articles' }}
+                </p>
+              </NuxtLink>
             </div>
           </div>
         </template>

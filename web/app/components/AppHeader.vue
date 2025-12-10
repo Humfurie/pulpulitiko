@@ -176,9 +176,16 @@ onMounted(() => {
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 group">
-          <span class="text-2xl font-extrabold tracking-tight">
-            <span class="text-stone-800 dark:text-white transition-colors duration-300">Pulpul</span><span class="text-orange-500 transition-colors duration-300">itiko</span>
-          </span>
+          <img
+            src="/pulpulitiko.png"
+            alt="Pulpulitiko"
+            class="h-8 w-auto dark:hidden"
+          />
+          <img
+            src="/pulpulitiko_dark.png"
+            alt="Pulpulitiko"
+            class="h-8 w-auto hidden dark:block"
+          />
         </NuxtLink>
 
         <!-- Desktop Navigation -->
@@ -223,6 +230,9 @@ onMounted(() => {
           </NuxtLink>
           <UDropdownMenu
             :items="[
+              { label: 'Polls', to: '/polls', icon: 'i-heroicons-chart-bar' },
+              { label: 'Elections', to: '/elections', icon: 'i-heroicons-clipboard-document-check' },
+              { label: 'Voter Education', to: '/voter-education', icon: 'i-heroicons-academic-cap' },
               { label: 'Legislation Tracker', to: '/legislation', icon: 'i-heroicons-document-text' },
               { label: 'Political Parties', to: '/parties', icon: 'i-heroicons-flag' },
               { label: 'Find My Representatives', to: '/my-representatives', icon: 'i-heroicons-user-group' },
@@ -450,6 +460,30 @@ onMounted(() => {
               Politicians
             </NuxtLink>
             <p class="py-2 px-4 text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-2">More</p>
+            <NuxtLink
+              to="/polls"
+              class="py-3 px-4 rounded-xl transition-all duration-300 text-stone-600 dark:text-stone-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-500 flex items-center gap-2"
+              @click="mobileMenuOpen = false"
+            >
+              <UIcon name="i-heroicons-chart-bar" class="w-5 h-5" />
+              Polls
+            </NuxtLink>
+            <NuxtLink
+              to="/elections"
+              class="py-3 px-4 rounded-xl transition-all duration-300 text-stone-600 dark:text-stone-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-500 flex items-center gap-2"
+              @click="mobileMenuOpen = false"
+            >
+              <UIcon name="i-heroicons-clipboard-document-check" class="w-5 h-5" />
+              Elections
+            </NuxtLink>
+            <NuxtLink
+              to="/voter-education"
+              class="py-3 px-4 rounded-xl transition-all duration-300 text-stone-600 dark:text-stone-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-500 flex items-center gap-2"
+              @click="mobileMenuOpen = false"
+            >
+              <UIcon name="i-heroicons-academic-cap" class="w-5 h-5" />
+              Voter Education
+            </NuxtLink>
             <NuxtLink
               to="/legislation"
               class="py-3 px-4 rounded-xl transition-all duration-300 text-stone-600 dark:text-stone-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 hover:text-orange-500 flex items-center gap-2"

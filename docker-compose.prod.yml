@@ -1,21 +1,45 @@
 services:
+  # Internal Redis - Dedicated for Pulpulitiko
+  redis:
+    image: redis:7-alpine
+    container_name: pulpulitiko-redis
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - default
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 156M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Go API Backend - Production
   api:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
     container_name: pulpulitiko-api
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       APP_ENV: production
       APP_PORT: "8080"
       DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio:9000}
-      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-minio.humfurie.org}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio.humfurie.org
+      MINIO_PUBLIC_ENDPOINT: minio.humfurie.org
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_BUCKET: ${MINIO_BUCKET:-politics-media}
-      MINIO_USE_SSL: "false"
+      MINIO_BUCKET: ${MINIO_BUCKET:-pulpulitiko-media}
+      MINIO_USE_SSL: "true"
       JWT_SECRET: ${JWT_SECRET}
     expose:
       - "8080"
@@ -90,3 +114,6 @@ networks:
     external: true
   default:
     driver: bridge
+
+volumes:
+  redis_data:

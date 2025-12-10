@@ -2,14 +2,13 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"pulpulitiko/internal/models"
-	"pulpulitiko/internal/repository"
-	"pulpulitiko/pkg/cache"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
+	"github.com/humfurie/pulpulitiko/api/internal/repository"
+	"github.com/humfurie/pulpulitiko/api/pkg/cache"
 )
 
 const (
@@ -41,37 +40,29 @@ func NewBillService(repo *repository.BillRepository, cache *cache.RedisCache) *B
 func (s *BillService) GetCurrentSession(ctx context.Context) (*models.LegislativeSession, error) {
 	cacheKey := sessionsCachePrefix + "current"
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var session models.LegislativeSession
-		if err := json.Unmarshal([]byte(cached), &session); err == nil {
-			return &session, nil
-		}
+	var session models.LegislativeSession
+	if err := s.cache.Get(ctx, cacheKey, &session); err == nil {
+		return &session, nil
 	}
 
-	session, err := s.repo.GetCurrentSession(ctx)
+	sessionPtr, err := s.repo.GetCurrentSession(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if session != nil {
-		if data, err := json.Marshal(session); err == nil {
-			s.cache.Set(ctx, cacheKey, string(data), sessionsCacheTTL)
-		}
+	if sessionPtr != nil {
+		s.cache.Set(ctx, cacheKey, sessionPtr, sessionsCacheTTL)
 	}
 
-	return session, nil
+	return sessionPtr, nil
 }
 
 func (s *BillService) ListSessions(ctx context.Context) ([]models.LegislativeSessionListItem, error) {
 	cacheKey := sessionsCachePrefix + "all"
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var sessions []models.LegislativeSessionListItem
-		if err := json.Unmarshal([]byte(cached), &sessions); err == nil {
-			return sessions, nil
-		}
+	var sessions []models.LegislativeSessionListItem
+	if err := s.cache.Get(ctx, cacheKey, &sessions); err == nil {
+		return sessions, nil
 	}
 
 	sessions, err := s.repo.ListSessions(ctx)
@@ -79,9 +70,7 @@ func (s *BillService) ListSessions(ctx context.Context) ([]models.LegislativeSes
 		return nil, err
 	}
 
-	if data, err := json.Marshal(sessions); err == nil {
-		s.cache.Set(ctx, cacheKey, string(data), sessionsCacheTTL)
-	}
+	s.cache.Set(ctx, cacheKey, sessions, sessionsCacheTTL)
 
 	return sessions, nil
 }
@@ -95,12 +84,9 @@ func (s *BillService) ListCommittees(ctx context.Context, chamber *string) ([]mo
 	}
 	cacheKey := committeesCachePrefix + chamberStr
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var committees []models.CommitteeListItem
-		if err := json.Unmarshal([]byte(cached), &committees); err == nil {
-			return committees, nil
-		}
+	var committees []models.CommitteeListItem
+	if err := s.cache.Get(ctx, cacheKey, &committees); err == nil {
+		return committees, nil
 	}
 
 	committees, err := s.repo.ListCommittees(ctx, chamber)
@@ -108,9 +94,7 @@ func (s *BillService) ListCommittees(ctx context.Context, chamber *string) ([]mo
 		return nil, err
 	}
 
-	if data, err := json.Marshal(committees); err == nil {
-		s.cache.Set(ctx, cacheKey, string(data), committeesCacheTTL)
-	}
+	s.cache.Set(ctx, cacheKey, committees, committeesCacheTTL)
 
 	return committees, nil
 }
@@ -118,26 +102,21 @@ func (s *BillService) ListCommittees(ctx context.Context, chamber *string) ([]mo
 func (s *BillService) GetCommitteeBySlug(ctx context.Context, slug string) (*models.Committee, error) {
 	cacheKey := committeesCachePrefix + "slug:" + slug
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var committee models.Committee
-		if err := json.Unmarshal([]byte(cached), &committee); err == nil {
-			return &committee, nil
-		}
+	var committee models.Committee
+	if err := s.cache.Get(ctx, cacheKey, &committee); err == nil {
+		return &committee, nil
 	}
 
-	committee, err := s.repo.GetCommitteeBySlug(ctx, slug)
+	committeePtr, err := s.repo.GetCommitteeBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
 
-	if committee != nil {
-		if data, err := json.Marshal(committee); err == nil {
-			s.cache.Set(ctx, cacheKey, string(data), committeesCacheTTL)
-		}
+	if committeePtr != nil {
+		s.cache.Set(ctx, cacheKey, committeePtr, committeesCacheTTL)
 	}
 
-	return committee, nil
+	return committeePtr, nil
 }
 
 // Bills
@@ -157,51 +136,41 @@ func (s *BillService) CreateBill(ctx context.Context, req *models.CreateBillRequ
 func (s *BillService) GetBillByID(ctx context.Context, id uuid.UUID) (*models.Bill, error) {
 	cacheKey := billCachePrefix + "id:" + id.String()
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var bill models.Bill
-		if err := json.Unmarshal([]byte(cached), &bill); err == nil {
-			return &bill, nil
-		}
+	var bill models.Bill
+	if err := s.cache.Get(ctx, cacheKey, &bill); err == nil {
+		return &bill, nil
 	}
 
-	bill, err := s.repo.GetByID(ctx, id)
+	billPtr, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	if bill != nil {
-		if data, err := json.Marshal(bill); err == nil {
-			s.cache.Set(ctx, cacheKey, string(data), billCacheTTL)
-		}
+	if billPtr != nil {
+		s.cache.Set(ctx, cacheKey, billPtr, billCacheTTL)
 	}
 
-	return bill, nil
+	return billPtr, nil
 }
 
 func (s *BillService) GetBillBySlug(ctx context.Context, slug string) (*models.Bill, error) {
 	cacheKey := billCachePrefix + "slug:" + slug
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var bill models.Bill
-		if err := json.Unmarshal([]byte(cached), &bill); err == nil {
-			return &bill, nil
-		}
+	var bill models.Bill
+	if err := s.cache.Get(ctx, cacheKey, &bill); err == nil {
+		return &bill, nil
 	}
 
-	bill, err := s.repo.GetBySlug(ctx, slug)
+	billPtr, err := s.repo.GetBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
 
-	if bill != nil {
-		if data, err := json.Marshal(bill); err == nil {
-			s.cache.Set(ctx, cacheKey, string(data), billCacheTTL)
-		}
+	if billPtr != nil {
+		s.cache.Set(ctx, cacheKey, billPtr, billCacheTTL)
 	}
 
-	return bill, nil
+	return billPtr, nil
 }
 
 func (s *BillService) ListBills(ctx context.Context, filter *models.BillFilter, page, perPage int) (*models.PaginatedBills, error) {
@@ -277,12 +246,9 @@ func (s *BillService) GetBillTopics(ctx context.Context, billID uuid.UUID) ([]mo
 func (s *BillService) ListAllTopics(ctx context.Context) ([]models.BillTopic, error) {
 	cacheKey := topicsCachePrefix + "all"
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var topics []models.BillTopic
-		if err := json.Unmarshal([]byte(cached), &topics); err == nil {
-			return topics, nil
-		}
+	var topics []models.BillTopic
+	if err := s.cache.Get(ctx, cacheKey, &topics); err == nil {
+		return topics, nil
 	}
 
 	topics, err := s.repo.ListAllTopics(ctx)
@@ -290,9 +256,7 @@ func (s *BillService) ListAllTopics(ctx context.Context) ([]models.BillTopic, er
 		return nil, err
 	}
 
-	if data, err := json.Marshal(topics); err == nil {
-		s.cache.Set(ctx, cacheKey, string(data), topicsCacheTTL)
-	}
+	s.cache.Set(ctx, cacheKey, topics, topicsCacheTTL)
 
 	return topics, nil
 }
@@ -334,26 +298,21 @@ func (s *BillService) GetPoliticianVotingHistory(ctx context.Context, politician
 func (s *BillService) GetPoliticianVotingRecord(ctx context.Context, politicianID uuid.UUID) (*models.PoliticianVotingRecord, error) {
 	cacheKey := fmt.Sprintf("politician:%s:voting_record", politicianID.String())
 
-	cached, err := s.cache.Get(ctx, cacheKey)
-	if err == nil && cached != "" {
-		var record models.PoliticianVotingRecord
-		if err := json.Unmarshal([]byte(cached), &record); err == nil {
-			return &record, nil
-		}
+	var record models.PoliticianVotingRecord
+	if err := s.cache.Get(ctx, cacheKey, &record); err == nil {
+		return &record, nil
 	}
 
-	record, err := s.repo.GetPoliticianVotingRecord(ctx, politicianID)
+	recordPtr, err := s.repo.GetPoliticianVotingRecord(ctx, politicianID)
 	if err != nil {
 		return nil, err
 	}
 
-	if record != nil {
-		if data, err := json.Marshal(record); err == nil {
-			s.cache.Set(ctx, cacheKey, string(data), billCacheTTL)
-		}
+	if recordPtr != nil {
+		s.cache.Set(ctx, cacheKey, recordPtr, billCacheTTL)
 	}
 
-	return record, nil
+	return recordPtr, nil
 }
 
 // Helper methods

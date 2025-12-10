@@ -38,9 +38,18 @@ useSeoMeta({
     <div class="w-full max-w-md">
       <!-- Header -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-          <UIcon name="i-heroicons-key" class="w-8 h-8 text-primary" />
-        </div>
+        <NuxtLink to="/" class="inline-block mb-4">
+          <img
+            src="/pulpulitiko.png"
+            alt="Pulpulitiko"
+            class="h-10 w-auto mx-auto dark:hidden"
+          />
+          <img
+            src="/pulpulitiko_dark.png"
+            alt="Pulpulitiko"
+            class="h-10 w-auto mx-auto hidden dark:block"
+          />
+        </NuxtLink>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Forgot Password?</h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">
           Enter your email and we'll send you a reset link

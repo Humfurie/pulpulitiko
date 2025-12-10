@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"pulpulitiko/internal/models"
-	"pulpulitiko/internal/services"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
+	"github.com/humfurie/pulpulitiko/api/internal/services"
 )
 
 type PoliticalPartyHandler struct {
@@ -37,11 +37,11 @@ func (h *PoliticalPartyHandler) GetParties(w http.ResponseWriter, r *http.Reques
 
 	parties, err := h.partyService.List(r.Context(), page, perPage, majorOnly, activeOnly)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get parties", err)
+		WriteInternalError(w, "Failed to get parties")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, parties)
+	WriteSuccess(w, parties)
 }
 
 // GetAllParties returns all political parties (for dropdowns)
@@ -50,11 +50,11 @@ func (h *PoliticalPartyHandler) GetAllParties(w http.ResponseWriter, r *http.Req
 
 	parties, err := h.partyService.GetAll(r.Context(), activeOnly)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get parties", err)
+		WriteInternalError(w, "Failed to get parties")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, parties)
+	WriteSuccess(w, parties)
 }
 
 // GetPartyBySlug returns a party by slug
@@ -63,26 +63,26 @@ func (h *PoliticalPartyHandler) GetPartyBySlug(w http.ResponseWriter, r *http.Re
 
 	party, err := h.partyService.GetBySlug(r.Context(), slug)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get party", err)
+		WriteInternalError(w, "Failed to get party")
 		return
 	}
 	if party == nil {
-		respondWithError(w, http.StatusNotFound, "Party not found", nil)
+		WriteNotFound(w, "Party not found")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, party)
+	WriteSuccess(w, party)
 }
 
 // GetAllPositions returns all government positions
 func (h *PoliticalPartyHandler) GetAllPositions(w http.ResponseWriter, r *http.Request) {
 	positions, err := h.partyService.GetAllPositions(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get positions", err)
+		WriteInternalError(w, "Failed to get positions")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, positions)
+	WriteSuccess(w, positions)
 }
 
 // GetPositionsByLevel returns positions for a specific government level
@@ -99,17 +99,17 @@ func (h *PoliticalPartyHandler) GetPositionsByLevel(w http.ResponseWriter, r *ht
 		}
 	}
 	if !isValid {
-		respondWithError(w, http.StatusBadRequest, "Invalid government level", nil)
+		WriteBadRequest(w, "Invalid government level")
 		return
 	}
 
 	positions, err := h.partyService.GetPositionsByLevel(r.Context(), level)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get positions", err)
+		WriteInternalError(w, "Failed to get positions")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, positions)
+	WriteSuccess(w, positions)
 }
 
 // GetPositionBySlug returns a position by slug
@@ -118,38 +118,38 @@ func (h *PoliticalPartyHandler) GetPositionBySlug(w http.ResponseWriter, r *http
 
 	position, err := h.partyService.GetPositionBySlug(r.Context(), slug)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get position", err)
+		WriteInternalError(w, "Failed to get position")
 		return
 	}
 	if position == nil {
-		respondWithError(w, http.StatusNotFound, "Position not found", nil)
+		WriteNotFound(w, "Position not found")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, position)
+	WriteSuccess(w, position)
 }
 
 // FindMyRepresentatives returns representatives for a given barangay
 func (h *PoliticalPartyHandler) FindMyRepresentatives(w http.ResponseWriter, r *http.Request) {
 	barangayIDStr := r.URL.Query().Get("barangay_id")
 	if barangayIDStr == "" {
-		respondWithError(w, http.StatusBadRequest, "barangay_id is required", nil)
+		WriteBadRequest(w, "barangay_id is required")
 		return
 	}
 
 	barangayID, err := uuid.Parse(barangayIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid barangay_id", err)
+		WriteBadRequest(w, "Invalid barangay_id")
 		return
 	}
 
 	representatives, err := h.partyService.FindRepresentativesByBarangay(r.Context(), barangayID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to find representatives", err)
+		WriteInternalError(w, "Failed to find representatives")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, representatives)
+	WriteSuccess(w, representatives)
 }
 
 // Admin endpoints
@@ -158,17 +158,17 @@ func (h *PoliticalPartyHandler) FindMyRepresentatives(w http.ResponseWriter, r *
 func (h *PoliticalPartyHandler) CreateParty(w http.ResponseWriter, r *http.Request) {
 	var req models.CreatePoliticalPartyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	party, err := h.partyService.Create(r.Context(), &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to create party", err)
+		WriteInternalError(w, "Failed to create party")
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, party)
+	WriteCreated(w, party)
 }
 
 // UpdateParty updates a political party
@@ -176,27 +176,27 @@ func (h *PoliticalPartyHandler) UpdateParty(w http.ResponseWriter, r *http.Reque
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid party ID", err)
+		WriteBadRequest(w, "Invalid party ID")
 		return
 	}
 
 	var req models.UpdatePoliticalPartyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	party, err := h.partyService.Update(r.Context(), id, &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to update party", err)
+		WriteInternalError(w, "Failed to update party")
 		return
 	}
 	if party == nil {
-		respondWithError(w, http.StatusNotFound, "Party not found", nil)
+		WriteNotFound(w, "Party not found")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, party)
+	WriteSuccess(w, party)
 }
 
 // DeleteParty deletes a political party
@@ -204,17 +204,17 @@ func (h *PoliticalPartyHandler) DeleteParty(w http.ResponseWriter, r *http.Reque
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid party ID", err)
+		WriteBadRequest(w, "Invalid party ID")
 		return
 	}
 
 	err = h.partyService.Delete(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to delete party", err)
+		WriteInternalError(w, "Failed to delete party")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Party deleted successfully"})
+	WriteSuccess(w, map[string]string{"message": "Party deleted successfully"})
 }
 
 // Jurisdiction endpoints
@@ -223,17 +223,17 @@ func (h *PoliticalPartyHandler) DeleteParty(w http.ResponseWriter, r *http.Reque
 func (h *PoliticalPartyHandler) CreateJurisdiction(w http.ResponseWriter, r *http.Request) {
 	var req models.CreatePoliticianJurisdictionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body", err)
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	jurisdiction, err := h.partyService.CreateJurisdiction(r.Context(), &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to create jurisdiction", err)
+		WriteInternalError(w, "Failed to create jurisdiction")
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, jurisdiction)
+	WriteCreated(w, jurisdiction)
 }
 
 // GetJurisdictionsByPolitician returns jurisdictions for a politician
@@ -241,17 +241,17 @@ func (h *PoliticalPartyHandler) GetJurisdictionsByPolitician(w http.ResponseWrit
 	politicianIDStr := chi.URLParam(r, "politicianId")
 	politicianID, err := uuid.Parse(politicianIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid politician ID", err)
+		WriteBadRequest(w, "Invalid politician ID")
 		return
 	}
 
 	jurisdictions, err := h.partyService.GetJurisdictionsByPolitician(r.Context(), politicianID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get jurisdictions", err)
+		WriteInternalError(w, "Failed to get jurisdictions")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, jurisdictions)
+	WriteSuccess(w, jurisdictions)
 }
 
 // DeleteJurisdiction deletes a jurisdiction
@@ -259,15 +259,15 @@ func (h *PoliticalPartyHandler) DeleteJurisdiction(w http.ResponseWriter, r *htt
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid jurisdiction ID", err)
+		WriteBadRequest(w, "Invalid jurisdiction ID")
 		return
 	}
 
 	err = h.partyService.DeleteJurisdiction(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to delete jurisdiction", err)
+		WriteInternalError(w, "Failed to delete jurisdiction")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Jurisdiction deleted successfully"})
+	WriteSuccess(w, map[string]string{"message": "Jurisdiction deleted successfully"})
 }

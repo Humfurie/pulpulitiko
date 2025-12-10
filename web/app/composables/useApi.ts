@@ -9,6 +9,8 @@ import type {
   BillFilter,
   BillTopic,
   BillVote,
+  Candidate,
+  CandidateListItem,
   Category,
   CategoryWithArticles,
   CityMunicipalityListItem,
@@ -20,7 +22,14 @@ import type {
   CommitteeListItem,
   CongressionalDistrict,
   CreateCommentRequest,
+  CreatePollCommentRequest,
+  CreatePollRequest,
   DistrictListItem,
+  Election,
+  ElectionCalendarItem,
+  ElectionFilter,
+  ElectionListItem,
+  ElectionPositionListItem,
   GovernmentPosition,
   GovernmentPositionListItem,
   LegislativeChamber,
@@ -31,10 +40,15 @@ import type {
   PaginatedArticles,
   PaginatedBarangays,
   PaginatedBills,
+  PaginatedCandidates,
+  PaginatedElections,
   PaginatedNotifications,
   PaginatedPoliticalParties,
   PaginatedPoliticianComments,
   PaginatedPoliticianVotes,
+  PaginatedPollComments,
+  PaginatedPolls,
+  PaginatedVoterEducation,
   PoliticalParty,
   PoliticalPartyListItem,
   Politician,
@@ -43,14 +57,24 @@ import type {
   PoliticianVote,
   PoliticianVotingRecord,
   PoliticianWithArticles,
+  Poll,
+  PollCategory,
+  PollComment,
+  PollFilter,
+  PollListItem,
+  PollResults,
+  PollStatus,
   ProvinceListItem,
   ProvinceWithCities,
   RegionListItem,
   RegionWithProvinces,
   Tag,
   TagWithArticles,
+  UpdatePollRequest,
   UploadResult,
-  UserProfile
+  UserProfile,
+  VoteResponse,
+  VoterEducation
 } from '~/types'
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -570,6 +594,259 @@ export function useApi() {
 
     async getPoliticianVotingRecord(politicianId: string): Promise<PoliticianVotingRecord> {
       return fetchApi<PoliticianVotingRecord>(`/legislation/politicians/${politicianId}/voting-record`)
+    },
+
+    // =====================================================
+    // ELECTIONS
+    // =====================================================
+
+    // Elections
+    async getElections(filter?: ElectionFilter, page = 1, perPage = 20): Promise<PaginatedElections> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      if (filter?.election_type) params.set('election_type', filter.election_type)
+      if (filter?.status) params.set('status', filter.status)
+      if (filter?.year) params.set('year', String(filter.year))
+      if (filter?.is_featured !== undefined) params.set('is_featured', String(filter.is_featured))
+      if (filter?.search) params.set('search', filter.search)
+      return fetchApi<PaginatedElections>(`/elections?${params}`)
+    },
+
+    async getElectionById(id: string): Promise<Election> {
+      return fetchApi<Election>(`/elections/${id}`)
+    },
+
+    async getElectionBySlug(slug: string): Promise<Election> {
+      return fetchApi<Election>(`/elections/slug/${slug}`)
+    },
+
+    async getUpcomingElections(limit = 5): Promise<ElectionListItem[]> {
+      return fetchApi<ElectionListItem[]>(`/elections/upcoming?limit=${limit}`)
+    },
+
+    async getFeaturedElections(): Promise<ElectionListItem[]> {
+      return fetchApi<ElectionListItem[]>('/elections/featured')
+    },
+
+    async getElectionCalendar(year?: number): Promise<ElectionCalendarItem[]> {
+      const params = year ? `?year=${year}` : ''
+      return fetchApi<ElectionCalendarItem[]>(`/elections/calendar${params}`)
+    },
+
+    async getElectionPositions(electionId: string): Promise<ElectionPositionListItem[]> {
+      return fetchApi<ElectionPositionListItem[]>(`/elections/${electionId}/positions`)
+    },
+
+    // Candidates
+    async getCandidates(
+      filter?: { election_id?: string; position_id?: string; party_id?: string; status?: string; is_winner?: boolean },
+      page = 1,
+      perPage = 20
+    ): Promise<PaginatedCandidates> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      if (filter?.election_id) params.set('election_id', filter.election_id)
+      if (filter?.position_id) params.set('position_id', filter.position_id)
+      if (filter?.party_id) params.set('party_id', filter.party_id)
+      if (filter?.status) params.set('status', filter.status)
+      if (filter?.is_winner !== undefined) params.set('is_winner', String(filter.is_winner))
+      return fetchApi<PaginatedCandidates>(`/candidates?${params}`)
+    },
+
+    async getCandidateById(id: string): Promise<Candidate> {
+      return fetchApi<Candidate>(`/candidates/${id}`)
+    },
+
+    async getCandidatesForPosition(positionId: string): Promise<CandidateListItem[]> {
+      return fetchApi<CandidateListItem[]>(`/candidates/position/${positionId}`)
+    },
+
+    // Voter Education
+    async getVoterEducation(electionId?: string, category?: string, page = 1, perPage = 20): Promise<PaginatedVoterEducation> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      if (electionId) params.set('election_id', electionId)
+      if (category) params.set('category', category)
+      return fetchApi<PaginatedVoterEducation>(`/voter-education?${params}`)
+    },
+
+    async getVoterEducationBySlug(slug: string): Promise<VoterEducation> {
+      return fetchApi<VoterEducation>(`/voter-education/${slug}`)
+    },
+
+    // =====================================================
+    // POLLS
+    // =====================================================
+
+    // Public poll endpoints
+    async getPolls(
+      filter?: PollFilter,
+      page = 1,
+      perPage = 12
+    ): Promise<PaginatedPolls> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      if (filter?.category) params.set('category', filter.category)
+      if (filter?.politician_id) params.set('politician_id', filter.politician_id)
+      if (filter?.election_id) params.set('election_id', filter.election_id)
+      if (filter?.search) params.set('search', filter.search)
+      return fetchApi<PaginatedPolls>(`/polls?${params}`)
+    },
+
+    async getPollBySlug(slug: string): Promise<Poll> {
+      return fetchApi<Poll>(`/polls/slug/${slug}`)
+    },
+
+    async getPollById(id: string): Promise<Poll> {
+      return fetchApi<Poll>(`/polls/${id}`)
+    },
+
+    async getFeaturedPolls(limit = 5): Promise<PollListItem[]> {
+      return fetchApi<PollListItem[]>(`/polls/featured?limit=${limit}`)
+    },
+
+    async getPollResults(pollId: string): Promise<PollResults> {
+      return fetchApi<PollResults>(`/polls/${pollId}/results`)
+    },
+
+    async castVote(pollId: string, optionId: string, authHeaders?: Record<string, string>): Promise<VoteResponse> {
+      return fetchApi<VoteResponse>(`/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: { option_id: optionId }
+      })
+    },
+
+    // Poll comments
+    async getPollComments(
+      pollId: string,
+      authHeaders?: Record<string, string>,
+      page = 1,
+      perPage = 20
+    ): Promise<PaginatedPollComments> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      return fetchApi<PaginatedPollComments>(`/polls/${pollId}/comments?${params}`, { headers: authHeaders })
+    },
+
+    async createPollComment(
+      pollId: string,
+      data: CreatePollCommentRequest,
+      authHeaders: Record<string, string>
+    ): Promise<PollComment> {
+      return fetchApi<PollComment>(`/polls/${pollId}/comments`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: data
+      })
+    },
+
+    // Authenticated user poll endpoints
+    async getMyPolls(authHeaders: Record<string, string>, page = 1, perPage = 10): Promise<PaginatedPolls> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      return fetchApi<PaginatedPolls>(`/my-polls?${params}`, { headers: authHeaders })
+    },
+
+    async createPoll(data: CreatePollRequest, authHeaders: Record<string, string>): Promise<Poll> {
+      return fetchApi<Poll>('/my-polls', {
+        method: 'POST',
+        headers: authHeaders,
+        body: data
+      })
+    },
+
+    async updatePoll(pollId: string, data: UpdatePollRequest, authHeaders: Record<string, string>): Promise<Poll> {
+      return fetchApi<Poll>(`/my-polls/${pollId}`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: data
+      })
+    },
+
+    async submitPollForApproval(pollId: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/my-polls/${pollId}/submit`, {
+        method: 'POST',
+        headers: authHeaders
+      })
+    },
+
+    async deletePoll(pollId: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/my-polls/${pollId}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      })
+    },
+
+    // Admin poll endpoints
+    async adminGetPolls(
+      authHeaders: Record<string, string>,
+      filter?: { category?: PollCategory; status?: PollStatus; search?: string; is_featured?: boolean },
+      page = 1,
+      perPage = 20
+    ): Promise<PaginatedPolls> {
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage)
+      })
+      if (filter?.category) params.set('category', filter.category)
+      if (filter?.status) params.set('status', filter.status)
+      if (filter?.search) params.set('search', filter.search)
+      if (filter?.is_featured !== undefined) params.set('is_featured', String(filter.is_featured))
+      return fetchApi<PaginatedPolls>(`/admin/polls?${params}`, { headers: authHeaders })
+    },
+
+    async adminUpdatePoll(
+      pollId: string,
+      data: UpdatePollRequest & { status?: PollStatus; is_featured?: boolean },
+      authHeaders: Record<string, string>
+    ): Promise<Poll> {
+      return fetchApi<Poll>(`/admin/polls/${pollId}`, {
+        method: 'PUT',
+        headers: authHeaders,
+        body: data
+      })
+    },
+
+    async approvePoll(pollId: string, approved: boolean, reason: string | undefined, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/admin/polls/${pollId}/approve`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: { approved, reason }
+      })
+    },
+
+    async closePoll(pollId: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/admin/polls/${pollId}/close`, {
+        method: 'POST',
+        headers: authHeaders
+      })
+    },
+
+    async adminDeletePoll(pollId: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/admin/polls/${pollId}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      })
+    },
+
+    async adminDeletePollComment(commentId: string, authHeaders: Record<string, string>): Promise<void> {
+      await fetchApi<{ message: string }>(`/admin/polls/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      })
     }
   }
 }

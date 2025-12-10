@@ -8,8 +8,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"pulpulitiko/internal/models"
-	"pulpulitiko/internal/services"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
+	"github.com/humfurie/pulpulitiko/api/internal/services"
 )
 
 type BillHandler struct {
@@ -29,23 +29,23 @@ func NewBillHandler(service *services.BillService) *BillHandler {
 func (h *BillHandler) GetCurrentSession(w http.ResponseWriter, r *http.Request) {
 	session, err := h.service.GetCurrentSession(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get current session")
+		WriteInternalError(w, "Failed to get current session")
 		return
 	}
 	if session == nil {
-		respondWithError(w, http.StatusNotFound, "No current session found")
+		WriteNotFound(w, "No current session found")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, session)
+	WriteSuccess(w, session)
 }
 
 func (h *BillHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
 	sessions, err := h.service.ListSessions(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to list sessions")
+		WriteInternalError(w, "Failed to list sessions")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, sessions)
+	WriteSuccess(w, sessions)
 }
 
 // Committees
@@ -58,24 +58,24 @@ func (h *BillHandler) ListCommittees(w http.ResponseWriter, r *http.Request) {
 
 	committees, err := h.service.ListCommittees(r.Context(), chamber)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to list committees")
+		WriteInternalError(w, "Failed to list committees")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, committees)
+	WriteSuccess(w, committees)
 }
 
 func (h *BillHandler) GetCommitteeBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	committee, err := h.service.GetCommitteeBySlug(r.Context(), slug)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get committee")
+		WriteInternalError(w, "Failed to get committee")
 		return
 	}
 	if committee == nil {
-		respondWithError(w, http.StatusNotFound, "Committee not found")
+		WriteNotFound(w, "Committee not found")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, committee)
+	WriteSuccess(w, committee)
 }
 
 // Bills - Public Endpoints
@@ -119,44 +119,44 @@ func (h *BillHandler) ListBills(w http.ResponseWriter, r *http.Request) {
 
 	bills, err := h.service.ListBills(r.Context(), filter, page, perPage)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to list bills")
+		WriteInternalError(w, "Failed to list bills")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, bills)
+	WriteSuccess(w, bills)
 }
 
 func (h *BillHandler) GetBillBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	bill, err := h.service.GetBillBySlug(r.Context(), slug)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get bill")
+		WriteInternalError(w, "Failed to get bill")
 		return
 	}
 	if bill == nil {
-		respondWithError(w, http.StatusNotFound, "Bill not found")
+		WriteNotFound(w, "Bill not found")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, bill)
+	WriteSuccess(w, bill)
 }
 
 func (h *BillHandler) GetBillByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid bill ID")
+		WriteBadRequest(w, "Invalid bill ID")
 		return
 	}
 
 	bill, err := h.service.GetBillByID(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get bill")
+		WriteInternalError(w, "Failed to get bill")
 		return
 	}
 	if bill == nil {
-		respondWithError(w, http.StatusNotFound, "Bill not found")
+		WriteNotFound(w, "Bill not found")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, bill)
+	WriteSuccess(w, bill)
 }
 
 // Bill Topics
@@ -164,10 +164,10 @@ func (h *BillHandler) GetBillByID(w http.ResponseWriter, r *http.Request) {
 func (h *BillHandler) ListAllTopics(w http.ResponseWriter, r *http.Request) {
 	topics, err := h.service.ListAllTopics(r.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to list topics")
+		WriteInternalError(w, "Failed to list topics")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, topics)
+	WriteSuccess(w, topics)
 }
 
 // Politician Voting Records
@@ -176,7 +176,7 @@ func (h *BillHandler) GetPoliticianVotingHistory(w http.ResponseWriter, r *http.
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid politician ID")
+		WriteBadRequest(w, "Invalid politician ID")
 		return
 	}
 
@@ -191,26 +191,26 @@ func (h *BillHandler) GetPoliticianVotingHistory(w http.ResponseWriter, r *http.
 
 	history, err := h.service.GetPoliticianVotingHistory(r.Context(), id, page, perPage)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get voting history")
+		WriteInternalError(w, "Failed to get voting history")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, history)
+	WriteSuccess(w, history)
 }
 
 func (h *BillHandler) GetPoliticianVotingRecord(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid politician ID")
+		WriteBadRequest(w, "Invalid politician ID")
 		return
 	}
 
 	record, err := h.service.GetPoliticianVotingRecord(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get voting record")
+		WriteInternalError(w, "Failed to get voting record")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, record)
+	WriteSuccess(w, record)
 }
 
 // Admin Endpoints
@@ -218,65 +218,65 @@ func (h *BillHandler) GetPoliticianVotingRecord(w http.ResponseWriter, r *http.R
 func (h *BillHandler) CreateBill(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateBillRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	bill, err := h.service.CreateBill(r.Context(), &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to create bill")
+		WriteInternalError(w, "Failed to create bill")
 		return
 	}
-	respondWithJSON(w, http.StatusCreated, bill)
+	WriteCreated(w, bill)
 }
 
 func (h *BillHandler) UpdateBill(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid bill ID")
+		WriteBadRequest(w, "Invalid bill ID")
 		return
 	}
 
 	var req models.UpdateBillRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	bill, err := h.service.UpdateBill(r.Context(), id, &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to update bill")
+		WriteInternalError(w, "Failed to update bill")
 		return
 	}
 	if bill == nil {
-		respondWithError(w, http.StatusNotFound, "Bill not found")
+		WriteNotFound(w, "Bill not found")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, bill)
+	WriteSuccess(w, bill)
 }
 
 func (h *BillHandler) DeleteBill(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid bill ID")
+		WriteBadRequest(w, "Invalid bill ID")
 		return
 	}
 
 	err = h.service.DeleteBill(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to delete bill")
+		WriteInternalError(w, "Failed to delete bill")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -286,24 +286,24 @@ func (h *BillHandler) AddBillStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid bill ID")
+		WriteBadRequest(w, "Invalid bill ID")
 		return
 	}
 
 	var req models.AddBillStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	err = h.service.AddBillStatus(r.Context(), id, &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to add bill status")
+		WriteInternalError(w, "Failed to add bill status")
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -313,57 +313,57 @@ func (h *BillHandler) AddBillVote(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid bill ID")
+		WriteBadRequest(w, "Invalid bill ID")
 		return
 	}
 
 	var req models.AddBillVoteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		WriteBadRequest(w, "Invalid request body")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
+		WriteBadRequest(w, err.Error())
 		return
 	}
 
 	vote, err := h.service.AddBillVote(r.Context(), id, &req)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to add bill vote")
+		WriteInternalError(w, "Failed to add bill vote")
 		return
 	}
-	respondWithJSON(w, http.StatusCreated, vote)
+	WriteCreated(w, vote)
 }
 
 func (h *BillHandler) GetBillVotes(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid bill ID")
+		WriteBadRequest(w, "Invalid bill ID")
 		return
 	}
 
 	votes, err := h.service.GetBillVotes(r.Context(), id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get bill votes")
+		WriteInternalError(w, "Failed to get bill votes")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, votes)
+	WriteSuccess(w, votes)
 }
 
 func (h *BillHandler) GetPoliticianVotesForBillVote(w http.ResponseWriter, r *http.Request) {
 	voteIDStr := chi.URLParam(r, "voteId")
 	voteID, err := uuid.Parse(voteIDStr)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid vote ID")
+		WriteBadRequest(w, "Invalid vote ID")
 		return
 	}
 
 	votes, err := h.service.GetPoliticianVotesForBill(r.Context(), voteID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get politician votes")
+		WriteInternalError(w, "Failed to get politician votes")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, votes)
+	WriteSuccess(w, votes)
 }

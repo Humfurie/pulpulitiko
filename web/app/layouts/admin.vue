@@ -10,6 +10,8 @@ const allNavigation = [
   { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
   { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
   { name: 'Politicians', href: '/admin/politicians', icon: 'i-heroicons-user-circle', roles: ['admin', 'author'] },
+  { name: 'Polls', href: '/admin/polls', icon: 'i-heroicons-chart-pie', roles: ['admin'] },
+  { name: 'Elections', href: '/admin/elections', icon: 'i-heroicons-clipboard-document-check', roles: ['admin'] },
   { name: 'Legislation', href: '/admin/legislation', icon: 'i-heroicons-scale', roles: ['admin'] },
   { name: 'Locations', href: '/admin/locations', icon: 'i-heroicons-map-pin', roles: ['admin'] },
   { name: 'Analytics', href: '/admin/analytics', icon: 'i-heroicons-chart-bar', roles: ['admin'] },
@@ -36,7 +38,11 @@ function isActive(href: string) {
     return route.path === '/admin'
   }
   // Check exact match or match with subpath (e.g., /admin/articles matches /admin/articles/123)
-  return route.path === href || route.path.startsWith(href + '/')
+  const result = route.path === href || route.path.startsWith(href + '/')
+  if (result) {
+    console.log('isActive:', { href, routePath: route.path, result })
+  }
+  return result
 }
 </script>
 
@@ -47,8 +53,18 @@ function isActive(href: string) {
       <div class="flex flex-col h-full">
         <!-- Logo -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-800">
-          <NuxtLink to="/admin" class="text-xl font-bold text-primary">
-            Pulpulitiko Admin
+          <NuxtLink to="/admin" class="flex items-center gap-2">
+            <img
+              src="/pulpulitiko.png"
+              alt="Pulpulitiko"
+              class="h-7 w-auto dark:hidden"
+            />
+            <img
+              src="/pulpulitiko_dark.png"
+              alt="Pulpulitiko"
+              class="h-7 w-auto hidden dark:block"
+            />
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Admin</span>
           </NuxtLink>
         </div>
 
@@ -97,6 +113,11 @@ function isActive(href: string) {
             </div>
           </NuxtLink>
           <div class="flex gap-2">
+            <UColorModeButton
+              variant="ghost"
+              size="sm"
+              class="flex-shrink-0"
+            />
             <UButton
               to="/"
               variant="ghost"
@@ -123,8 +144,17 @@ function isActive(href: string) {
     <!-- Simple header for regular users -->
     <header v-else class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-        <NuxtLink to="/" class="text-xl font-bold text-primary">
-          Pulpulitiko
+        <NuxtLink to="/">
+          <img
+            src="/pulpulitiko.png"
+            alt="Pulpulitiko"
+            class="h-8 w-auto dark:hidden"
+          />
+          <img
+            src="/pulpulitiko_dark.png"
+            alt="Pulpulitiko"
+            class="h-8 w-auto hidden dark:block"
+          />
         </NuxtLink>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
