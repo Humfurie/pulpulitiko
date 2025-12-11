@@ -27,7 +27,7 @@ func (r *PollRepository) CreatePoll(ctx context.Context, userID uuid.UUID, req *
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	var startsAt, endsAt *time.Time
 	if req.StartsAt != nil {

@@ -51,7 +51,7 @@ func (s *BillService) GetCurrentSession(ctx context.Context) (*models.Legislativ
 	}
 
 	if sessionPtr != nil {
-		s.cache.Set(ctx, cacheKey, sessionPtr, sessionsCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, sessionPtr, sessionsCacheTTL)
 	}
 
 	return sessionPtr, nil
@@ -70,7 +70,7 @@ func (s *BillService) ListSessions(ctx context.Context) ([]models.LegislativeSes
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, sessions, sessionsCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, sessions, sessionsCacheTTL)
 
 	return sessions, nil
 }
@@ -94,7 +94,7 @@ func (s *BillService) ListCommittees(ctx context.Context, chamber *string) ([]mo
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, committees, committeesCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, committees, committeesCacheTTL)
 
 	return committees, nil
 }
@@ -113,7 +113,7 @@ func (s *BillService) GetCommitteeBySlug(ctx context.Context, slug string) (*mod
 	}
 
 	if committeePtr != nil {
-		s.cache.Set(ctx, cacheKey, committeePtr, committeesCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, committeePtr, committeesCacheTTL)
 	}
 
 	return committeePtr, nil
@@ -128,7 +128,7 @@ func (s *BillService) CreateBill(ctx context.Context, req *models.CreateBillRequ
 	}
 
 	// Invalidate bills list cache
-	s.cache.DeletePattern(ctx, billsCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, billsCachePrefix+"*")
 
 	return bill, nil
 }
@@ -147,7 +147,7 @@ func (s *BillService) GetBillByID(ctx context.Context, id uuid.UUID) (*models.Bi
 	}
 
 	if billPtr != nil {
-		s.cache.Set(ctx, cacheKey, billPtr, billCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, billPtr, billCacheTTL)
 	}
 
 	return billPtr, nil
@@ -167,7 +167,7 @@ func (s *BillService) GetBillBySlug(ctx context.Context, slug string) (*models.B
 	}
 
 	if billPtr != nil {
-		s.cache.Set(ctx, cacheKey, billPtr, billCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, billPtr, billCacheTTL)
 	}
 
 	return billPtr, nil
@@ -186,9 +186,9 @@ func (s *BillService) UpdateBill(ctx context.Context, id uuid.UUID, req *models.
 
 	if bill != nil {
 		// Invalidate caches
-		s.cache.Delete(ctx, billCachePrefix+"id:"+id.String())
-		s.cache.Delete(ctx, billCachePrefix+"slug:"+bill.Slug)
-		s.cache.DeletePattern(ctx, billsCachePrefix+"*")
+		_ = s.cache.Delete(ctx, billCachePrefix+"id:"+id.String())
+		_ = s.cache.Delete(ctx, billCachePrefix+"slug:"+bill.Slug)
+		_ = s.cache.DeletePattern(ctx, billsCachePrefix+"*")
 	}
 
 	return bill, nil
@@ -204,11 +204,11 @@ func (s *BillService) DeleteBill(ctx context.Context, id uuid.UUID) error {
 	}
 
 	// Invalidate caches
-	s.cache.Delete(ctx, billCachePrefix+"id:"+id.String())
+	_ = s.cache.Delete(ctx, billCachePrefix+"id:"+id.String())
 	if bill != nil {
-		s.cache.Delete(ctx, billCachePrefix+"slug:"+bill.Slug)
+		_ = s.cache.Delete(ctx, billCachePrefix+"slug:"+bill.Slug)
 	}
-	s.cache.DeletePattern(ctx, billsCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, billsCachePrefix+"*")
 
 	return nil
 }
@@ -256,7 +256,7 @@ func (s *BillService) ListAllTopics(ctx context.Context) ([]models.BillTopic, er
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, topics, topicsCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, topics, topicsCacheTTL)
 
 	return topics, nil
 }
@@ -309,7 +309,7 @@ func (s *BillService) GetPoliticianVotingRecord(ctx context.Context, politicianI
 	}
 
 	if recordPtr != nil {
-		s.cache.Set(ctx, cacheKey, recordPtr, billCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, recordPtr, billCacheTTL)
 	}
 
 	return recordPtr, nil
@@ -319,9 +319,9 @@ func (s *BillService) GetPoliticianVotingRecord(ctx context.Context, politicianI
 
 func (s *BillService) invalidateBillCache(ctx context.Context, billID uuid.UUID) {
 	bill, _ := s.repo.GetByID(ctx, billID)
-	s.cache.Delete(ctx, billCachePrefix+"id:"+billID.String())
+	_ = s.cache.Delete(ctx, billCachePrefix+"id:"+billID.String())
 	if bill != nil {
-		s.cache.Delete(ctx, billCachePrefix+"slug:"+bill.Slug)
+		_ = s.cache.Delete(ctx, billCachePrefix+"slug:"+bill.Slug)
 	}
-	s.cache.DeletePattern(ctx, billsCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, billsCachePrefix+"*")
 }

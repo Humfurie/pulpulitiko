@@ -131,7 +131,7 @@ func (r *BillRepository) Create(ctx context.Context, req *models.CreateBillReque
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	bill := &models.Bill{}
 	err = tx.QueryRow(ctx, `
@@ -518,7 +518,7 @@ func (r *BillRepository) AddBillStatus(ctx context.Context, billID uuid.UUID, re
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Add status history entry
 	_, err = tx.Exec(ctx, `
