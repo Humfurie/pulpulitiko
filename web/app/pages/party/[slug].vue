@@ -50,7 +50,7 @@ useSeoMeta({
           v-if="party.logo"
           class="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700"
         >
-          <img :src="party.logo" :alt="party.name" class="w-full h-full object-contain" />
+          <img :src="party.logo" :alt="party.name" class="w-full h-full object-contain" >
         </div>
         <div
           v-else
@@ -153,7 +153,7 @@ useSeoMeta({
             <div>
               <dt class="text-sm text-stone-500 dark:text-stone-400">Classification</dt>
               <dd>
-                <UBadge :color="party.is_major ? 'orange' : 'neutral'" variant="subtle">
+                <UBadge :color="party.is_major ? 'warning' : 'neutral'" variant="subtle">
                   {{ party.is_major ? 'Major Party' : 'Minor Party' }}
                 </UBadge>
               </dd>

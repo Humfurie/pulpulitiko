@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PoliticianWithArticles, PoliticianComment, CommentAuthor } from '~/types'
+import type {CommentAuthor, PoliticianComment, PoliticianWithArticles} from '~/types'
 
 definePageMeta({
   layout: 'politician'
@@ -113,10 +113,10 @@ function insertMention(user: CommentAuthor) {
 
   if (lastAtIndex !== -1) {
     // Get what's currently typed after @
-    const currentMention = text.substring(lastAtIndex + 1).split(/[\s\n]/)[0]
+    const currentMention = text.substring(lastAtIndex + 1).split(/[\s\n]/)[0] || ''
 
     // If user already typed the exact name, just add a space and close
-    if (currentMention.toLowerCase() === user.name.toLowerCase()) {
+    if (currentMention && currentMention.toLowerCase() === user.name.toLowerCase()) {
       // Just add space if not already there
       if (!text.endsWith(' ')) {
         modelRef.value = text + ' '
@@ -274,8 +274,7 @@ async function toggleReplies(commentId: string) {
     loadingReplies.value = new Set(loadingReplies.value)
 
     try {
-      const replies = await api.getPoliticianCommentReplies(commentId, auth.getAuthHeaders())
-      repliesMap.value[commentId] = replies
+      repliesMap.value[commentId] = await api.getPoliticianCommentReplies(commentId, auth.getAuthHeaders())
     } catch (e) {
       console.error('Failed to load replies:', e)
     } finally {
@@ -655,9 +654,9 @@ useHead(() => ({
                             :alt="user.name"
                             class="w-6 h-6 rounded-full object-cover"
                           >
-                          <div v-else class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                            <UIcon name="i-heroicons-user" class="w-3 h-3 text-primary" />
-                          </div>
+                          <span v-else class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                            <UIcon name="i-heroicons-user" class="w-3 h-3 text-primary"/>
+                          </span>
                           <span class="font-medium">{{ user.name }}</span>
                         </button>
                       </div>
@@ -823,9 +822,9 @@ useHead(() => ({
                                 :alt="user.name"
                                 class="w-6 h-6 rounded-full object-cover"
                               >
-                              <div v-else class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span v-else class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                                 <UIcon name="i-heroicons-user" class="w-3 h-3 text-primary" />
-                              </div>
+                              </span>
                               <span class="font-medium">{{ user.name }}</span>
                             </button>
                           </div>
@@ -867,7 +866,7 @@ useHead(() => ({
                           class="bg-white dark:bg-gray-900 rounded-lg p-3"
                         >
                           <div class="flex items-start gap-2">
-                            <div class="flex-shrink-0">
+                            <div class="shrink-0">
                               <img
                                 v-if="reply.author?.avatar"
                                 :src="reply.author.avatar"
@@ -887,6 +886,7 @@ useHead(() => ({
                                   {{ formatRelativeTime(reply.created_at) }}
                                 </span>
                               </div>
+                              <!-- eslint-disable-next-line vue/no-v-html -->
                               <p
                                 class="mt-1 text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap"
                                 v-html="formatContentWithMentions(reply.content)"

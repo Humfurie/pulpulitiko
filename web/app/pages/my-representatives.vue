@@ -57,7 +57,7 @@ const groupedRepresentatives = computed(() => {
     const level = rep.level || 'national'
     if (groups[level]) {
       groups[level].push(rep)
-    } else {
+    } else if (groups.national) {
       groups.national.push(rep)
     }
   }
@@ -83,16 +83,16 @@ const levelIcons: Record<string, string> = {
   barangay: 'i-heroicons-home'
 }
 
-function getLevelColor(level: string): string {
-  const colors: Record<string, string> = {
-    national: 'red',
-    regional: 'purple',
-    provincial: 'blue',
-    city: 'orange',
-    municipal: 'green',
-    barangay: 'teal'
+function getLevelColor(level: string): 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral' {
+  const colors: Record<string, 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'> = {
+    national: 'error',
+    regional: 'secondary',
+    provincial: 'info',
+    city: 'warning',
+    municipal: 'success',
+    barangay: 'primary'
   }
-  return colors[level] || 'gray'
+  return colors[level] || 'neutral'
 }
 </script>
 
@@ -189,7 +189,7 @@ function getLevelColor(level: string): string {
                   :src="rep.photo"
                   :alt="rep.name"
                   size="lg"
-                  :ui="{ rounded: 'rounded-lg' }"
+                  class="rounded-lg"
                 />
                 <div class="flex-1 min-w-0">
                   <h3 class="font-semibold text-stone-900 dark:text-white truncate">

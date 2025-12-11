@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Comment, CommentAuthor } from '~/types'
+import type {Comment, CommentAuthor} from '~/types'
 
 const props = defineProps<{
   articleSlug: string
@@ -86,23 +86,21 @@ watch(() => props.replyToAuthor, (author) => {
 }, { immediate: true })
 
 const formattedPreview = computed(() => {
-  const formatted = content.value
-    // Bold: **text** or __text__
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/__(.*?)__/g, '<strong>$1</strong>')
-    // Italic: *text* or _text_
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/_([^_]+)_/g, '<em>$1</em>')
-    // Strikethrough: ~~text~~
-    .replace(/~~(.*?)~~/g, '<del>$1</del>')
-    // Blockquote: > text
-    .replace(/^>\s?(.*)$/gm, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 text-gray-600 dark:text-gray-400 italic">$1</blockquote>')
-    // @mentions - make them clickable links
-    .replace(/@([a-zA-Z0-9_-]+)/g, '<a href="/user/$1" class="text-primary font-medium hover:underline">@$1</a>')
-    // Line breaks
-    .replace(/\n/g, '<br>')
-
-  return formatted
+  return content.value
+      // Bold: **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic: *text* or _text_
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      // Strikethrough: ~~text~~
+      .replace(/~~(.*?)~~/g, '<del>$1</del>')
+      // Blockquote: > text
+      .replace(/^>\s?(.*)$/gm, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 text-gray-600 dark:text-gray-400 italic">$1</blockquote>')
+      // @mentions - make them clickable links
+      .replace(/@([a-zA-Z0-9_-]+)/g, '<a href="/user/$1" class="text-primary font-medium hover:underline">@$1</a>')
+      // Line breaks
+      .replace(/\n/g, '<br>')
 })
 
 // Filter users for mention dropdown
@@ -125,8 +123,7 @@ function insertEmoji(emoji: string) {
 
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
-  const newText = content.value.substring(0, start) + emoji + content.value.substring(end)
-  content.value = newText
+  content.value = content.value.substring(0, start) + emoji + content.value.substring(end)
   showEmojiPicker.value = false
 
   nextTick(() => {
@@ -170,8 +167,7 @@ function handleInput(event: Event) {
 // Load users that can be mentioned
 async function loadMentionUsers() {
   try {
-    const users = await api.getMentionableUsers()
-    mentionUsers.value = users
+    mentionUsers.value = await api.getMentionableUsers()
   } catch (e) {
     console.error('Failed to load mentionable users:', e)
   }
@@ -192,8 +188,7 @@ function insertMention(user: CommentAuthor) {
 
   // Replace @search with @username
   const slug = user.name.toLowerCase().replace(/\s+/g, '-')
-  const newText = textBeforeCursor.substring(0, atIndex) + '@' + slug + ' ' + textAfterCursor
-  content.value = newText
+  content.value = textBeforeCursor.substring(0, atIndex) + '@' + slug + ' ' + textAfterCursor
   showMentionDropdown.value = false
 
   nextTick(() => {
@@ -239,8 +234,7 @@ function openMentionPicker() {
 
   textareaRef.value = textarea as HTMLTextAreaElement
   const cursorPos = textarea.selectionStart
-  const newText = content.value.substring(0, cursorPos) + '@' + content.value.substring(cursorPos)
-  content.value = newText
+  content.value = content.value.substring(0, cursorPos) + '@' + content.value.substring(cursorPos)
 
   nextTick(() => {
     ;(textarea as HTMLTextAreaElement).focus()
@@ -311,8 +305,7 @@ function insertFormat(format: string) {
       break
   }
 
-  const newText = content.value.substring(0, start) + before + selected + after + content.value.substring(end)
-  content.value = newText
+  content.value = content.value.substring(0, start) + before + selected + after + content.value.substring(end)
 
   // Restore cursor position
   nextTick(() => {
@@ -424,9 +417,9 @@ function handleCancel() {
               :alt="user.name"
               class="w-8 h-8 rounded-full object-cover"
             />
-            <div v-else class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <span v-else class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <UIcon name="i-heroicons-user" class="w-4 h-4 text-primary" />
-            </div>
+            </span>
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{ user.name }}</span>
           </button>
         </div>
@@ -436,7 +429,7 @@ function handleCancel() {
             v-if="content.trim()"
             class="text-gray-700 dark:text-gray-300"
             v-html="formattedPreview"
-          ></div>
+          />
           <!-- eslint-enable vue/no-v-html -->
           <span v-else class="text-gray-400">Nothing to preview</span>
         </div>

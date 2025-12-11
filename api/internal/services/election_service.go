@@ -40,7 +40,7 @@ func (s *ElectionService) CreateElection(ctx context.Context, req *models.Create
 		return nil, err
 	}
 
-	s.cache.DeletePattern(ctx, electionsCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, electionsCachePrefix+"*")
 
 	return election, nil
 }
@@ -59,7 +59,7 @@ func (s *ElectionService) GetElectionByID(ctx context.Context, id uuid.UUID) (*m
 	}
 
 	if electionPtr != nil {
-		s.cache.Set(ctx, cacheKey, electionPtr, electionCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, electionPtr, electionCacheTTL)
 	}
 
 	return electionPtr, nil
@@ -79,7 +79,7 @@ func (s *ElectionService) GetElectionBySlug(ctx context.Context, slug string) (*
 	}
 
 	if electionPtr != nil {
-		s.cache.Set(ctx, cacheKey, electionPtr, electionCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, electionPtr, electionCacheTTL)
 	}
 
 	return electionPtr, nil
@@ -102,7 +102,7 @@ func (s *ElectionService) GetUpcomingElections(ctx context.Context, limit int) (
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, elections, electionCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, elections, electionCacheTTL)
 
 	return elections, nil
 }
@@ -120,7 +120,7 @@ func (s *ElectionService) GetFeaturedElections(ctx context.Context) ([]models.El
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, elections, electionCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, elections, electionCacheTTL)
 
 	return elections, nil
 }
@@ -138,7 +138,7 @@ func (s *ElectionService) GetElectionCalendar(ctx context.Context, year int) ([]
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, items, calendarCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, items, calendarCacheTTL)
 
 	return items, nil
 }
@@ -179,7 +179,7 @@ func (s *ElectionService) CreateElectionPosition(ctx context.Context, req *model
 		return nil, err
 	}
 
-	s.cache.Delete(ctx, electionCachePrefix+"id:"+req.ElectionID.String())
+	_ = s.cache.Delete(ctx, electionCachePrefix+"id:"+req.ElectionID.String())
 
 	return position, nil
 }
@@ -196,7 +196,7 @@ func (s *ElectionService) CreateCandidate(ctx context.Context, req *models.Creat
 		return nil, err
 	}
 
-	s.cache.DeletePattern(ctx, candidatesCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, candidatesCachePrefix+"*")
 
 	return candidate, nil
 }
@@ -218,7 +218,7 @@ func (s *ElectionService) GetCandidatesForPosition(ctx context.Context, position
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, candidates, electionCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, candidates, electionCacheTTL)
 
 	return candidates, nil
 }
@@ -233,7 +233,7 @@ func (s *ElectionService) UpdateCandidate(ctx context.Context, id uuid.UUID, req
 		return nil, err
 	}
 
-	s.cache.DeletePattern(ctx, candidatesCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, candidatesCachePrefix+"*")
 
 	return candidate, nil
 }
@@ -246,7 +246,7 @@ func (s *ElectionService) CreateVoterEducation(ctx context.Context, req *models.
 		return nil, err
 	}
 
-	s.cache.DeletePattern(ctx, voterEducationCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, voterEducationCachePrefix+"*")
 
 	return ve, nil
 }
@@ -265,7 +265,7 @@ func (s *ElectionService) GetVoterEducationBySlug(ctx context.Context, slug stri
 	}
 
 	if vePtr != nil {
-		s.cache.Set(ctx, cacheKey, vePtr, electionCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, vePtr, electionCacheTTL)
 	}
 
 	return vePtr, nil
@@ -282,7 +282,7 @@ func (s *ElectionService) IncrementVoterEducationViewCount(ctx context.Context, 
 // Helper methods
 
 func (s *ElectionService) invalidateElectionCache(ctx context.Context, id uuid.UUID, slug string) {
-	s.cache.Delete(ctx, electionCachePrefix+"id:"+id.String())
-	s.cache.Delete(ctx, electionCachePrefix+"slug:"+slug)
-	s.cache.DeletePattern(ctx, electionsCachePrefix+"*")
+	_ = s.cache.Delete(ctx, electionCachePrefix+"id:"+id.String())
+	_ = s.cache.Delete(ctx, electionCachePrefix+"slug:"+slug)
+	_ = s.cache.DeletePattern(ctx, electionsCachePrefix+"*")
 }

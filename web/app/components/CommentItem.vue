@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Comment } from '~/types'
+import type {Comment} from '~/types'
 
 const props = defineProps<{
   comment: Comment
@@ -129,23 +129,21 @@ function formatDate(dateString: string): string {
 
 function formatContent(content: string): string {
   // Parse markdown-like syntax
-  const formatted = content
-    // Bold: **text** or __text__
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/__(.*?)__/g, '<strong>$1</strong>')
-    // Italic: *text* or _text_
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/_([^_]+)_/g, '<em>$1</em>')
-    // Strikethrough: ~~text~~
-    .replace(/~~(.*?)~~/g, '<del>$1</del>')
-    // Blockquote: > text
-    .replace(/^>\s?(.*)$/gm, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 text-gray-600 dark:text-gray-400 italic">$1</blockquote>')
-    // @mentions - make them clickable links to user profiles
-    .replace(/@([a-zA-Z0-9_-]+)/g, '<a href="/user/$1" class="text-primary font-medium hover:underline">@$1</a>')
-    // Line breaks
-    .replace(/\n/g, '<br>')
-
-  return formatted
+  return content
+      // Bold: **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Italic: *text* or _text_
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/_([^_]+)_/g, '<em>$1</em>')
+      // Strikethrough: ~~text~~
+      .replace(/~~(.*?)~~/g, '<del>$1</del>')
+      // Blockquote: > text
+      .replace(/^>\s?(.*)$/gm, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 text-gray-600 dark:text-gray-400 italic">$1</blockquote>')
+      // @mentions - make them clickable links to user profiles
+      .replace(/@([a-zA-Z0-9_-]+)/g, '<a href="/user/$1" class="text-primary font-medium hover:underline">@$1</a>')
+      // Line breaks
+      .replace(/\n/g, '<br>')
 }
 
 // Get user slug from name for profile link
@@ -335,7 +333,7 @@ defineExpose({ loadReplies })
         <div
           class="mt-1 text-gray-700 dark:text-gray-300 break-words"
           v-html="formatContent(comment.content)"
-        ></div>
+        />
         <!-- eslint-enable vue/no-v-html -->
 
         <!-- Actions row -->

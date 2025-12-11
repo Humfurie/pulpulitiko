@@ -411,7 +411,6 @@ func (r *BillRepository) Update(ctx context.Context, id uuid.UUID, req *models.U
 	if req.RepublicActNumber != nil {
 		setClauses = append(setClauses, fmt.Sprintf("republic_act_number = $%d", argNum))
 		args = append(args, *req.RepublicActNumber)
-		argNum++
 	}
 
 	if len(setClauses) == 0 {

@@ -157,9 +157,9 @@ function getCityType(city: CityMunicipalityListItem): string {
   return 'Municipality'
 }
 
-function getCityTypeColor(city: CityMunicipalityListItem): string {
-  if (city.is_huc) return 'blue'
-  if (city.is_capital) return 'orange'
+function getCityTypeColor(city: CityMunicipalityListItem): 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral' {
+  if (city.is_huc) return 'info'
+  if (city.is_capital) return 'warning'
   if (city.is_city) return 'primary'
   return 'neutral'
 }

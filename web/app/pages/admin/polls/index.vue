@@ -10,7 +10,7 @@ useSeoMeta({
 })
 
 const api = useApi()
-const { authHeaders } = useAuth()
+const { getAuthHeaders } = useAuth()
 
 // Filters
 const page = ref(1)
@@ -23,7 +23,7 @@ const searchQuery = ref('')
 const { data: pollsData, pending, refresh } = await useAsyncData<PaginatedPolls>(
   'admin-polls',
   () => api.adminGetPolls(
-    authHeaders.value!,
+    getAuthHeaders(),
     {
       category: categoryFilter.value || undefined,
       status: statusFilter.value || undefined,
@@ -78,7 +78,7 @@ const approvePoll = async () => {
   if (!actionPoll.value) return
   processing.value = true
   try {
-    await api.approvePoll(actionPoll.value.id, true, undefined, authHeaders.value!)
+    await api.approvePoll(actionPoll.value.id, true, undefined, getAuthHeaders())
     await refresh()
     showApproveModal.value = false
     actionPoll.value = null
@@ -93,7 +93,7 @@ const rejectPoll = async () => {
   if (!actionPoll.value) return
   processing.value = true
   try {
-    await api.approvePoll(actionPoll.value.id, false, rejectReason.value || undefined, authHeaders.value!)
+    await api.approvePoll(actionPoll.value.id, false, rejectReason.value || undefined, getAuthHeaders())
     await refresh()
     showRejectModal.value = false
     rejectReason.value = ''
@@ -108,7 +108,7 @@ const rejectPoll = async () => {
 const closePoll = async (poll: PollListItem) => {
   if (!confirm('Are you sure you want to close this poll?')) return
   try {
-    await api.closePoll(poll.id, authHeaders.value!)
+    await api.closePoll(poll.id, getAuthHeaders())
     await refresh()
   } catch (err) {
     console.error('Failed to close poll:', err)
@@ -118,7 +118,7 @@ const closePoll = async (poll: PollListItem) => {
 const deletePoll = async (poll: PollListItem) => {
   if (!confirm('Are you sure you want to delete this poll? This action cannot be undone.')) return
   try {
-    await api.adminDeletePoll(poll.id, authHeaders.value!)
+    await api.adminDeletePoll(poll.id, getAuthHeaders())
     await refresh()
   } catch (err) {
     console.error('Failed to delete poll:', err)
@@ -127,7 +127,7 @@ const deletePoll = async (poll: PollListItem) => {
 
 const toggleFeatured = async (poll: PollListItem) => {
   try {
-    await api.adminUpdatePoll(poll.id, { is_featured: !poll.is_featured }, authHeaders.value!)
+    await api.adminUpdatePoll(poll.id, { is_featured: !poll.is_featured }, getAuthHeaders())
     await refresh()
   } catch (err) {
     console.error('Failed to toggle featured:', err)
@@ -178,13 +178,13 @@ const getCategoryLabel = (cat: PollCategory) => {
       <div class="flex flex-col md:flex-row gap-4">
         <!-- Search -->
         <div class="flex-1">
-          <form @submit.prevent="handleSearch" class="flex">
+          <form class="flex" @submit.prevent="handleSearch">
             <input
               v-model="searchQuery"
               type="text"
               placeholder="Search polls..."
               class="flex-1 rounded-l-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-            />
+            >
             <button
               type="submit"
               class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700"
@@ -228,7 +228,7 @@ const getCategoryLabel = (cat: PollCategory) => {
     <!-- Polls Table -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
       <div v-if="pending" class="p-8 text-center">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
       </div>
 
       <div v-else-if="polls.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -263,12 +263,12 @@ const getCategoryLabel = (cat: PollCategory) => {
             <td class="px-6 py-4">
               <div class="flex items-center">
                 <button
-                  @click="toggleFeatured(poll)"
                   :class="[
                     'mr-2 transition-colors',
                     poll.is_featured ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600 hover:text-yellow-400'
                   ]"
                   :title="poll.is_featured ? 'Remove from featured' : 'Add to featured'"
+                  @click="toggleFeatured(poll)"
                 >
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -307,18 +307,18 @@ const getCategoryLabel = (cat: PollCategory) => {
                 <!-- Approve/Reject for pending polls -->
                 <template v-if="poll.status === 'pending_approval'">
                   <button
-                    @click="actionPoll = poll; showApproveModal = true"
                     class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                     title="Approve"
+                    @click="actionPoll = poll; showApproveModal = true"
                   >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                   </button>
                   <button
-                    @click="actionPoll = poll; showRejectModal = true"
                     class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                     title="Reject"
+                    @click="actionPoll = poll; showRejectModal = true"
                   >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -329,9 +329,9 @@ const getCategoryLabel = (cat: PollCategory) => {
                 <!-- Close for active polls -->
                 <button
                   v-if="poll.status === 'active'"
-                  @click="closePoll(poll)"
                   class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                   title="Close Poll"
+                  @click="closePoll(poll)"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -340,9 +340,9 @@ const getCategoryLabel = (cat: PollCategory) => {
 
                 <!-- Delete -->
                 <button
-                  @click="deletePoll(poll)"
                   class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                   title="Delete"
+                  @click="deletePoll(poll)"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -359,9 +359,9 @@ const getCategoryLabel = (cat: PollCategory) => {
     <div v-if="totalPages > 1" class="mt-6 flex justify-center">
       <nav class="flex items-center space-x-2">
         <button
-          @click="page = page - 1"
           :disabled="page <= 1"
           class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="page = page - 1"
         >
           Previous
         </button>
@@ -371,9 +371,9 @@ const getCategoryLabel = (cat: PollCategory) => {
         </span>
 
         <button
-          @click="page = page + 1"
           :disabled="page >= totalPages"
           class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="page = page + 1"
         >
           Next
         </button>
@@ -393,15 +393,15 @@ const getCategoryLabel = (cat: PollCategory) => {
         </p>
         <div class="flex justify-end space-x-3">
           <button
-            @click="showApproveModal = false"
             class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            @click="showApproveModal = false"
           >
             Cancel
           </button>
           <button
-            @click="approvePoll"
             :disabled="processing"
             class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            @click="approvePoll"
           >
             {{ processing ? 'Approving...' : 'Approve' }}
           </button>
@@ -425,18 +425,18 @@ const getCategoryLabel = (cat: PollCategory) => {
           rows="3"
           placeholder="Reason for rejection..."
           class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-red-500 focus:border-red-500 mb-4"
-        ></textarea>
+        />
         <div class="flex justify-end space-x-3">
           <button
-            @click="showRejectModal = false; rejectReason = ''"
             class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            @click="showRejectModal = false; rejectReason = ''"
           >
             Cancel
           </button>
           <button
-            @click="rejectPoll"
-            :disabled="processing"
             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            :disabled="processing"
+            @click="rejectPoll"
           >
             {{ processing ? 'Rejecting...' : 'Reject' }}
           </button>

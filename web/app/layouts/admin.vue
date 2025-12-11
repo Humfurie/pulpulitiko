@@ -90,7 +90,7 @@ function isActive(href: string) {
       >
         <div
           v-if="sidebarOpen && !isRegularUser"
-          class="fixed inset-0 z-[55] bg-black/50 lg:hidden"
+          class="fixed inset-0 z-55 bg-black/50 lg:hidden"
           @click="sidebarOpen = false"
         />
       </Transition>
@@ -99,7 +99,7 @@ function isActive(href: string) {
       <aside
         v-if="!isRegularUser"
         :class="[
-          'fixed inset-y-0 left-0 z-[60] w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 lg:hidden',
+          'fixed inset-y-0 left-0 z-60 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 lg:hidden',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         ]"
       >
@@ -177,7 +177,7 @@ function isActive(href: string) {
             <UColorModeButton
               variant="ghost"
               size="sm"
-              class="flex-shrink-0 hidden lg:flex"
+              class="shrink-0 hidden lg:flex"
             />
             <UButton
               to="/"
@@ -274,7 +274,7 @@ function isActive(href: string) {
             <UColorModeButton
               variant="ghost"
               size="sm"
-              class="flex-shrink-0"
+              class="shrink-0"
             />
             <UButton
               to="/"
@@ -307,12 +307,12 @@ function isActive(href: string) {
             src="/pulpulitiko.png"
             alt="Pulpulitiko"
             class="h-8 w-auto dark:hidden"
-          />
+          >
           <img
             src="/pulpulitiko_dark.png"
             alt="Pulpulitiko"
             class="h-8 w-auto hidden dark:block"
-          />
+          >
         </NuxtLink>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">

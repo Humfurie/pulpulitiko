@@ -167,11 +167,11 @@ const totalUnread = computed(() =>
       <!-- Stats bar -->
       <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 flex items-center gap-4 text-xs">
         <div class="flex items-center gap-1">
-          <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+          <span class="w-2 h-2 bg-green-500 rounded-full" />
           <span class="text-gray-600 dark:text-gray-400">{{ openCount }} open</span>
         </div>
         <div v-if="totalUnread > 0" class="flex items-center gap-1">
-          <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
+          <span class="w-2 h-2 bg-primary-500 rounded-full" />
           <span class="text-gray-600 dark:text-gray-400">{{ totalUnread }} unread</span>
         </div>
         <div class="text-gray-500 dark:text-gray-500">
@@ -336,7 +336,7 @@ const totalUnread = computed(() =>
                     class="flex items-center gap-1"
                     :class="messaging.currentConversation.value.status === 'open' ? 'text-green-600' : 'text-gray-500'"
                   >
-                    <span class="w-2 h-2 rounded-full" :class="messaging.currentConversation.value.status === 'open' ? 'bg-green-500' : 'bg-gray-400'"></span>
+                    <span class="w-2 h-2 rounded-full" :class="messaging.currentConversation.value.status === 'open' ? 'bg-green-500' : 'bg-gray-400'" />
                     {{ messaging.currentConversation.value.status === 'open' ? 'Active' : messaging.currentConversation.value.status }}
                   </span>
                   <span v-if="messaging.currentConversation.value.subject" class="text-gray-400">
