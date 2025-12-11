@@ -289,53 +289,43 @@ func (r *ElectionRepository) GetElectionCalendar(ctx context.Context, year int) 
 func (r *ElectionRepository) UpdateElection(ctx context.Context, id uuid.UUID, req *models.UpdateElectionRequest) (*models.Election, error) {
 	setClauses := []string{}
 	args := []interface{}{id}
-	argNum := 2
 
 	if req.Name != nil {
-		setClauses = append(setClauses, fmt.Sprintf("name = $%d", argNum))
 		args = append(args, *req.Name)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("name = $%d", len(args)))
 	}
 	if req.Slug != nil {
-		setClauses = append(setClauses, fmt.Sprintf("slug = $%d", argNum))
 		args = append(args, *req.Slug)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("slug = $%d", len(args)))
 	}
 	if req.Description != nil {
-		setClauses = append(setClauses, fmt.Sprintf("description = $%d", argNum))
 		args = append(args, *req.Description)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("description = $%d", len(args)))
 	}
 	if req.ElectionDate != nil {
 		date, _ := time.Parse("2006-01-02", *req.ElectionDate)
-		setClauses = append(setClauses, fmt.Sprintf("election_date = $%d", argNum))
 		args = append(args, date)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("election_date = $%d", len(args)))
 	}
 	if req.Status != nil {
-		setClauses = append(setClauses, fmt.Sprintf("status = $%d", argNum))
 		args = append(args, *req.Status)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("status = $%d", len(args)))
 	}
 	if req.IsFeatured != nil {
-		setClauses = append(setClauses, fmt.Sprintf("is_featured = $%d", argNum))
 		args = append(args, *req.IsFeatured)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("is_featured = $%d", len(args)))
 	}
 	if req.VoterTurnoutPercentage != nil {
-		setClauses = append(setClauses, fmt.Sprintf("voter_turnout_percentage = $%d", argNum))
 		args = append(args, *req.VoterTurnoutPercentage)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("voter_turnout_percentage = $%d", len(args)))
 	}
 	if req.TotalRegisteredVoters != nil {
-		setClauses = append(setClauses, fmt.Sprintf("total_registered_voters = $%d", argNum))
 		args = append(args, *req.TotalRegisteredVoters)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("total_registered_voters = $%d", len(args)))
 	}
 	if req.TotalVotesCast != nil {
-		setClauses = append(setClauses, fmt.Sprintf("total_votes_cast = $%d", argNum))
 		args = append(args, *req.TotalVotesCast)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("total_votes_cast = $%d", len(args)))
 	}
 
 	if len(setClauses) == 0 {
@@ -662,57 +652,46 @@ func (r *ElectionRepository) ListCandidates(ctx context.Context, filter *models.
 func (r *ElectionRepository) UpdateCandidate(ctx context.Context, id uuid.UUID, req *models.UpdateCandidateRequest) (*models.Candidate, error) {
 	setClauses := []string{}
 	args := []interface{}{id}
-	argNum := 2
 
 	if req.PartyID != nil {
-		setClauses = append(setClauses, fmt.Sprintf("party_id = $%d", argNum))
 		args = append(args, *req.PartyID)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("party_id = $%d", len(args)))
 	}
 	if req.BallotNumber != nil {
-		setClauses = append(setClauses, fmt.Sprintf("ballot_number = $%d", argNum))
 		args = append(args, *req.BallotNumber)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("ballot_number = $%d", len(args)))
 	}
 	if req.BallotName != nil {
-		setClauses = append(setClauses, fmt.Sprintf("ballot_name = $%d", argNum))
 		args = append(args, *req.BallotName)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("ballot_name = $%d", len(args)))
 	}
 	if req.CampaignSlogan != nil {
-		setClauses = append(setClauses, fmt.Sprintf("campaign_slogan = $%d", argNum))
 		args = append(args, *req.CampaignSlogan)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("campaign_slogan = $%d", len(args)))
 	}
 	if req.Platform != nil {
-		setClauses = append(setClauses, fmt.Sprintf("platform = $%d", argNum))
 		args = append(args, *req.Platform)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("platform = $%d", len(args)))
 	}
 	if req.Status != nil {
-		setClauses = append(setClauses, fmt.Sprintf("status = $%d", argNum))
 		args = append(args, *req.Status)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("status = $%d", len(args)))
 	}
 	if req.IsIncumbent != nil {
-		setClauses = append(setClauses, fmt.Sprintf("is_incumbent = $%d", argNum))
 		args = append(args, *req.IsIncumbent)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("is_incumbent = $%d", len(args)))
 	}
 	if req.IsWinner != nil {
-		setClauses = append(setClauses, fmt.Sprintf("is_winner = $%d", argNum))
 		args = append(args, *req.IsWinner)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("is_winner = $%d", len(args)))
 	}
 	if req.VotesReceived != nil {
-		setClauses = append(setClauses, fmt.Sprintf("votes_received = $%d", argNum))
 		args = append(args, *req.VotesReceived)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("votes_received = $%d", len(args)))
 	}
 	if req.VotePercentage != nil {
-		setClauses = append(setClauses, fmt.Sprintf("vote_percentage = $%d", argNum))
 		args = append(args, *req.VotePercentage)
-		argNum++
+		setClauses = append(setClauses, fmt.Sprintf("vote_percentage = $%d", len(args)))
 	}
 
 	if len(setClauses) == 0 {
