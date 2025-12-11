@@ -450,12 +450,12 @@ func (r *PollRepository) AdminUpdatePoll(ctx context.Context, id uuid.UUID, req 
 	if req.Status != nil {
 		sets = append(sets, fmt.Sprintf("status = $%d", argNum))
 		args = append(args, *req.Status)
-		argNum++
+		argNum++ //nolint:ineffassign // argNum is used in the query below
 	}
 	if req.IsFeatured != nil {
 		sets = append(sets, fmt.Sprintf("is_featured = $%d", argNum))
 		args = append(args, *req.IsFeatured)
-		argNum++
+		argNum++ //nolint:ineffassign // argNum is used in the query below
 	}
 
 	if len(sets) > 0 {
