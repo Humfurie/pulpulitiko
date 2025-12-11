@@ -41,7 +41,7 @@ func (s *PollService) CreatePoll(ctx context.Context, userID uuid.UUID, req *mod
 		return nil, err
 	}
 
-	s.cache.DeletePattern(ctx, pollsCachePrefix+"*")
+	_ = s.cache.DeletePattern(ctx, pollsCachePrefix+"*")
 
 	return poll, nil
 }
@@ -124,7 +124,7 @@ func (s *PollService) GetFeaturedPolls(ctx context.Context, limit int) ([]models
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, polls, pollCacheTTL)
+	_ = s.cache.Set(ctx, cacheKey, polls, pollCacheTTL)
 
 	return polls, nil
 }
@@ -262,7 +262,7 @@ func (s *PollService) CastVote(ctx context.Context, pollID, optionID uuid.UUID, 
 	}
 
 	// Invalidate results cache
-	s.cache.Delete(ctx, pollResultsCachePrefix+pollID.String())
+	_ = s.cache.Delete(ctx, pollResultsCachePrefix+pollID.String())
 
 	// Get updated results
 	results, err := s.GetPollResults(ctx, pollID)
@@ -298,7 +298,7 @@ func (s *PollService) GetPollResults(ctx context.Context, pollID uuid.UUID) (*mo
 	}
 
 	if resultsPtr != nil {
-		s.cache.Set(ctx, cacheKey, resultsPtr, pollResultsCacheTTL)
+		_ = s.cache.Set(ctx, cacheKey, resultsPtr, pollResultsCacheTTL)
 	}
 
 	return resultsPtr, nil
@@ -321,9 +321,9 @@ func (s *PollService) DeletePollComment(ctx context.Context, id uuid.UUID) error
 // Helper methods
 
 func (s *PollService) invalidatePollCache(ctx context.Context, id uuid.UUID) {
-	s.cache.Delete(ctx, pollCachePrefix+"id:"+id.String())
-	s.cache.Delete(ctx, pollResultsCachePrefix+id.String())
-	s.cache.DeletePattern(ctx, pollsCachePrefix+"*")
+	_ = s.cache.Delete(ctx, pollCachePrefix+"id:"+id.String())
+	_ = s.cache.Delete(ctx, pollResultsCachePrefix+id.String())
+	_ = s.cache.DeletePattern(ctx, pollsCachePrefix+"*")
 }
 
 // HashIP creates a hash of IP + poll ID for anonymous vote tracking

@@ -55,10 +55,12 @@ const groupedRepresentatives = computed(() => {
 
   for (const rep of representatives.value) {
     const level = rep.level || 'national'
-    if (groups[level]) {
-      groups[level].push(rep)
-    } else if (groups.national) {
-      groups.national.push(rep)
+    const targetGroup = groups[level]
+    if (targetGroup) {
+      targetGroup.push(rep)
+    } else {
+      // Fallback to national (always exists)
+      groups.national!.push(rep)
     }
   }
 

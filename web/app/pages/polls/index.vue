@@ -176,7 +176,7 @@ const getCategoryLabel = (cat: PollCategory) => {
           <!-- Error State -->
           <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <p class="text-red-600">Failed to load polls. Please try again.</p>
-            <button @click="refresh" class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <button class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" @click="() => refresh()">
               Retry
             </button>
           </div>

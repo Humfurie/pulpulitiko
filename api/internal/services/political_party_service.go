@@ -31,8 +31,8 @@ func (s *PoliticalPartyService) Create(ctx context.Context, req *models.CreatePo
 	}
 
 	// Invalidate relevant caches
-	s.cache.DeletePattern(ctx, "party:*")
-	s.cache.DeletePattern(ctx, "parties:*")
+	_ = s.cache.DeletePattern(ctx, "party:*")
+	_ = s.cache.DeletePattern(ctx, "parties:*")
 
 	return party, nil
 }
@@ -53,7 +53,7 @@ func (s *PoliticalPartyService) GetByID(ctx context.Context, id uuid.UUID) (*mod
 		return nil, nil
 	}
 
-	s.cache.Set(ctx, cacheKey, result, partyTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, partyTTL)
 	return result, nil
 }
 
@@ -73,7 +73,7 @@ func (s *PoliticalPartyService) GetBySlug(ctx context.Context, slug string) (*mo
 		return nil, nil
 	}
 
-	s.cache.Set(ctx, cacheKey, result, partyTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, partyTTL)
 	return result, nil
 }
 
@@ -97,7 +97,7 @@ func (s *PoliticalPartyService) GetAll(ctx context.Context, activeOnly bool) ([]
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, result, partyTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, partyTTL)
 	return result, nil
 }
 
@@ -108,8 +108,8 @@ func (s *PoliticalPartyService) Update(ctx context.Context, id uuid.UUID, req *m
 	}
 
 	// Invalidate relevant caches
-	s.cache.DeletePattern(ctx, "party:*")
-	s.cache.DeletePattern(ctx, "parties:*")
+	_ = s.cache.DeletePattern(ctx, "party:*")
+	_ = s.cache.DeletePattern(ctx, "parties:*")
 
 	return party, nil
 }
@@ -121,8 +121,8 @@ func (s *PoliticalPartyService) Delete(ctx context.Context, id uuid.UUID) error 
 	}
 
 	// Invalidate relevant caches
-	s.cache.DeletePattern(ctx, "party:*")
-	s.cache.DeletePattern(ctx, "parties:*")
+	_ = s.cache.DeletePattern(ctx, "party:*")
+	_ = s.cache.DeletePattern(ctx, "parties:*")
 
 	return nil
 }
@@ -142,7 +142,7 @@ func (s *PoliticalPartyService) GetAllPositions(ctx context.Context) ([]models.G
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, result, partyTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, partyTTL)
 	return result, nil
 }
 
@@ -159,7 +159,7 @@ func (s *PoliticalPartyService) GetPositionsByLevel(ctx context.Context, level s
 		return nil, err
 	}
 
-	s.cache.Set(ctx, cacheKey, result, partyTTL)
+	_ = s.cache.Set(ctx, cacheKey, result, partyTTL)
 	return result, nil
 }
 

@@ -136,7 +136,9 @@ const getOptionPercentage = (option: PollOption) => {
 
 const getWinningOption = () => {
   if (!poll.value?.options || poll.value.options.length === 0) return null
-  return poll.value.options.reduce((max, opt) => opt.vote_count > max.vote_count ? opt : max, poll.value.options[0])
+  const firstOption = poll.value.options[0]
+  if (!firstOption) return null
+  return poll.value.options.reduce((max, opt) => opt.vote_count > max.vote_count ? opt : max, firstOption)
 }
 </script>
 

@@ -143,6 +143,13 @@ function insertMention(user: CommentAuthor) {
   mentionSearch.value = ''
 }
 
+// Handle mention blur
+function handleMentionBlur() {
+  globalThis.setTimeout(() => {
+    showMentionDropdown.value = false
+  }, 200)
+}
+
 // Handle keyboard navigation in mention dropdown
 function handleMentionKeydown(event: KeyboardEvent) {
   if (!showMentionDropdown.value) return
@@ -155,7 +162,8 @@ function handleMentionKeydown(event: KeyboardEvent) {
     selectedMentionIndex.value = Math.max(selectedMentionIndex.value - 1, 0)
   } else if (event.key === 'Enter' && filteredMentionUsers.value.length > 0) {
     event.preventDefault()
-    insertMention(filteredMentionUsers.value[selectedMentionIndex.value])
+    const user = filteredMentionUsers.value[selectedMentionIndex.value]
+    if (user) insertMention(user)
   } else if (event.key === 'Escape') {
     showMentionDropdown.value = false
   }
@@ -631,7 +639,7 @@ useHead(() => ({
                       :disabled="submittingComment"
                       @input="handleCommentInput"
                       @keydown="handleMentionKeydown"
-                      @blur="() => setTimeout(() => showMentionDropdown = false, 200)"
+                      @blur="handleMentionBlur"
                     />
                     <!-- Mention dropdown for comment -->
                     <div
@@ -799,7 +807,7 @@ useHead(() => ({
                           :disabled="submittingReply"
                           @input="handleReplyInput"
                           @keydown="handleMentionKeydown"
-                          @blur="() => setTimeout(() => showMentionDropdown = false, 200)"
+                          @blur="handleMentionBlur"
                         />
                         <!-- Mention dropdown for reply -->
                         <div

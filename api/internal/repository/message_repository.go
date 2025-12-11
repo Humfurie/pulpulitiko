@@ -114,12 +114,12 @@ func (r *MessageRepository) ListConversations(ctx context.Context, filter *model
 		if filter.UserID != nil {
 			whereClause += fmt.Sprintf(" AND c.user_id = $%d", argNum)
 			args = append(args, *filter.UserID)
-			argNum++
+			argNum++ //nolint:ineffassign // argNum is used in the query below
 		}
 		if filter.Status != nil {
 			whereClause += fmt.Sprintf(" AND c.status = $%d", argNum)
 			args = append(args, *filter.Status)
-			argNum++
+			argNum++ //nolint:ineffassign // argNum is used in the query below
 		}
 	}
 

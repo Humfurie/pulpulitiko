@@ -60,7 +60,8 @@ const statusLabels: Record<BillStatus, string> = {
   archived: 'Archived'
 }
 
-const statusColors: Record<BillStatus, string> = {
+type BadgeColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
+const statusColors: Record<BillStatus, BadgeColor> = {
   filed: 'neutral',
   pending_committee: 'warning',
   in_committee: 'info',
