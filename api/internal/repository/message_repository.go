@@ -108,18 +108,15 @@ func (r *MessageRepository) ListConversations(ctx context.Context, filter *model
 	// Build query conditions
 	whereClause := "WHERE 1=1"
 	args := []interface{}{}
-	argNum := 1
 
 	if filter != nil {
 		if filter.UserID != nil {
-			whereClause += fmt.Sprintf(" AND c.user_id = $%d", argNum)
 			args = append(args, *filter.UserID)
-			argNum++ //nolint:ineffassign // argNum is used in the query below
+			whereClause += fmt.Sprintf(" AND c.user_id = $%d", len(args))
 		}
 		if filter.Status != nil {
-			whereClause += fmt.Sprintf(" AND c.status = $%d", argNum)
 			args = append(args, *filter.Status)
-			argNum++ //nolint:ineffassign // argNum is used in the query below
+			whereClause += fmt.Sprintf(" AND c.status = $%d", len(args))
 		}
 	}
 
@@ -141,7 +138,7 @@ func (r *MessageRepository) ListConversations(ctx context.Context, filter *model
 		%s
 		ORDER BY c.last_message_at DESC NULLS LAST, c.created_at DESC
 		LIMIT $%d OFFSET $%d
-	`, whereClause, argNum, argNum+1)
+	`, whereClause, len(args)+1, len(args)+2)
 
 	args = append(args, perPage, offset)
 

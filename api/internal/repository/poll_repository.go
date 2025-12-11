@@ -445,17 +445,14 @@ func (r *PollRepository) AdminUpdatePoll(ctx context.Context, id uuid.UUID, req 
 	// Then apply admin-specific updates
 	var sets []string
 	var args []interface{}
-	argNum := 1
 
 	if req.Status != nil {
-		sets = append(sets, fmt.Sprintf("status = $%d", argNum))
 		args = append(args, *req.Status)
-		argNum++ //nolint:ineffassign // argNum is used in the query below
+		sets = append(sets, fmt.Sprintf("status = $%d", len(args)))
 	}
 	if req.IsFeatured != nil {
-		sets = append(sets, fmt.Sprintf("is_featured = $%d", argNum))
 		args = append(args, *req.IsFeatured)
-		argNum++ //nolint:ineffassign // argNum is used in the query below
+		sets = append(sets, fmt.Sprintf("is_featured = $%d", len(args)))
 	}
 
 	if len(sets) > 0 {
@@ -463,7 +460,7 @@ func (r *PollRepository) AdminUpdatePoll(ctx context.Context, id uuid.UUID, req 
 		query := fmt.Sprintf(`
 			UPDATE polls SET %s, updated_at = NOW()
 			WHERE id = $%d AND deleted_at IS NULL
-		`, strings.Join(sets, ", "), argNum)
+		`, strings.Join(sets, ", "), len(args))
 
 		_, err = r.db.Exec(ctx, query, args...)
 		if err != nil {
