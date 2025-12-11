@@ -61,7 +61,8 @@ export default defineNuxtConfig({
         { name: 'twitter:card', content: 'summary_large_image' }
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', href: '/pulpulitiko.png' },
+        { rel: 'apple-touch-icon', href: '/pulpulitiko.png' },
         { rel: 'alternate', type: 'application/rss+xml', title: 'Pulpulitiko RSS Feed', href: '/rss' }
       ],
       style: [
@@ -104,11 +105,18 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/': { prerender: true },
+    '/': { ssr: true },
     '/article/**': { isr: 900 }, // 15 minutes
     '/category/**': { isr: 1800 }, // 30 minutes
     '/tag/**': { isr: 1800 },
     '/author/**': { isr: 1800 } // 30 minutes
+  },
+
+  nitro: {
+    prerender: {
+      crawlLinks: false,
+      routes: []
+    }
   },
 
   // Vite config for Docker HMR

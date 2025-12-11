@@ -72,8 +72,8 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 		       u.role_id, COALESCE(r.slug, '') as role_slug, u.created_at, u.updated_at, u.deleted_at
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
-		LEFT JOIN authors a ON a.email = u.email AND a.deleted_at IS NULL
-		WHERE u.email = $1 AND u.deleted_at IS NULL
+		LEFT JOIN authors a ON LOWER(a.email) = LOWER(u.email) AND a.deleted_at IS NULL
+		WHERE LOWER(u.email) = LOWER($1) AND u.deleted_at IS NULL
 	`
 
 	user := &models.User{}
