@@ -19,12 +19,12 @@ const { data: categories } = await useAsyncData('footer-categories', () => api.g
               src="/pulpulitiko.png"
               alt="Pulpulitiko"
               class="h-10 w-auto dark:hidden"
-            />
+            >
             <img
               src="/pulpulitiko_dark.png"
               alt="Pulpulitiko"
               class="h-10 w-auto hidden dark:block"
-            />
+            >
           </NuxtLink>
           <p class="mt-5 text-stone-600 dark:text-stone-400 max-w-md leading-relaxed">
             Your trusted source for Philippine political news and commentary.

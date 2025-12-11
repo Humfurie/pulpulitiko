@@ -59,7 +59,7 @@ useSeoMeta({
       <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
       <h2 class="text-xl font-semibold text-stone-900 dark:text-white mb-2">Province Not Found</h2>
       <p class="text-stone-600 dark:text-stone-400 mb-4">The province you're looking for doesn't exist.</p>
-      <UButton to="/locations" color="orange">Back to Locations</UButton>
+      <UButton to="/locations" color="warning">Back to Locations</UButton>
     </div>
 
     <!-- Content -->
@@ -87,8 +87,8 @@ useSeoMeta({
                 <h3 class="font-semibold text-stone-900 dark:text-white">
                   {{ city.name }}
                 </h3>
-                <UBadge v-if="city.is_capital" color="orange" size="xs">Capital</UBadge>
-                <UBadge v-else-if="city.is_city" color="blue" size="xs" variant="subtle">City</UBadge>
+                <UBadge v-if="city.is_capital" color="warning" size="xs">Capital</UBadge>
+                <UBadge v-else-if="city.is_city" color="info" size="xs" variant="subtle">City</UBadge>
                 <UBadge v-else size="xs" variant="subtle">Municipality</UBadge>
               </div>
               <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">

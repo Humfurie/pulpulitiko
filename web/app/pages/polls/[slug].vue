@@ -7,12 +7,12 @@ definePageMeta({
 
 const route = useRoute()
 const api = useApi()
-const { user, authHeaders } = useAuth()
+const { user, getAuthHeaders } = useAuth()
 
 const slug = computed(() => route.params.slug as string)
 
 // Fetch poll
-const { data: poll, pending, error, refresh } = await useAsyncData<Poll>(
+const { data: poll, pending, error, refresh: _refresh } = await useAsyncData<Poll>(
   `poll-${slug.value}`,
   () => api.getPollBySlug(slug.value)
 )
@@ -65,7 +65,8 @@ const castVote = async () => {
   voteError.value = null
 
   try {
-    const response = await api.castVote(poll.value!.id, selectedOption.value, authHeaders.value || undefined)
+    const authHeaders = getAuthHeaders()
+    const response = await api.castVote(poll.value!.id, selectedOption.value, Object.keys(authHeaders).length > 0 ? authHeaders : undefined)
     if (response.success && response.results) {
       // Update poll with new results
       if (poll.value && poll.value.options) {

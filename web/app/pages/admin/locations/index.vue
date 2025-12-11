@@ -579,11 +579,11 @@ const tabs = [
         <p class="mt-4">
           <strong>City Types:</strong>
           <span class="inline-flex gap-2 ml-2">
-            <UBadge color="blue" variant="subtle" size="xs">HUC</UBadge>
+            <UBadge color="info" variant="subtle" size="xs">HUC</UBadge>
             <span>= Highly Urbanized City</span>
           </span>
           <span class="inline-flex gap-2 ml-2">
-            <UBadge color="orange" variant="subtle" size="xs">Capital</UBadge>
+            <UBadge color="warning" variant="subtle" size="xs">Capital</UBadge>
             <span>= Provincial Capital</span>
           </span>
         </p>

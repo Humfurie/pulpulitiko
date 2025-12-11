@@ -61,7 +61,7 @@ useSeoMeta({
       <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
       <h2 class="text-xl font-semibold text-stone-900 dark:text-white mb-2">City Not Found</h2>
       <p class="text-stone-600 dark:text-stone-400 mb-4">The city or municipality you're looking for doesn't exist.</p>
-      <UButton to="/locations" color="orange">Back to Locations</UButton>
+      <UButton to="/locations" color="warning">Back to Locations</UButton>
     </div>
 
     <!-- Content -->
@@ -71,9 +71,9 @@ useSeoMeta({
           <h1 class="text-3xl font-bold text-stone-900 dark:text-white">
             {{ data.city.name }}
           </h1>
-          <UBadge v-if="data.city.is_capital" color="orange" size="sm">Provincial Capital</UBadge>
-          <UBadge v-else-if="data.city.is_huc" color="blue" size="sm">Highly Urbanized City</UBadge>
-          <UBadge v-else-if="data.city.is_city" color="blue" size="sm" variant="subtle">City</UBadge>
+          <UBadge v-if="data.city.is_capital" color="warning" size="sm">Provincial Capital</UBadge>
+          <UBadge v-else-if="data.city.is_huc" color="info" size="sm">Highly Urbanized City</UBadge>
+          <UBadge v-else-if="data.city.is_city" color="info" size="sm" variant="subtle">City</UBadge>
           <UBadge v-else size="sm" variant="subtle">Municipality</UBadge>
         </div>
         <p class="text-stone-600 dark:text-stone-400">

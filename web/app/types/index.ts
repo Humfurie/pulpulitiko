@@ -791,6 +791,7 @@ export interface Barangay {
   updated_at: string
   deleted_at?: string
   city_municipality?: CityMunicipality
+  city?: CityMunicipality // alias used in some API responses
 }
 
 export interface BarangayListItem {

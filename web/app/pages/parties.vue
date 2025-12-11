@@ -93,7 +93,7 @@ watch(showMajorOnly, () => {
                 <UBadge v-if="party.abbreviation" variant="subtle" size="xs">
                   {{ party.abbreviation }}
                 </UBadge>
-                <UBadge v-if="party.is_major" color="orange" size="xs">Major</UBadge>
+                <UBadge v-if="party.is_major" color="warning" size="xs">Major</UBadge>
                 <span v-if="party.member_count > 0" class="text-xs text-stone-500">
                   {{ party.member_count }} member(s)
                 </span>

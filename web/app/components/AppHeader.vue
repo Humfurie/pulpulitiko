@@ -124,7 +124,7 @@ watch(() => auth.isAuthenticated.value, (isAuth) => {
 }, { immediate: true })
 
 // Poll for new notifications every 10 seconds for near real-time updates
-let notificationInterval: NodeJS.Timeout | null = null
+let notificationInterval: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   if (auth.isAuthenticated.value) {
     fetchUnreadCount()
@@ -180,12 +180,12 @@ onMounted(() => {
             src="/pulpulitiko.png"
             alt="Pulpulitiko"
             class="h-8 w-auto dark:hidden"
-          />
+          >
           <img
             src="/pulpulitiko_dark.png"
             alt="Pulpulitiko"
             class="h-8 w-auto hidden dark:block"
-          />
+          >
         </NuxtLink>
 
         <!-- Desktop Navigation -->

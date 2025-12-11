@@ -38,7 +38,7 @@ useSeoMeta({
       <UIcon name="i-heroicons-exclamation-triangle" class="w-12 h-12 text-red-500 mx-auto mb-4" />
       <h2 class="text-xl font-semibold text-stone-900 dark:text-white mb-2">Party Not Found</h2>
       <p class="text-stone-600 dark:text-stone-400 mb-4">The political party you're looking for doesn't exist.</p>
-      <UButton to="/parties" color="orange">View All Parties</UButton>
+      <UButton to="/parties" color="warning">View All Parties</UButton>
     </div>
 
     <!-- Content -->
@@ -74,7 +74,7 @@ useSeoMeta({
             <UBadge v-if="party.abbreviation" variant="subtle" size="lg">
               {{ party.abbreviation }}
             </UBadge>
-            <UBadge v-if="party.is_major" color="orange" size="sm">Major Party</UBadge>
+            <UBadge v-if="party.is_major" color="warning" size="sm">Major Party</UBadge>
             <UBadge v-if="!party.is_active" color="error" size="sm">Inactive</UBadge>
           </div>
 

@@ -431,12 +431,13 @@ function handleCancel() {
           </button>
         </div>
         <div v-else class="min-h-[52px]">
-          <!-- eslint-disable-next-line vue/no-v-html -->
+          <!-- eslint-disable vue/no-v-html -->
           <div
             v-if="content.trim()"
             class="text-gray-700 dark:text-gray-300"
             v-html="formattedPreview"
-          />
+          ></div>
+          <!-- eslint-enable vue/no-v-html -->
           <span v-else class="text-gray-400">Nothing to preview</span>
         </div>
       </div>

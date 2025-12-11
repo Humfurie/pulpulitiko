@@ -12,7 +12,7 @@ const page = ref(1)
 const perPage = ref(20)
 const filter = ref<ElectionFilter>({})
 
-const { data, status, refresh } = await useAsyncData(
+const { data, status, refresh: _refresh } = await useAsyncData(
   () => api.getElections(filter.value, page.value, perPage.value),
   { watch: [page, filter] }
 )
@@ -37,9 +37,8 @@ const electionStatuses: { value: ElectionStatus | ''; label: string }[] = [
 
 function applyFilter(key: keyof ElectionFilter, value: string | undefined) {
   if (value === '' || value === undefined) {
-    const newFilter = { ...filter.value }
-    delete newFilter[key]
-    filter.value = newFilter
+    const { [key]: _, ...rest } = filter.value
+    filter.value = rest
   } else {
     filter.value = { ...filter.value, [key]: value }
   }

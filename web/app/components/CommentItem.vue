@@ -330,12 +330,13 @@ defineExpose({ loadReplies })
           </span>
         </div>
 
-        <!-- Comment body -->
-        <!-- eslint-disable-next-line vue/no-v-html -->
+        <!-- Comment body (sanitized content) -->
+        <!-- eslint-disable vue/no-v-html -->
         <div
           class="mt-1 text-gray-700 dark:text-gray-300 break-words"
           v-html="formatContent(comment.content)"
-        />
+        ></div>
+        <!-- eslint-enable vue/no-v-html -->
 
         <!-- Actions row -->
         <div class="mt-3 flex items-center gap-4">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ElectionFilter, ElectionListItem, ElectionType, ElectionStatus } from '~/types'
+import type { ElectionFilter, ElectionType, ElectionStatus } from '~/types'
 
 const api = useApi()
 
@@ -40,9 +40,8 @@ const years = Array.from({ length: 10 }, (_, i) => currentYear + 2 - i)
 
 function applyFilter(key: keyof ElectionFilter, value: string | number | boolean | undefined) {
   if (value === '' || value === undefined) {
-    const newFilter = { ...filter.value }
-    delete newFilter[key]
-    filter.value = newFilter
+    const { [key]: _, ...rest } = filter.value
+    filter.value = rest
   } else {
     filter.value = { ...filter.value, [key]: value }
   }

@@ -67,8 +67,8 @@ function isActive(href: string) {
           @click="sidebarOpen = true"
         />
         <NuxtLink to="/admin" class="flex items-center gap-2">
-          <img src="/pulpulitiko.png" alt="Pulpulitiko" class="h-6 w-auto dark:hidden" />
-          <img src="/pulpulitiko_dark.png" alt="Pulpulitiko" class="h-6 w-auto hidden dark:block" />
+          <img src="/pulpulitiko.png" alt="Pulpulitiko" class="h-6 w-auto dark:hidden">
+          <img src="/pulpulitiko_dark.png" alt="Pulpulitiko" class="h-6 w-auto hidden dark:block">
         </NuxtLink>
         <div class="flex items-center gap-2">
           <UColorModeButton variant="ghost" size="xs" />
@@ -111,12 +111,12 @@ function isActive(href: string) {
               src="/pulpulitiko.png"
               alt="Pulpulitiko"
               class="h-7 w-auto dark:hidden"
-            />
+            >
             <img
               src="/pulpulitiko_dark.png"
               alt="Pulpulitiko"
               class="h-7 w-auto hidden dark:block"
-            />
+            >
             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Admin</span>
           </NuxtLink>
           <!-- Close button for mobile -->
@@ -216,12 +216,12 @@ function isActive(href: string) {
               src="/pulpulitiko.png"
               alt="Pulpulitiko"
               class="h-7 w-auto dark:hidden"
-            />
+            >
             <img
               src="/pulpulitiko_dark.png"
               alt="Pulpulitiko"
               class="h-7 w-auto hidden dark:block"
-            />
+            >
             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Admin</span>
           </NuxtLink>
         </div>
