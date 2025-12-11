@@ -92,7 +92,9 @@ useSeoMeta({
         :columns="columns"
       >
         <template #name-cell="{ row }">
-          <p class="font-medium text-gray-900 dark:text-white">{{ row.original.name }}</p>
+          <NuxtLink :to="`/admin/categories/${row.original.id}`" class="block">
+            <p class="font-medium text-gray-900 dark:text-white hover:text-primary">{{ row.original.name }}</p>
+          </NuxtLink>
         </template>
 
         <template #slug-cell="{ row }">

@@ -103,7 +103,7 @@ useSeoMeta({
         class="flex-1"
       >
         <template #name-cell="{ row }">
-          <div class="flex items-center gap-3">
+          <NuxtLink :to="`/admin/users/${row.original.id}`" class="flex items-center gap-3">
             <UAvatar
               v-if="row.original.avatar"
               :src="row.original.avatar"
@@ -112,10 +112,10 @@ useSeoMeta({
             />
             <UAvatar v-else :alt="row.original.name" size="sm" />
             <div>
-              <p class="font-medium text-gray-900 dark:text-white">{{ row.original.name }}</p>
+              <p class="font-medium text-gray-900 dark:text-white hover:text-primary">{{ row.original.name }}</p>
               <p class="text-sm text-gray-500">{{ row.original.slug }}</p>
             </div>
-          </div>
+          </NuxtLink>
         </template>
 
         <template #email-cell="{ row }">

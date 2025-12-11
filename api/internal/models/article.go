@@ -50,6 +50,8 @@ type ArticleListItem struct {
 	CreatedAt     time.Time     `json:"created_at"`
 
 	AuthorName            *string `json:"author_name,omitempty"`
+	AuthorSlug            *string `json:"author_slug,omitempty"`
+	AuthorAvatar          *string `json:"author_avatar,omitempty"`
 	CategoryName          *string `json:"category_name,omitempty"`
 	CategorySlug          *string `json:"category_slug,omitempty"`
 	PrimaryPoliticianName *string `json:"primary_politician_name,omitempty"`

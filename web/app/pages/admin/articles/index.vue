@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ArticleListItem, PaginatedArticles, ApiResponse } from '~/types'
+import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
   layout: 'admin',
@@ -16,7 +17,7 @@ const articles = ref<ArticleListItem[]>([])
 const totalPages = ref(1)
 const error = ref('')
 
-const columns = [
+const columns: TableColumn<ArticleListItem>[] = [
   { accessorKey: 'title', header: 'Title' },
   { accessorKey: 'category_name', header: 'Category' },
   { accessorKey: 'status', header: 'Status' },
@@ -97,13 +98,12 @@ useSeoMeta({
         v-else-if="articles.length"
         :data="articles"
         :columns="columns"
-        class="flex-1"
       >
         <template #title-cell="{ row }">
-          <div>
-            <p class="font-medium text-gray-900 dark:text-white">{{ row.original.title }}</p>
-            <p class="text-sm text-gray-500">{{ row.original.slug }}</p>
-          </div>
+          <NuxtLink :to="`/admin/articles/${row.original.id}`" class="block min-w-0">
+            <p class="font-medium text-gray-900 dark:text-white truncate hover:text-primary">{{ row.original.title }}</p>
+            <p class="text-sm text-gray-500 truncate">{{ row.original.slug }}</p>
+          </NuxtLink>
         </template>
 
         <template #category_name-cell="{ row }">
@@ -119,7 +119,7 @@ useSeoMeta({
         </template>
 
         <template #published_at-cell="{ row }">
-          <span class="text-gray-600 dark:text-gray-400 text-sm">
+          <span class="text-gray-600 dark:text-gray-400 text-sm whitespace-nowrap">
             {{ row.original.published_at ? new Date(row.original.published_at).toLocaleDateString() : '-' }}
           </span>
         </template>

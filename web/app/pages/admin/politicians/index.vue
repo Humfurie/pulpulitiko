@@ -130,10 +130,10 @@ useSeoMeta({
         </template>
 
         <template #name-cell="{ row }">
-          <div>
-            <p class="font-medium text-gray-900 dark:text-white">{{ row.original.name }}</p>
+          <NuxtLink :to="`/admin/politicians/${row.original.id}`" class="block">
+            <p class="font-medium text-gray-900 dark:text-white hover:text-primary">{{ row.original.name }}</p>
             <p class="text-sm text-gray-500">{{ row.original.slug }}</p>
-          </div>
+          </NuxtLink>
         </template>
 
         <template #position-cell="{ row }">

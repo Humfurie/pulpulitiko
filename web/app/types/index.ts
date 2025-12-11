@@ -208,6 +208,8 @@ export interface ArticleListItem {
   published_at?: string
   created_at: string
   author_name?: string
+  author_slug?: string
+  author_avatar?: string
   category_name?: string
   category_slug?: string
   primary_politician_name?: string

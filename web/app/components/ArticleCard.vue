@@ -239,8 +239,26 @@ function handleMouseLeave() {
       </p>
 
       <div v-if="article.author_name" class="mt-4 pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+        <NuxtLink v-if="article.author_slug" :to="`/author/${article.author_slug}`" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <UAvatar
+            v-if="article.author_avatar"
+            :src="article.author_avatar"
+            :alt="article.author_name"
+            size="sm"
+          />
+          <div v-else class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+            <UIcon name="i-heroicons-user" class="w-4 h-4 text-orange-500" />
+          </div>
+          <span class="text-sm font-medium text-stone-700 dark:text-stone-300">{{ article.author_name }}</span>
+        </NuxtLink>
+        <div v-else class="flex items-center gap-2">
+          <UAvatar
+            v-if="article.author_avatar"
+            :src="article.author_avatar"
+            :alt="article.author_name"
+            size="sm"
+          />
+          <div v-else class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
             <UIcon name="i-heroicons-user" class="w-4 h-4 text-orange-500" />
           </div>
           <span class="text-sm font-medium text-stone-700 dark:text-stone-300">{{ article.author_name }}</span>
