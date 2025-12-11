@@ -65,7 +65,7 @@ function handleMouseLeave() {
         <UIcon name="i-heroicons-newspaper" class="w-20 h-20 text-orange-300 dark:text-orange-700 animate-float-slow" />
       </div>
       <!-- Gradient overlay with warm tones -->
-      <div class="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-stone-900/40 to-transparent group-hover:from-orange-950/90 transition-colors duration-500" />
+      <div class="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/60 to-stone-900/20 group-hover:from-orange-950/95 transition-colors duration-500" />
     </NuxtLink>
 
     <!-- Decorative elements -->
@@ -76,7 +76,7 @@ function handleMouseLeave() {
     <!-- Content overlay -->
     <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10 transform group-hover:translate-y-0 translate-y-2 transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]">
       <div class="flex items-center gap-3 mb-4">
-        <span v-if="article.published_at" class="px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-white/90 text-sm font-medium border border-white/10">
+        <span v-if="article.published_at" class="px-4 py-1.5 bg-stone-800/70 backdrop-blur-md rounded-full text-white text-sm font-medium border border-stone-700/50">
           {{ formatDate(article.published_at) }}
         </span>
         <NuxtLink
@@ -88,13 +88,13 @@ function handleMouseLeave() {
         </NuxtLink>
       </div>
       <NuxtLink :to="`/article/${article.slug}`">
-        <h2 class="text-2xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 tracking-tight">
+        <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 tracking-tight">
           <span class="bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat bg-left-bottom group-hover:bg-[length:100%_2px] transition-all duration-500">
             {{ article.title }}
           </span>
         </h2>
       </NuxtLink>
-      <p v-if="article.summary" class="text-white/70 text-base md:text-lg line-clamp-2 max-w-3xl group-hover:text-white/90 transition-colors duration-300">
+      <p v-if="article.summary" class="text-white/90 text-base md:text-lg line-clamp-2 max-w-3xl group-hover:text-white transition-colors duration-300">
         {{ article.summary }}
       </p>
     </div>

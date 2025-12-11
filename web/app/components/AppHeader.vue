@@ -286,7 +286,7 @@ onMounted(() => {
             </UButton>
 
             <template #content>
-              <div class="w-80 max-h-96 overflow-hidden">
+              <div class="w-[calc(100vw-2rem)] sm:w-80 max-h-96 overflow-hidden">
                 <!-- Header -->
                 <div class="flex items-center justify-between px-4 py-3 border-b border-stone-200 dark:border-stone-700">
                   <h3 class="font-semibold text-stone-800 dark:text-stone-200">Notifications</h3>

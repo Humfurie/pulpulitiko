@@ -281,11 +281,11 @@ defineExpose({ loadReplies })
 </script>
 
 <template>
-  <div :class="['group', isReply ? 'relative pl-8 mt-4' : '']">
+  <div :class="['group', isReply ? 'relative pl-4 sm:pl-8 mt-4' : '']">
     <!-- Vertical connector line for replies -->
     <div
       v-if="isReply"
-      class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"
+      class="absolute left-2 sm:left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"
     />
 
     <div class="flex gap-3">

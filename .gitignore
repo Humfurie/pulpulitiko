@@ -2,3 +2,7 @@
 
 # Build artifacts
 api/server
+/.idea/remote-targets.xml
+/.idea/webServers.xml
+/.idea/deployment.xml
+/.playwright-mcp/

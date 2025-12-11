@@ -351,109 +351,109 @@ useHead({
   </div>
 </template>
 
-<style scoped>
+<style>
 /* Article Content Styling - Improved contrast */
 .article-content {
-  color: #1f2937;
+  color: #374151;
 }
 
-:global(.dark) .article-content {
-  color: #e5e7eb !important;
+.dark .article-content {
+  color: #d1d5db !important;
 }
 
 /* Force override inline styles in dark mode */
-:global(.dark) .article-content :deep(*) {
+.dark .article-content * {
   color: inherit !important;
 }
 
-:global(.dark) .article-content :deep(a) {
+.dark .article-content a {
   color: var(--ui-primary) !important;
 }
 
-.article-content :deep(h1),
-.article-content :deep(h2),
-.article-content :deep(h3),
-.article-content :deep(h4),
-.article-content :deep(h5),
-.article-content :deep(h6) {
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
   font-weight: 700;
   color: #111827;
   margin-top: 2.5rem;
   margin-bottom: 1rem;
 }
 
-:global(.dark) .article-content :deep(h1),
-:global(.dark) .article-content :deep(h2),
-:global(.dark) .article-content :deep(h3),
-:global(.dark) .article-content :deep(h4),
-:global(.dark) .article-content :deep(h5),
-:global(.dark) .article-content :deep(h6) {
+.dark .article-content h1,
+.dark .article-content h2,
+.dark .article-content h3,
+.dark .article-content h4,
+.dark .article-content h5,
+.dark .article-content h6 {
   color: #f9fafb;
 }
 
-.article-content :deep(h2) {
+.article-content h2 {
   font-size: 1.875rem;
   line-height: 2.25rem;
 }
 
-.article-content :deep(h3) {
+.article-content h3 {
   font-size: 1.5rem;
   line-height: 2rem;
 }
 
-.article-content :deep(p) {
+.article-content p {
   font-size: 1.125rem;
   line-height: 1.85;
   margin-bottom: 1.5rem;
 }
 
-.article-content :deep(a) {
+.article-content a {
   color: var(--ui-primary);
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.article-content :deep(a:hover) {
+.article-content a:hover {
   opacity: 0.8;
 }
 
-.article-content :deep(strong) {
+.article-content strong {
   font-weight: 600;
   color: #111827;
 }
 
-:global(.dark) .article-content :deep(strong) {
+.dark .article-content strong {
   color: #f9fafb;
 }
 
-.article-content :deep(em) {
+.article-content em {
   font-style: italic;
 }
 
-.article-content :deep(ul),
-.article-content :deep(ol) {
+.article-content ul,
+.article-content ol {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
   padding-left: 1.5rem;
 }
 
-.article-content :deep(li) {
+.article-content li {
   margin-bottom: 0.75rem;
   font-size: 1.125rem;
   line-height: 1.75;
 }
 
-.article-content :deep(ul li) {
+.article-content ul li {
   list-style-type: disc;
 }
 
-.article-content :deep(ol li) {
+.article-content ol li {
   list-style-type: decimal;
 }
 
 /* Blockquote - Better contrast in dark mode */
-.article-content :deep(blockquote) {
+.article-content blockquote {
   position: relative;
   margin: 2rem 0;
   padding: 1.5rem 2rem;
@@ -464,19 +464,19 @@ useHead({
   color: #374151;
 }
 
-:global(.dark) .article-content :deep(blockquote) {
+.dark .article-content blockquote {
   background-color: #1f2937;
   color: #e5e7eb;
 }
 
-.article-content :deep(blockquote p) {
+.article-content blockquote p {
   font-size: 1.25rem;
   line-height: 1.75rem;
   margin-bottom: 0;
   color: inherit;
 }
 
-.article-content :deep(blockquote)::before {
+.article-content blockquote::before {
   content: '"';
   position: absolute;
   top: -0.5rem;
@@ -488,17 +488,17 @@ useHead({
 }
 
 /* Images */
-.article-content :deep(img) {
+.article-content img {
   border-radius: 0.75rem;
   margin: 2rem 0;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.article-content :deep(figure) {
+.article-content figure {
   margin: 2rem 0;
 }
 
-.article-content :deep(figcaption) {
+.article-content figcaption {
   text-align: center;
   font-size: 0.875rem;
   color: #6b7280;
@@ -506,12 +506,12 @@ useHead({
   font-style: italic;
 }
 
-:global(.dark) .article-content :deep(figcaption) {
+.dark .article-content figcaption {
   color: #d1d5db;
 }
 
 /* Code blocks */
-.article-content :deep(pre) {
+.article-content pre {
   margin: 1.5rem 0;
   padding: 1rem;
   background-color: #1f2937;
@@ -520,12 +520,12 @@ useHead({
   font-size: 0.875rem;
 }
 
-:global(.dark) .article-content :deep(pre) {
+.dark .article-content pre {
   background-color: #111827;
   border: 1px solid #374151;
 }
 
-.article-content :deep(code) {
+.article-content code {
   font-size: 0.875rem;
   background-color: #f3f4f6;
   padding: 0.125rem 0.375rem;
@@ -533,36 +533,36 @@ useHead({
   color: #dc2626;
 }
 
-:global(.dark) .article-content :deep(code) {
+.dark .article-content code {
   background-color: #374151;
   color: #fbbf24;
 }
 
-.article-content :deep(pre code) {
+.article-content pre code {
   background-color: transparent;
   padding: 0;
   color: #e5e7eb;
 }
 
 /* Horizontal rule */
-.article-content :deep(hr) {
+.article-content hr {
   margin: 2.5rem 0;
   border-color: #e5e7eb;
 }
 
-:global(.dark) .article-content :deep(hr) {
+.dark .article-content hr {
   border-color: #374151;
 }
 
 /* Tables */
-.article-content :deep(table) {
+.article-content table {
   width: 100%;
   margin: 1.5rem 0;
   font-size: 0.875rem;
   border-collapse: collapse;
 }
 
-.article-content :deep(th) {
+.article-content th {
   background-color: #f3f4f6;
   padding: 0.75rem 1rem;
   text-align: left;
@@ -571,28 +571,28 @@ useHead({
   border-bottom: 2px solid #e5e7eb;
 }
 
-:global(.dark) .article-content :deep(th) {
+.dark .article-content th {
   background-color: #1f2937;
   color: #f9fafb;
   border-bottom-color: #374151;
 }
 
-.article-content :deep(td) {
+.article-content td {
   border-bottom: 1px solid #e5e7eb;
   padding: 0.75rem 1rem;
   color: #374151;
 }
 
-:global(.dark) .article-content :deep(td) {
+.dark .article-content td {
   border-bottom-color: #374151;
   color: #e5e7eb;
 }
 
-.article-content :deep(tr:hover td) {
+.article-content tr:hover td {
   background-color: #f9fafb;
 }
 
-:global(.dark) .article-content :deep(tr:hover td) {
+.dark .article-content tr:hover td {
   background-color: #1f2937;
 }
 </style>

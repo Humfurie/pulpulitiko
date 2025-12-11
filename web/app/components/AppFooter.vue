@@ -11,7 +11,7 @@ const { data: categories } = await useAsyncData('footer-categories', () => api.g
     <div class="absolute top-0 right-0 w-64 h-64 bg-orange-200/20 dark:bg-orange-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
     <UContainer class="py-16 relative">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-12">
         <!-- Brand -->
         <div class="md:col-span-2">
           <NuxtLink to="/" class="inline-block group">

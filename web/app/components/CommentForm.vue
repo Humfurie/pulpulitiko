@@ -399,7 +399,7 @@ function handleCancel() {
         <!-- Mention dropdown -->
         <div
           v-if="showMentionDropdown && filteredMentionUsers.length > 0"
-          class="mention-dropdown absolute z-50 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-48 overflow-y-auto"
+          class="mention-dropdown absolute z-50 mt-1 w-full sm:w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-48 overflow-y-auto"
         >
           <button
             v-for="(user, index) in filteredMentionUsers"
@@ -509,7 +509,7 @@ function handleCancel() {
             <!-- Emoji picker dropdown -->
             <div
               v-if="showEmojiPicker"
-              class="absolute bottom-full left-0 mb-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
+              class="absolute bottom-full left-0 mb-2 w-full sm:w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
               @click.stop
             >
               <!-- Category tabs -->

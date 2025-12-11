@@ -244,7 +244,7 @@ onUnmounted(() => {
 
 <template>
   <!-- Hide support chat for admins - they use the admin messages page -->
-  <div v-if="!auth.isAdmin.value" class="fixed bottom-4 right-4 z-50">
+  <div v-if="!auth.isAdmin.value" class="fixed bottom-4 right-4 z-[9999] safe-area-bottom">
     <!-- Chat Button -->
     <Transition
       enter-active-class="transition ease-out duration-200"
@@ -637,5 +637,14 @@ onUnmounted(() => {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+/* Safe area handling for mobile devices with notches/gesture navigation */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+  }
 }
 </style>
