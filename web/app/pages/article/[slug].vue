@@ -352,13 +352,22 @@ useHead({
 </template>
 
 <style scoped>
-/* Article Content Styling - Lively inspired */
+/* Article Content Styling - Improved contrast */
 .article-content {
-  color: #374151;
+  color: #1f2937;
 }
 
 :global(.dark) .article-content {
-  color: #d1d5db;
+  color: #e5e7eb !important;
+}
+
+/* Force override inline styles in dark mode */
+:global(.dark) .article-content :deep(*) {
+  color: inherit !important;
+}
+
+:global(.dark) .article-content :deep(a) {
+  color: var(--ui-primary) !important;
 }
 
 .article-content :deep(h1),
@@ -379,7 +388,7 @@ useHead({
 :global(.dark) .article-content :deep(h4),
 :global(.dark) .article-content :deep(h5),
 :global(.dark) .article-content :deep(h6) {
-  color: #ffffff;
+  color: #f9fafb;
 }
 
 .article-content :deep(h2) {
@@ -394,17 +403,19 @@ useHead({
 
 .article-content :deep(p) {
   font-size: 1.125rem;
-  line-height: 1.75rem;
+  line-height: 1.85;
   margin-bottom: 1.5rem;
 }
 
 .article-content :deep(a) {
   color: var(--ui-primary);
   font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .article-content :deep(a:hover) {
-  text-decoration: underline;
+  opacity: 0.8;
 }
 
 .article-content :deep(strong) {
@@ -413,7 +424,7 @@ useHead({
 }
 
 :global(.dark) .article-content :deep(strong) {
-  color: #ffffff;
+  color: #f9fafb;
 }
 
 .article-content :deep(em) {
@@ -430,6 +441,7 @@ useHead({
 .article-content :deep(li) {
   margin-bottom: 0.75rem;
   font-size: 1.125rem;
+  line-height: 1.75;
 }
 
 .article-content :deep(ul li) {
@@ -440,27 +452,28 @@ useHead({
   list-style-type: decimal;
 }
 
-/* Blockquote - Lively style with left accent */
+/* Blockquote - Better contrast in dark mode */
 .article-content :deep(blockquote) {
   position: relative;
   margin: 2rem 0;
   padding: 1.5rem 2rem;
-  background-color: #f9fafb;
+  background-color: #f3f4f6;
   border-radius: 0.75rem;
   border-left: 4px solid var(--ui-primary);
   font-style: italic;
-  color: #4b5563;
+  color: #374151;
 }
 
 :global(.dark) .article-content :deep(blockquote) {
-  background-color: #111827;
-  color: #9ca3af;
+  background-color: #1f2937;
+  color: #e5e7eb;
 }
 
 .article-content :deep(blockquote p) {
   font-size: 1.25rem;
   line-height: 1.75rem;
   margin-bottom: 0;
+  color: inherit;
 }
 
 .article-content :deep(blockquote)::before {
@@ -470,7 +483,7 @@ useHead({
   left: 1rem;
   font-size: 3.75rem;
   color: var(--ui-primary);
-  opacity: 0.2;
+  opacity: 0.3;
   font-family: serif;
 }
 
@@ -494,21 +507,22 @@ useHead({
 }
 
 :global(.dark) .article-content :deep(figcaption) {
-  color: #9ca3af;
+  color: #d1d5db;
 }
 
 /* Code blocks */
 .article-content :deep(pre) {
   margin: 1.5rem 0;
   padding: 1rem;
-  background-color: #111827;
+  background-color: #1f2937;
   border-radius: 0.75rem;
   overflow-x: auto;
   font-size: 0.875rem;
 }
 
 :global(.dark) .article-content :deep(pre) {
-  background-color: #1f2937;
+  background-color: #111827;
+  border: 1px solid #374151;
 }
 
 .article-content :deep(code) {
@@ -516,17 +530,18 @@ useHead({
   background-color: #f3f4f6;
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
-  color: var(--ui-primary);
+  color: #dc2626;
 }
 
 :global(.dark) .article-content :deep(code) {
-  background-color: #1f2937;
+  background-color: #374151;
+  color: #fbbf24;
 }
 
 .article-content :deep(pre code) {
   background-color: transparent;
   padding: 0;
-  color: #f3f4f6;
+  color: #e5e7eb;
 }
 
 /* Horizontal rule */
@@ -536,7 +551,7 @@ useHead({
 }
 
 :global(.dark) .article-content :deep(hr) {
-  border-color: #1f2937;
+  border-color: #374151;
 }
 
 /* Tables */
@@ -544,6 +559,7 @@ useHead({
   width: 100%;
   margin: 1.5rem 0;
   font-size: 0.875rem;
+  border-collapse: collapse;
 }
 
 .article-content :deep(th) {
@@ -552,19 +568,31 @@ useHead({
   text-align: left;
   font-weight: 600;
   color: #111827;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 :global(.dark) .article-content :deep(th) {
   background-color: #1f2937;
-  color: #ffffff;
+  color: #f9fafb;
+  border-bottom-color: #374151;
 }
 
 .article-content :deep(td) {
   border-bottom: 1px solid #e5e7eb;
   padding: 0.75rem 1rem;
+  color: #374151;
 }
 
 :global(.dark) .article-content :deep(td) {
   border-bottom-color: #374151;
+  color: #e5e7eb;
+}
+
+.article-content :deep(tr:hover td) {
+  background-color: #f9fafb;
+}
+
+:global(.dark) .article-content :deep(tr:hover td) {
+  background-color: #1f2937;
 }
 </style>

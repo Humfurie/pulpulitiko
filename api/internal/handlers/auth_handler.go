@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/humfurie/pulpulitiko/api/internal/middleware"
 	"github.com/humfurie/pulpulitiko/api/internal/models"
 	"github.com/humfurie/pulpulitiko/api/internal/services"
@@ -41,11 +42,20 @@ func (h *AuthHandler) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteSuccess(w, map[string]interface{}{
-		"user_id": claims.UserID,
-		"email":   claims.Email,
-		"role":    claims.Role,
-	})
+	// Fetch full user data from database
+	userID, err := uuid.Parse(claims.UserID)
+	if err != nil {
+		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid user ID")
+		return
+	}
+
+	user, err := h.authService.GetUserByID(r.Context(), userID)
+	if err != nil || user == nil {
+		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "user not found")
+		return
+	}
+
+	WriteSuccess(w, user)
 }
 
 // POST /api/admin/users

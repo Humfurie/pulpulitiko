@@ -86,10 +86,10 @@ useSeoMeta({
             <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-900/20">
               <UIcon name="i-heroicons-tag" class="text-primary-500" />
             </div>
-            <div>
-              <p class="font-medium text-gray-900 dark:text-white">{{ tag.name }}</p>
+            <NuxtLink :to="`/admin/tags/${tag.id}`" class="block">
+              <p class="font-medium text-gray-900 dark:text-white hover:text-primary">{{ tag.name }}</p>
               <p class="text-sm text-gray-500">{{ tag.slug }}</p>
-            </div>
+            </NuxtLink>
           </div>
           <div class="flex items-center gap-2">
             <UButton

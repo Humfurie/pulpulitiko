@@ -261,7 +261,7 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 
 	query := fmt.Sprintf(`
 		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.view_count, a.published_at, a.created_at,
-			   au.name, c.name, c.slug, p.name, p.slug
+			   au.name, au.slug, au.avatar, c.name, c.slug, p.name, p.slug
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id
 		LEFT JOIN categories c ON a.category_id = c.id
@@ -283,7 +283,7 @@ func (r *ArticleRepository) List(ctx context.Context, filter *models.ArticleFilt
 		err := rows.Scan(
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
 			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
-			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+			&article.AuthorName, &article.AuthorSlug, &article.AuthorAvatar, &article.CategoryName, &article.CategorySlug,
 			&article.PrimaryPoliticianName, &article.PrimaryPoliticianSlug,
 		)
 		if err != nil {
@@ -473,7 +473,7 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 
 	query := fmt.Sprintf(`
 		SELECT a.id, a.slug, a.title, a.summary, a.featured_image, a.status, a.view_count, a.published_at, a.created_at,
-			   au.name, c.name, c.slug, p.name, p.slug
+			   au.name, au.slug, au.avatar, c.name, c.slug, p.name, p.slug
 		FROM articles a
 		LEFT JOIN authors au ON a.author_id = au.id AND au.deleted_at IS NULL
 		LEFT JOIN categories c ON a.category_id = c.id AND c.deleted_at IS NULL
@@ -493,7 +493,7 @@ func (r *ArticleRepository) GetByIDs(ctx context.Context, ids []uuid.UUID) ([]mo
 		err := rows.Scan(
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
 			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
-			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+			&article.AuthorName, &article.AuthorSlug, &article.AuthorAvatar, &article.CategoryName, &article.CategorySlug,
 			&article.PrimaryPoliticianName, &article.PrimaryPoliticianSlug,
 		)
 		if err != nil {
@@ -557,6 +557,8 @@ func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uu
 				a.published_at,
 				a.created_at,
 				au.name as author_name,
+				au.slug as author_slug,
+				au.avatar as author_avatar,
 				c.name as category_name,
 				c.slug as category_slug,
 				p.name as primary_politician_name,
@@ -577,7 +579,7 @@ func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uu
 				AND a.deleted_at IS NULL
 		)
 		SELECT id, slug, title, summary, featured_image, status, view_count, published_at, created_at,
-			   author_name, category_name, category_slug, primary_politician_name, primary_politician_slug
+			   author_name, author_slug, author_avatar, category_name, category_slug, primary_politician_name, primary_politician_slug
 		FROM scored_articles
 		WHERE shared_tags > 0 OR same_category = 1
 		ORDER BY shared_tags DESC, same_category DESC, view_count DESC, published_at DESC NULLS LAST
@@ -596,7 +598,7 @@ func (r *ArticleRepository) GetRelatedArticles(ctx context.Context, articleID uu
 		err := rows.Scan(
 			&article.ID, &article.Slug, &article.Title, &article.Summary, &article.FeaturedImage,
 			&article.Status, &article.ViewCount, &article.PublishedAt, &article.CreatedAt,
-			&article.AuthorName, &article.CategoryName, &article.CategorySlug,
+			&article.AuthorName, &article.AuthorSlug, &article.AuthorAvatar, &article.CategoryName, &article.CategorySlug,
 			&article.PrimaryPoliticianName, &article.PrimaryPoliticianSlug,
 		)
 		if err != nil {

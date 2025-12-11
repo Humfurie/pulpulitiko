@@ -1,4 +1,28 @@
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: pulpulitiko-postgres
+    environment:
+      POSTGRES_DB: politics_db
+      POSTGRES_USER: politics
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U politics -d politics_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Internal Redis - Dedicated for Pulpulitiko
   redis:
     image: redis:7-alpine
@@ -29,10 +53,12 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     environment:
       APP_ENV: production
       APP_PORT: "8080"
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgres://politics:${POSTGRES_PASSWORD:-localdev}@postgres:5432/politics_db?sslmode=disable
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: minio.humfurie.org
       MINIO_PUBLIC_ENDPOINT: minio.humfurie.org
@@ -45,7 +71,6 @@ services:
       - "8080"
     restart: always
     networks:
-      - traefik-public
       - proxy
       - default
     deploy:
@@ -65,7 +90,8 @@ services:
       - "traefik.http.routers.pulpulitiko-api.entrypoints=websecure"
       - "traefik.http.routers.pulpulitiko-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.pulpulitiko-api.loadbalancer.server.port=8080"
-      - "traefik.docker.network=traefik-public"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.pulpulitiko-api.priority=2"
 
   # Nuxt Frontend - Production
   web:
@@ -83,7 +109,7 @@ services:
       - api
     restart: always
     networks:
-      - traefik-public
+      - proxy
       - default
     deploy:
       resources:
@@ -91,7 +117,7 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "-q", "--spider", "http://0.0.0.0:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -102,18 +128,16 @@ services:
       - "traefik.http.routers.pulpulitiko-web.entrypoints=websecure"
       - "traefik.http.routers.pulpulitiko-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.pulpulitiko-web.loadbalancer.server.port=3000"
-      - "traefik.docker.network=traefik-public"
+      - "traefik.docker.network=proxy"
       # Lower priority so /api routes go to api service first
       - "traefik.http.routers.pulpulitiko-web.priority=1"
-      - "traefik.http.routers.pulpulitiko-api.priority=2"
 
 networks:
-  traefik-public:
-    external: true
   proxy:
     external: true
   default:
     driver: bridge
 
 volumes:
+  postgres_data:
   redis_data:
