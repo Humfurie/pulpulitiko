@@ -9,8 +9,8 @@ docker compose -f docker-compose.prod.yml up -d
 # Run migrations
 docker exec pulpulitiko-api /usr/local/bin/migrate -path /app/migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
 
-# Run seed
-docker exec -e ADMIN_EMAIL=humfurie@gmail.com -e ADMIN_PASSWORD='@Humfurie143819' -e ADMIN_NAME=Humfurie pulpulitiko-api /app/seed
+# Run seed (set your own admin credentials)
+docker exec -e ADMIN_EMAIL=<email> -e ADMIN_PASSWORD=<password> -e ADMIN_NAME=<name> pulpulitiko-api /app/seed
 
 # View logs
 docker logs -f pulpulitiko-api
@@ -47,7 +47,3 @@ Key variables in `.env`:
 - `JWT_SECRET` - Authentication secret
 - `RESEND_API_KEY` - Email service (optional)
 
-## Admin User
-
-- Email: humfurie@gmail.com
-- Name: Humfurie
