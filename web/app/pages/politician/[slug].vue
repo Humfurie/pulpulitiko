@@ -752,9 +752,13 @@ useHead(() => ({
                       <div class="mt-2 flex items-center gap-2">
                         <!-- Like -->
                         <button
-                          v-if="auth.isAuthenticated.value"
-                          class="text-xs text-gray-500 dark:text-gray-400 hover:text-green-500 flex items-center gap-1 px-2 py-1 rounded-full transition-colors"
-                          :class="{ 'text-green-500 bg-green-50 dark:bg-green-950/30': comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted }"
+                          :class="[
+                            'text-xs flex items-center gap-1 px-2 py-1 rounded-full transition-colors',
+                            comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted
+                              ? 'text-green-500 bg-green-50 dark:bg-green-950/30'
+                              : 'text-gray-500 dark:text-gray-400 hover:text-green-500'
+                          ]"
+                          :disabled="!auth.isAuthenticated.value"
                           @click="toggleReaction(comment.id, 'thumbsup', comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted || false)"
                         >
                           <UIcon name="i-heroicons-hand-thumb-up" class="w-4 h-4" />
@@ -763,9 +767,13 @@ useHead(() => ({
 
                         <!-- Dislike -->
                         <button
-                          v-if="auth.isAuthenticated.value"
-                          class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 flex items-center gap-1 px-2 py-1 rounded-full transition-colors"
-                          :class="{ 'text-red-500 bg-red-50 dark:bg-red-950/30': comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted }"
+                          :class="[
+                            'text-xs flex items-center gap-1 px-2 py-1 rounded-full transition-colors',
+                            comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted
+                              ? 'text-red-500 bg-red-50 dark:bg-red-950/30'
+                              : 'text-gray-500 dark:text-gray-400 hover:text-red-500'
+                          ]"
+                          :disabled="!auth.isAuthenticated.value"
                           @click="toggleReaction(comment.id, 'thumbsdown', comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted || false)"
                         >
                           <UIcon name="i-heroicons-hand-thumb-down" class="w-4 h-4" />
