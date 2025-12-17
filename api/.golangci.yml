@@ -1,0 +1,169 @@
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+    - third_party
+  skip-files:
+    - ".*_test.go"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  sort-results: true
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Reports suspicious constructs
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Go static analysis
+    - typecheck     # Type-check Go code
+    - unused        # Check for unused constants, variables, functions and types
+
+    # Additional recommended linters
+    - gofmt         # Check whether code was gofmt-ed
+    - goimports     # Check import statements are formatted well
+    - gocritic      # Provides diagnostics that check for bugs, performance and style issues
+    - gosec         # Inspects source code for security problems
+    - misspell      # Finds commonly misspelled English words
+    - unconvert     # Remove unnecessary type conversions
+    - unparam       # Reports unused function parameters
+    - revive        # Fast, configurable, extensible, flexible, and beautiful linter for Go
+    - gocyclo       # Computes and checks the cyclomatic complexity of functions
+    - dupl          # Tool for code clone detection
+    - bodyclose     # Checks whether HTTP response body is closed successfully
+    - noctx         # Finds sending http request without context.Context
+    - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed
+    - rowserrcheck  # Checks whether Err of rows is checked successfully
+    - exportloopref # Checks for pointers to enclosing loop variables
+    - gci           # Controls Go package import order and makes it always deterministic
+
+  disable:
+    - exhaustive    # Can be too strict
+    - exhauststruct # Can be too strict
+    - funlen        # Can be too opinionated
+    - gochecknoglobals # Sometimes globals are necessary
+    - gocognit      # Similar to gocyclo
+    - godox         # Allow TODO comments
+    - gomnd         # Can be too strict about magic numbers
+    - lll           # Line length can be handled by formatters
+    - nlreturn      # Can be too opinionous
+    - wsl           # Whitespace linter can be too strict
+    - testpackage   # Not always necessary to use _test package
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow # Can be too strict
+
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104 # Duplicates errcheck
+    config:
+      G111: # Potential directory traversal
+        exclude_dirs:
+          - test
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  misspell:
+    locale: US
+    ignore-words:
+      - cancelled
+
+  revive:
+    confidence: 0.8
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  gci:
+    sections:
+      - standard # Standard packages
+      - default # Default packages
+      - prefix(github.com/Humfurie/pulpulitiko) # Project packages
+    skip-generated: true
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - gocritic
+
+    # Exclude known issues in generated files
+    - path: mock_.*\.go
+      linters:
+        - all
+
+    # Allow fmt.Println in main.go
+    - path: cmd/.*\.go
+      linters:
+        - forbidigo
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+
+severity:
+  default-severity: warning
+  rules:
+    - linters:
+        - errcheck
+        - gosec
+      severity: error

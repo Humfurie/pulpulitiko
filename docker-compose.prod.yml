@@ -49,6 +49,8 @@ services:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
+      args:
+        GO_VERSION: "1.22"
     container_name: pulpulitiko-api
     depends_on:
       redis:

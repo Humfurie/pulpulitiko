@@ -15,10 +15,15 @@ on:
 env:
   NODE_VERSION: '20'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +45,7 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +67,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [lint, typecheck]
     steps:
       - uses: actions/checkout@v4
@@ -79,8 +86,8 @@ jobs:
       - name: Build
         working-directory: web
         env:
-          NUXT_PUBLIC_API_URL: ${{ vars.NUXT_PUBLIC_API_URL || 'https://api.pulpulitiko.com/api' }}
-          NUXT_PUBLIC_SITE_URL: ${{ vars.NUXT_PUBLIC_SITE_URL || 'https://pulpulitiko.com' }}
+          NUXT_PUBLIC_API_URL: ${{ vars.NUXT_PUBLIC_API_URL || 'https://pulpulitiko.humfurie.org/api' }}
+          NUXT_PUBLIC_SITE_URL: ${{ vars.NUXT_PUBLIC_SITE_URL || 'https://pulpulitiko.humfurie.org' }}
         run: npm run build
 
       - name: Upload artifact
@@ -88,4 +95,34 @@ jobs:
         with:
           name: web-build
           path: web/.output
-          retention-days: 7
+          retention-days: 1
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, typecheck]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/web.Dockerfile
+          push: false
+          load: true
+          tags: pulpulitiko-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker run --rm -d --name web-test -e NUXT_PUBLIC_API_URL=https://pulpulitiko.humfurie.org/api pulpulitiko-web:${{ github.sha }}
+          sleep 10
+          docker logs web-test
+          docker stop web-test || true

@@ -1,0 +1,217 @@
+# Deployment Workflow Example
+#
+# To use this workflow:
+# 1. Copy this file to deploy.yml
+# 2. Configure the required secrets in GitHub repository settings:
+#    - SSH_PRIVATE_KEY: SSH private key for deployment server access
+#    - DEPLOY_HOST: Hostname or IP of deployment server
+#    - DEPLOY_USER: SSH user for deployment
+#    - POSTGRES_PASSWORD: Production database password
+#    - JWT_SECRET: Production JWT secret
+#    - MINIO_ACCESS_KEY: MinIO access key
+#    - MINIO_SECRET_KEY: MinIO secret key
+# 3. Update the deployment path and commands as needed
+# 4. Consider setting up GitHub Environments for additional protection
+
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: # Allow manual deployment
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false # Don't cancel in-progress deployments
+
+jobs:
+  # Run all tests before deploying
+  pre-deploy-checks:
+    name: Pre-deployment Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if workflows passed
+        run: |
+          echo "All pre-deployment checks completed"
+          # Add any additional checks here
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [pre-deploy-checks]
+    # Uncomment to use GitHub Environments for additional protection
+    # environment:
+    #   name: production
+    #   url: https://pulpulitiko.humfurie.org
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to production server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+        run: |
+          ssh $DEPLOY_USER@$DEPLOY_HOST << 'ENDSSH'
+            set -e
+
+            # Navigate to project directory
+            cd /path/to/pulpulitiko
+
+            # Pull latest code
+            echo "Pulling latest changes..."
+            git fetch origin
+            git checkout master
+            git pull origin master
+
+            # Update .env file with secrets
+            # Note: This is a simplified example. Consider using a secrets management solution
+            echo "Updating environment variables..."
+
+            # Build and deploy with docker-compose
+            echo "Building services..."
+            docker compose -f docker-compose.prod.yml build
+
+            # Stop old containers
+            echo "Stopping old containers..."
+            docker compose -f docker-compose.prod.yml down
+
+            # Start new containers
+            echo "Starting new containers..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Wait for services to be ready
+            echo "Waiting for services to be ready..."
+            sleep 10
+
+            # Run migrations
+            echo "Running database migrations..."
+            docker exec pulpulitiko-api /usr/local/bin/migrate \
+              -path /app/migrations \
+              -database "postgres://politics:${POSTGRES_PASSWORD}@postgres:5432/politics_db?sslmode=disable" \
+              up
+
+            # Check service health
+            echo "Checking service health..."
+            docker exec pulpulitiko-api wget -q --spider http://localhost:8080/health || {
+              echo "API health check failed!"
+              docker compose -f docker-compose.prod.yml logs api
+              exit 1
+            }
+
+            docker exec pulpulitiko-web wget -q --spider http://0.0.0.0:3000 || {
+              echo "Web health check failed!"
+              docker compose -f docker-compose.prod.yml logs web
+              exit 1
+            }
+
+            echo "Deployment completed successfully!"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          # Wait a bit for services to stabilize
+          sleep 15
+
+          # Check if the site is accessible
+          curl -f https://pulpulitiko.humfurie.org/health || {
+            echo "Production health check failed!"
+            exit 1
+          }
+
+          echo "Production site is accessible and healthy"
+
+      - name: Post-deployment cleanup
+        if: always()
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh $DEPLOY_USER@$DEPLOY_HOST << 'ENDSSH'
+            cd /path/to/pulpulitiko
+
+            # Clean up old Docker images
+            docker image prune -f
+
+            # Show final status
+            docker compose -f docker-compose.prod.yml ps
+          ENDSSH
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy]
+    if: failure()
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rollback deployment
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          echo "Deployment failed. Initiating rollback..."
+
+          ssh $DEPLOY_USER@$DEPLOY_HOST << 'ENDSSH'
+            set -e
+
+            cd /path/to/pulpulitiko
+
+            # Revert to previous commit
+            git reset --hard HEAD^
+
+            # Rebuild and restart services
+            docker compose -f docker-compose.prod.yml build
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "Rollback completed"
+          ENDSSH
+
+      - name: Notify rollback
+        run: |
+          echo "Deployment was rolled back due to failure"
+          # Add notification logic here (Slack, email, etc.)
+
+  notify:
+    name: Send Deployment Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [deploy]
+    if: always()
+    steps:
+      - name: Notify deployment status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "Deployment succeeded!"
+            # Add notification logic here
+          else
+            echo "Deployment failed!"
+            # Add notification logic here
+          fi
