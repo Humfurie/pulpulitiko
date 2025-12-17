@@ -1,5 +1,5 @@
 # Development Dockerfile for Nuxt with hot reload
-FROM node:22-alpine
+FROM node:25-alpine
 
 WORKDIR /src
 
