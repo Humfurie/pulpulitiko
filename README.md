@@ -72,17 +72,17 @@ pulpulitiko/
 
 4. Build and start all services:
    ```bash
-   docker-compose build
-   docker-compose up -d
+   docker compose build
+   docker compose up -d
    ```
 
 5. Run database migrations and seed:
    ```bash
    # Run migrations
-   docker-compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
+   docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
 
    # Seed the database (creates admin user, roles, categories, tags, sample articles)
-   docker-compose exec api ./seed
+   docker compose exec api ./seed
    ```
 
 6. Access the application:
@@ -99,10 +99,39 @@ If you didn't customize the `.env` file:
 
 ### Database Commands
 
+**Using Makefile (Recommended - Laravel-style):**
 ```bash
+cd api
+
+# Run migrations
+make migrate-up
+
 # Fresh migration (drop all tables and re-migrate)
-docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" drop -f
+make migrate-fresh
+
+# Fresh migration + seed
+make migrate-fresh-seed
+
+# Check migration version
+make migrate-version
+
+# Rollback one migration
+make migrate-down
+
+# Build seed binary
+make build
+```
+
+**Using Docker (Full commands):**
+```bash
+# Run migrations
 docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
+
+# Fresh migration (drop all tables and re-migrate)
+docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" down -all
+docker compose exec api migrate -path ./migrations -database "postgres://politics:localdev@postgres:5432/politics_db?sslmode=disable" up
+
+# Seed the database
 docker compose exec api ./seed
 
 # Check migration version

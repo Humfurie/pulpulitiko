@@ -752,10 +752,13 @@ useHead(() => ({
                       <div class="mt-2 flex items-center gap-2">
                         <!-- Like -->
                         <button
-                          v-if="auth.isAuthenticated.value"
                           class="text-xs text-gray-500 dark:text-gray-400 hover:text-green-500 flex items-center gap-1 px-2 py-1 rounded-full transition-colors"
-                          :class="{ 'text-green-500 bg-green-50 dark:bg-green-950/30': comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted }"
-                          @click="toggleReaction(comment.id, 'thumbsup', comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted || false)"
+                          :class="{
+                            'text-green-500 bg-green-50 dark:bg-green-950/30': comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted,
+                            'cursor-not-allowed opacity-60': !auth.isAuthenticated.value
+                          }"
+                          :title="!auth.isAuthenticated.value ? 'Sign in to react' : ''"
+                          @click="auth.isAuthenticated.value ? toggleReaction(comment.id, 'thumbsup', comment.reactions?.find(r => r.reaction === 'thumbsup')?.has_reacted || false) : $router.push('/login')"
                         >
                           <UIcon name="i-heroicons-hand-thumb-up" class="w-4 h-4" />
                           <span v-if="getReactionCount(comment, 'thumbsup') > 0">{{ formatCount(getReactionCount(comment, 'thumbsup')) }}</span>
@@ -763,10 +766,13 @@ useHead(() => ({
 
                         <!-- Dislike -->
                         <button
-                          v-if="auth.isAuthenticated.value"
                           class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 flex items-center gap-1 px-2 py-1 rounded-full transition-colors"
-                          :class="{ 'text-red-500 bg-red-50 dark:bg-red-950/30': comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted }"
-                          @click="toggleReaction(comment.id, 'thumbsdown', comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted || false)"
+                          :class="{
+                            'text-red-500 bg-red-50 dark:bg-red-950/30': comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted,
+                            'cursor-not-allowed opacity-60': !auth.isAuthenticated.value
+                          }"
+                          :title="!auth.isAuthenticated.value ? 'Sign in to react' : ''"
+                          @click="auth.isAuthenticated.value ? toggleReaction(comment.id, 'thumbsdown', comment.reactions?.find(r => r.reaction === 'thumbsdown')?.has_reacted || false) : $router.push('/login')"
                         >
                           <UIcon name="i-heroicons-hand-thumb-down" class="w-4 h-4" />
                           <span v-if="getReactionCount(comment, 'thumbsdown') > 0">{{ formatCount(getReactionCount(comment, 'thumbsdown')) }}</span>
@@ -774,9 +780,10 @@ useHead(() => ({
 
                         <!-- Reply button -->
                         <button
-                          v-if="auth.isAuthenticated.value"
                           class="text-xs text-gray-500 dark:text-gray-400 hover:text-primary flex items-center gap-1"
-                          @click="startReply(comment.id)"
+                          :class="{ 'cursor-not-allowed opacity-60': !auth.isAuthenticated.value }"
+                          :title="!auth.isAuthenticated.value ? 'Sign in to reply' : ''"
+                          @click="auth.isAuthenticated.value ? startReply(comment.id) : $router.push('/login')"
                         >
                           <UIcon name="i-heroicons-chat-bubble-left" class="w-4 h-4" />
                           Reply

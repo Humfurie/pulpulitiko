@@ -244,7 +244,11 @@ onUnmounted(() => {
 
 <template>
   <!-- Hide support chat for admins - they use the admin messages page -->
-  <div v-if="!auth.isAdmin.value" class="fixed bottom-4 right-4 z-[9999] safe-area-bottom">
+  <div
+    v-if="!auth.isAdmin.value"
+    class="fixed z-[9999] safe-area-bottom"
+    :class="isOpen ? 'inset-0 md:bottom-4 md:right-4 md:inset-auto' : 'bottom-4 right-4'"
+  >
     <!-- Chat Button -->
     <Transition
       enter-active-class="transition ease-out duration-200"
@@ -286,10 +290,10 @@ onUnmounted(() => {
     >
       <div
         v-if="isOpen && auth.isAuthenticated.value"
-        class="absolute bottom-0 right-0 w-[380px] h-[520px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden"
+        class="absolute inset-0 md:bottom-0 md:right-0 md:inset-auto w-full md:w-[380px] h-full md:h-[520px] bg-white dark:bg-gray-900 md:rounded-2xl shadow-2xl border-0 md:border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden"
       >
         <!-- Header -->
-        <div class="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-3">
+        <div class="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-4 py-3 pt-safe">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -646,5 +650,9 @@ onUnmounted(() => {
   .safe-area-bottom {
     bottom: calc(1rem + env(safe-area-inset-bottom, 0));
   }
+}
+/* Safe area top padding for notch devices */
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
 }
 </style>
