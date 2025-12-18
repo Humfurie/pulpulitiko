@@ -50,7 +50,7 @@ services:
       context: .
       dockerfile: docker/api.Dockerfile
       args:
-        GO_VERSION: "1.22"
+        GO_VERSION: "1.24"
     container_name: pulpulitiko-api
     depends_on:
       redis:
@@ -94,6 +94,12 @@ services:
       - "traefik.http.services.pulpulitiko-api.loadbalancer.server.port=8080"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.pulpulitiko-api.priority=2"
+      # Upload handling - increase timeout and buffering
+      - "traefik.http.middlewares.pulpulitiko-api-buffering.buffering.maxRequestBodyBytes=52428800"
+      - "traefik.http.middlewares.pulpulitiko-api-buffering.buffering.memRequestBodyBytes=2097152"
+      - "traefik.http.middlewares.pulpulitiko-api-buffering.buffering.retryExpression=IsNetworkError() && Attempts() < 2"
+      - "traefik.http.routers.pulpulitiko-api.middlewares=pulpulitiko-api-buffering"
+      - "traefik.http.services.pulpulitiko-api.loadbalancer.responseforwarding.flushinterval=100ms"
 
   # Nuxt Frontend - Production
   web:

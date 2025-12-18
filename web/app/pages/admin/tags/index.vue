@@ -97,14 +97,18 @@ useSeoMeta({
               variant="ghost"
               size="sm"
               icon="i-heroicons-pencil"
-            />
+            >
+              Edit
+            </UButton>
             <UButton
               variant="ghost"
               size="sm"
               color="error"
               icon="i-heroicons-trash"
               @click="deleteTag(tag.id)"
-            />
+            >
+              Delete
+            </UButton>
           </div>
         </div>
       </div>
