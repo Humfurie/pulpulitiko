@@ -10,14 +10,14 @@ ENV NUXT_PUBLIC_API_URL=${NUXT_PUBLIC_API_URL}
 # Copy package files
 COPY web/package.json web/package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (ignore scripts since source code isn't copied yet)
+RUN npm ci --ignore-scripts
 
 # Copy source code
 COPY web/ ./
 
-# Build Nuxt app
-RUN npm run build
+# Run postinstall and build
+RUN npm run postinstall && npm run build
 
 # Runtime stage
 FROM node:22-alpine
