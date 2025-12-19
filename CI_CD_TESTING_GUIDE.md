@@ -9,7 +9,8 @@ This document describes the comprehensive testing and CI/CD setup for the Pulpul
 All CI/CD workflows have been fixed and are now fully functional. See [`CI_CD_FIXES.md`](CI_CD_FIXES.md) for detailed information about the fixes.
 
 **Key Changes**:
-- ✅ Fixed Go version in backend-ci.yml (1.23 instead of non-existent 1.24.0)
+- ✅ **CRITICAL**: Fixed `api/go.mod` from Go 1.24.0 to 1.22 (1.24 doesn't exist)
+- ✅ Fixed Go version in backend-ci.yml (1.22 to match go.mod)
 - ✅ Made ESLint step non-blocking in frontend-ci.yml (configured warnings are acceptable)
 - ✅ Created `docker-compose.ci.yml` overlay for integration tests
 - ✅ Fixed port mappings for API and Web services in CI

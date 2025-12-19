@@ -6,13 +6,22 @@ All CI/CD workflows have been fixed and are now ready to run successfully. The f
 
 ## Issues Found and Fixed
 
-### 1. Backend CI Workflow (`.github/workflows/backend-ci.yml`)
+### 1. Backend CI Workflow (`.github/workflows/backend-ci.yml`) ⚠️ CRITICAL
 
-**Issue**: Go version `1.24.0` doesn't exist
-- **Location**: Lines 52 and 155
-- **Error**: `setup-go` action would fail because Go 1.24 hasn't been released yet
-- **Fix**: Changed to Go `1.23` (latest stable version)
-- **Impact**: Backend CI will now properly setup Go environment
+**Issue**: Go version `1.24.0` doesn't exist in both go.mod and CI
+- **Location**:
+  - `api/go.mod` line 3: `go 1.24.0`
+  - `.github/workflows/backend-ci.yml` lines 52 and 155
+- **Error**:
+  ```
+  go: go.mod requires go >= 1.24.0 (running go 1.22.12; GOTOOLCHAIN=local)
+  Error: Process completed with exit code 1.
+  ```
+- **Root Cause**: Go 1.24 hasn't been released yet (latest is 1.22.x)
+- **Fix**:
+  1. Changed `api/go.mod` from `go 1.24.0` to `go 1.22`
+  2. Changed CI workflow to use Go `1.22` (matching go.mod)
+- **Impact**: Backend CI will now properly build and test
 
 **Additional Fix**: Corrected `working-directory` path
 - **Location**: Line 161
@@ -167,11 +176,12 @@ Approximately **12-20 minutes** (jobs run in parallel)
 
 ## Files Modified
 
-1. `.github/workflows/backend-ci.yml` - Fixed Go version (1.23), corrected working-directory
-2. `.github/workflows/frontend-ci.yml` - Made ESLint continue-on-error
-3. `.github/workflows/integration-tests.yml` - Complete rewrite with docker-compose.ci.yml overlay
-4. `docker-compose.test.yml` - Fixed Dockerfile paths, added web port mapping
-5. **Created**: `docker-compose.ci.yml` - New CI overlay configuration
+1. **`api/go.mod`** - ⚠️ CRITICAL: Changed from `go 1.24.0` to `go 1.22`
+2. `.github/workflows/backend-ci.yml` - Fixed Go version (1.22 to match go.mod), corrected working-directory
+3. `.github/workflows/frontend-ci.yml` - Made ESLint continue-on-error
+4. `.github/workflows/integration-tests.yml` - Complete rewrite with docker-compose.ci.yml overlay
+5. `docker-compose.test.yml` - Fixed Dockerfile paths, added web port mapping
+6. **Created**: `docker-compose.ci.yml` - New CI overlay configuration
 
 ## Next Steps
 
