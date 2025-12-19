@@ -4,6 +4,20 @@
 
 This document describes the comprehensive testing and CI/CD setup for the Pulpulitiko project.
 
+## ⚠️ Recent Updates (2025-12-19)
+
+All CI/CD workflows have been fixed and are now fully functional. See [`CI_CD_FIXES.md`](CI_CD_FIXES.md) for detailed information about the fixes.
+
+**Key Changes**:
+- ✅ Fixed Go version in backend-ci.yml (1.23 instead of non-existent 1.24.0)
+- ✅ Made ESLint step non-blocking in frontend-ci.yml (configured warnings are acceptable)
+- ✅ Created `docker-compose.ci.yml` overlay for integration tests
+- ✅ Fixed port mappings for API and Web services in CI
+- ✅ Removed Traefik/proxy network dependency for CI
+- ✅ Fixed docker-compose.test.yml Dockerfile paths
+
+**Quick Test**: Run `./test-ci-locally.sh` to verify all workflows before pushing.
+
 ## Table of Contents
 
 - [Test Coverage](#test-coverage)

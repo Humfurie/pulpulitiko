@@ -35,8 +35,10 @@ services:
 
   api-test:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/api.Dockerfile
+      args:
+        GO_VERSION: "1.22"
     container_name: pulpulitiko-api-test
     environment:
       DATABASE_URL: postgres://politics:testpassword@postgres-test:5432/politics_test_db?sslmode=disable
@@ -62,13 +64,14 @@ services:
 
   web-test:
     build:
-      context: ./web
-      dockerfile: Dockerfile
-      target: test
+      context: .
+      dockerfile: docker/web.Dockerfile
     container_name: pulpulitiko-web-test
     environment:
       NUXT_PUBLIC_API_URL: http://api-test:8080
       NODE_ENV: test
+    ports:
+      - "3001:3000"
     networks:
       - test-network
     command: npm run test:run

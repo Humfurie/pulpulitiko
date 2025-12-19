@@ -49,7 +49,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.0'
+          go-version: '1.23'
           cache-dependency-path: api/go.sum
 
       - name: Cache Go modules
@@ -152,13 +152,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.0'
+          go-version: '1.23'
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
           args: '-exclude-dir=test -exclude-dir=mocks ./...'
-          working-directory: api
+          working-directory: ./api
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
