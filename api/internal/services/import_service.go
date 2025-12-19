@@ -63,7 +63,9 @@ func (s *ImportService) StartImport(ctx context.Context, req *models.ProcessImpo
 	go func() {
 		// Create a new context for async processing (don't use request context)
 		processCtx := context.Background()
-		s.ProcessImport(processCtx, importLog.ID, req.FileData)
+		if err := s.ProcessImport(processCtx, importLog.ID, req.FileData); err != nil {
+			fmt.Printf("Error processing import %s: %v\n", importLog.ID, err)
+		}
 	}()
 
 	return importLog, nil
@@ -72,32 +74,46 @@ func (s *ImportService) StartImport(ctx context.Context, req *models.ProcessImpo
 // ProcessImport processes the import asynchronously
 func (s *ImportService) ProcessImport(ctx context.Context, importLogID uuid.UUID, fileData []byte) error {
 	// Update status to processing
-	s.importRepo.UpdateStatus(ctx, importLogID, "processing")
+	if err := s.importRepo.UpdateStatus(ctx, importLogID, "processing"); err != nil {
+		fmt.Printf("Failed to update import status to processing: %v\n", err)
+	}
 
 	// Parse Excel file
 	rows, err := excel.ParseImportFile(fileData)
 	if err != nil {
-		s.importRepo.UpdateStatus(ctx, importLogID, "failed")
+		if updateErr := s.importRepo.UpdateStatus(ctx, importLogID, "failed"); updateErr != nil {
+			fmt.Printf("Failed to update import status to failed: %v\n", updateErr)
+		}
 		errMsg := fmt.Sprintf("Failed to parse Excel file: %s", err.Error())
-		s.importRepo.UpdateErrorLog(ctx, importLogID, errMsg)
+		if logErr := s.importRepo.UpdateErrorLog(ctx, importLogID, errMsg); logErr != nil {
+			fmt.Printf("Failed to update error log: %v\n", logErr)
+		}
 		return err
 	}
 
 	// Update total rows
-	s.importRepo.UpdateTotalRows(ctx, importLogID, len(rows))
+	if err := s.importRepo.UpdateTotalRows(ctx, importLogID, len(rows)); err != nil {
+		fmt.Printf("Failed to update total rows: %v\n", err)
+	}
 
 	// Validate rows
 	validationResult, err := s.validator.ValidateImportRows(ctx, rows)
 	if err != nil {
-		s.importRepo.UpdateStatus(ctx, importLogID, "failed")
+		if updateErr := s.importRepo.UpdateStatus(ctx, importLogID, "failed"); updateErr != nil {
+			fmt.Printf("Failed to update import status to failed: %v\n", updateErr)
+		}
 		errMsg := fmt.Sprintf("Validation failed: %s", err.Error())
-		s.importRepo.UpdateErrorLog(ctx, importLogID, errMsg)
+		if logErr := s.importRepo.UpdateErrorLog(ctx, importLogID, errMsg); logErr != nil {
+			fmt.Printf("Failed to update error log: %v\n", logErr)
+		}
 		return err
 	}
 
 	// Store validation errors
 	if len(validationResult.Errors) > 0 {
-		s.importRepo.UpdateValidationErrors(ctx, importLogID, validationResult.Errors)
+		if err := s.importRepo.UpdateValidationErrors(ctx, importLogID, validationResult.Errors); err != nil {
+			fmt.Printf("Failed to update validation errors: %v\n", err)
+		}
 	}
 
 	// Process valid rows
@@ -120,17 +136,21 @@ func (s *ImportService) ProcessImport(ctx context.Context, importLogID uuid.UUID
 
 	// Update import log with statistics
 	completedAt := time.Now()
-	s.importRepo.UpdateStatistics(ctx, importLogID, &models.ImportStatistics{
+	if err := s.importRepo.UpdateStatistics(ctx, importLogID, &models.ImportStatistics{
 		SuccessfulImports:  stats.SuccessfulImports,
 		FailedImports:      stats.FailedImports,
 		PoliticiansCreated: stats.PoliticiansCreated,
 		PoliticiansUpdated: stats.PoliticiansUpdated,
 		PositionsArchived:  stats.PositionsArchived,
 		CompletedAt:        &completedAt,
-	})
+	}); err != nil {
+		fmt.Printf("Failed to update import statistics: %v\n", err)
+	}
 
 	// Mark as completed
-	s.importRepo.UpdateStatus(ctx, importLogID, "completed")
+	if err := s.importRepo.UpdateStatus(ctx, importLogID, "completed"); err != nil {
+		fmt.Printf("Failed to update import status to completed: %v\n", err)
+	}
 
 	return nil
 }
