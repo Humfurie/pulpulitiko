@@ -17,8 +17,8 @@ type Region struct {
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 
 	// Relations (populated when needed)
-	Provinces      []Province `json:"provinces,omitempty"`
-	ProvinceCount  int        `json:"province_count,omitempty"`
+	Provinces     []Province `json:"provinces,omitempty"`
+	ProvinceCount int        `json:"province_count,omitempty"`
 }
 
 // Province represents a Philippine province
@@ -33,9 +33,9 @@ type Province struct {
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 
 	// Relations
-	Region               *Region             `json:"region,omitempty"`
-	CitiesMunicipalities []CityMunicipality  `json:"cities_municipalities,omitempty"`
-	CityCount            int                 `json:"city_count,omitempty"`
+	Region               *Region            `json:"region,omitempty"`
+	CitiesMunicipalities []CityMunicipality `json:"cities_municipalities,omitempty"`
+	CityCount            int                `json:"city_count,omitempty"`
 }
 
 // CityMunicipality represents a city or municipality
@@ -47,8 +47,8 @@ type CityMunicipality struct {
 	Slug       string     `json:"slug"`
 	IsCity     bool       `json:"is_city"`
 	IsCapital  bool       `json:"is_capital"`
-	IsHUC      bool       `json:"is_huc"`  // Highly Urbanized City
-	IsICC      bool       `json:"is_icc"`  // Independent Component City
+	IsHUC      bool       `json:"is_huc"` // Highly Urbanized City
+	IsICC      bool       `json:"is_icc"` // Independent Component City
 	Population *int       `json:"population,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
@@ -89,9 +89,9 @@ type CongressionalDistrict struct {
 	DeletedAt          *time.Time `json:"deleted_at,omitempty"`
 
 	// Relations
-	Province         *Province           `json:"province,omitempty"`
-	CityMunicipality *CityMunicipality   `json:"city_municipality,omitempty"`
-	Coverage         []CityMunicipality  `json:"coverage,omitempty"` // Cities/municipalities in this district
+	Province         *Province          `json:"province,omitempty"`
+	CityMunicipality *CityMunicipality  `json:"city_municipality,omitempty"`
+	Coverage         []CityMunicipality `json:"coverage,omitempty"` // Cities/municipalities in this district
 }
 
 // =====================================================
@@ -291,18 +291,18 @@ type PaginatedDistricts struct {
 
 // Bulk Import Request (for PSGC data import)
 type BulkLocationImportRequest struct {
-	Regions            []CreateRegionRequest           `json:"regions,omitempty"`
-	Provinces          []CreateProvinceRequest         `json:"provinces,omitempty"`
+	Regions             []CreateRegionRequest           `json:"regions,omitempty"`
+	Provinces           []CreateProvinceRequest         `json:"provinces,omitempty"`
 	CitiesMunicpalities []CreateCityMunicipalityRequest `json:"cities_municipalities,omitempty"`
-	Barangays          []CreateBarangayRequest         `json:"barangays,omitempty"`
+	Barangays           []CreateBarangayRequest         `json:"barangays,omitempty"`
 }
 
 type BulkImportResult struct {
-	RegionsCreated    int      `json:"regions_created"`
-	ProvincesCreated  int      `json:"provinces_created"`
-	CitiesCreated     int      `json:"cities_created"`
-	BarangaysCreated  int      `json:"barangays_created"`
-	Errors            []string `json:"errors,omitempty"`
+	RegionsCreated   int      `json:"regions_created"`
+	ProvincesCreated int      `json:"provinces_created"`
+	CitiesCreated    int      `json:"cities_created"`
+	BarangaysCreated int      `json:"barangays_created"`
+	Errors           []string `json:"errors,omitempty"`
 }
 
 // Search Result (unified search across all location types)

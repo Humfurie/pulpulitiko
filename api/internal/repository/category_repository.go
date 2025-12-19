@@ -114,6 +114,74 @@ func (r *CategoryRepository) List(ctx context.Context) ([]models.Category, error
 	return categories, nil
 }
 
+func (r *CategoryRepository) AdminList(ctx context.Context, filter *models.CategoryFilter, page, perPage int) (*models.PaginatedCategories, error) {
+	whereClause := "WHERE deleted_at IS NULL"
+	args := []interface{}{}
+	argCount := 0
+
+	if filter.Search != nil && *filter.Search != "" {
+		argCount++
+		whereClause += fmt.Sprintf(" AND (name ILIKE $%d OR slug ILIKE $%d OR description ILIKE $%d)", argCount, argCount, argCount)
+		args = append(args, "%"+*filter.Search+"%")
+	}
+
+	orderClause := "ORDER BY name ASC"
+	if filter.SortBy != nil && *filter.SortBy != "" {
+		sortBy := *filter.SortBy
+		sortOrder := "ASC"
+		if filter.SortOrder != nil && *filter.SortOrder != "" {
+			sortOrder = *filter.SortOrder
+		}
+		if sortBy == "name" || sortBy == "created_at" || sortBy == "slug" {
+			orderClause = fmt.Sprintf("ORDER BY %s %s", sortBy, sortOrder)
+		}
+	}
+
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM categories %s", whereClause)
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count categories: %w", err)
+	}
+
+	offset := (page - 1) * perPage
+	totalPages := (total + perPage - 1) / perPage
+
+	argCount++
+	query := fmt.Sprintf(`
+		SELECT id, name, slug, description, created_at, updated_at
+		FROM categories
+		%s
+		%s
+		LIMIT $%d OFFSET $%d
+	`, whereClause, orderClause, argCount, argCount+1)
+	args = append(args, perPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list categories: %w", err)
+	}
+	defer rows.Close()
+
+	categories := []models.Category{}
+	for rows.Next() {
+		var category models.Category
+		err := rows.Scan(&category.ID, &category.Name, &category.Slug, &category.Description, &category.CreatedAt, &category.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan category: %w", err)
+		}
+		categories = append(categories, category)
+	}
+
+	return &models.PaginatedCategories{
+		Categories: categories,
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: totalPages,
+	}, nil
+}
+
 func (r *CategoryRepository) Update(ctx context.Context, id uuid.UUID, req *models.UpdateCategoryRequest) error {
 	query := `
 		UPDATE categories

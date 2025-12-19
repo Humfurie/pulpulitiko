@@ -67,7 +67,7 @@ watch(showMajorOnly, () => {
               v-if="party.logo"
               class="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white border border-stone-200 dark:border-stone-700"
             >
-              <img :src="party.logo" :alt="party.name" class="w-full h-full object-contain" />
+              <img :src="party.logo" :alt="party.name" class="w-full h-full object-contain" >
             </div>
             <div
               v-else

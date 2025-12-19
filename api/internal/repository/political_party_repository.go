@@ -3,11 +3,13 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/humfurie/pulpulitiko/api/internal/models"
 )
 
 type PoliticalPartyRepository struct {
@@ -321,6 +323,127 @@ func (r *PoliticalPartyRepository) GetPositionBySlug(ctx context.Context, slug s
 	}
 
 	return pos, nil
+}
+
+func (r *PoliticalPartyRepository) CreatePosition(ctx context.Context, req *models.CreateGovernmentPositionRequest) (*models.GovernmentPosition, error) {
+	pos := &models.GovernmentPosition{}
+
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO government_positions (name, slug, level, branch, display_order, description, max_terms, term_years, is_elected)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, name, slug, level, branch, display_order, description, max_terms, term_years, is_elected, created_at, updated_at
+	`, req.Name, req.Slug, req.Level, req.Branch, req.DisplayOrder, req.Description, req.MaxTerms, req.TermYears, req.IsElected).Scan(
+		&pos.ID, &pos.Name, &pos.Slug, &pos.Level, &pos.Branch, &pos.DisplayOrder,
+		&pos.Description, &pos.MaxTerms, &pos.TermYears, &pos.IsElected, &pos.CreatedAt, &pos.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create government position: %w", err)
+	}
+
+	return pos, nil
+}
+
+func (r *PoliticalPartyRepository) UpdatePosition(ctx context.Context, id uuid.UUID, req *models.UpdateGovernmentPositionRequest) (*models.GovernmentPosition, error) {
+	// Build dynamic update query
+	updates := []string{}
+	args := []interface{}{}
+	argCount := 1
+
+	if req.Name != nil {
+		updates = append(updates, fmt.Sprintf("name = $%d", argCount))
+		args = append(args, *req.Name)
+		argCount++
+	}
+	if req.Slug != nil {
+		updates = append(updates, fmt.Sprintf("slug = $%d", argCount))
+		args = append(args, *req.Slug)
+		argCount++
+	}
+	if req.Level != nil {
+		updates = append(updates, fmt.Sprintf("level = $%d", argCount))
+		args = append(args, *req.Level)
+		argCount++
+	}
+	if req.Branch != nil {
+		updates = append(updates, fmt.Sprintf("branch = $%d", argCount))
+		args = append(args, *req.Branch)
+		argCount++
+	}
+	if req.DisplayOrder != nil {
+		updates = append(updates, fmt.Sprintf("display_order = $%d", argCount))
+		args = append(args, *req.DisplayOrder)
+		argCount++
+	}
+	if req.Description != nil {
+		updates = append(updates, fmt.Sprintf("description = $%d", argCount))
+		args = append(args, *req.Description)
+		argCount++
+	}
+	if req.MaxTerms != nil {
+		updates = append(updates, fmt.Sprintf("max_terms = $%d", argCount))
+		args = append(args, *req.MaxTerms)
+		argCount++
+	}
+	if req.TermYears != nil {
+		updates = append(updates, fmt.Sprintf("term_years = $%d", argCount))
+		args = append(args, *req.TermYears)
+		argCount++
+	}
+	if req.IsElected != nil {
+		updates = append(updates, fmt.Sprintf("is_elected = $%d", argCount))
+		args = append(args, *req.IsElected)
+		argCount++
+	}
+
+	if len(updates) == 0 {
+		return r.GetPositionByID(ctx, id)
+	}
+
+	updates = append(updates, fmt.Sprintf("updated_at = $%d", argCount))
+	args = append(args, time.Now())
+	argCount++
+
+	args = append(args, id)
+
+	query := fmt.Sprintf(`
+		UPDATE government_positions
+		SET %s
+		WHERE id = $%d
+		RETURNING id, name, slug, level, branch, display_order, description, max_terms, term_years, is_elected, created_at, updated_at
+	`, strings.Join(updates, ", "), argCount)
+
+	pos := &models.GovernmentPosition{}
+	err := r.db.QueryRow(ctx, query, args...).Scan(
+		&pos.ID, &pos.Name, &pos.Slug, &pos.Level, &pos.Branch, &pos.DisplayOrder,
+		&pos.Description, &pos.MaxTerms, &pos.TermYears, &pos.IsElected, &pos.CreatedAt, &pos.UpdatedAt,
+	)
+
+	if err == pgx.ErrNoRows {
+		return nil, fmt.Errorf("government position not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to update government position: %w", err)
+	}
+
+	return pos, nil
+}
+
+func (r *PoliticalPartyRepository) DeletePosition(ctx context.Context, id uuid.UUID) error {
+	result, err := r.db.Exec(ctx, `
+		DELETE FROM government_positions
+		WHERE id = $1
+	`, id)
+
+	if err != nil {
+		return fmt.Errorf("failed to delete government position: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("government position not found")
+	}
+
+	return nil
 }
 
 // Politician Jurisdiction methods

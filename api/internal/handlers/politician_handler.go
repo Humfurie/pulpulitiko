@@ -103,6 +103,7 @@ func (h *PoliticianHandler) AdminList(w http.ResponseWriter, r *http.Request) {
 
 	search := r.URL.Query().Get("search")
 	party := r.URL.Query().Get("party")
+	partyID := r.URL.Query().Get("party_id")
 
 	filter := &models.PoliticianFilter{}
 	if search != "" {
@@ -110,6 +111,11 @@ func (h *PoliticianHandler) AdminList(w http.ResponseWriter, r *http.Request) {
 	}
 	if party != "" {
 		filter.Party = &party
+	}
+	if partyID != "" {
+		if id, err := uuid.Parse(partyID); err == nil {
+			filter.PartyID = &id
+		}
 	}
 
 	politicians, err := h.politicianService.List(r.Context(), filter, page, perPage)

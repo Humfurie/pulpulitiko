@@ -83,6 +83,10 @@ func (s *CategoryService) List(ctx context.Context) ([]models.Category, error) {
 	return result, nil
 }
 
+func (s *CategoryService) AdminList(ctx context.Context, filter *models.CategoryFilter, page, perPage int) (*models.PaginatedCategories, error) {
+	return s.repo.AdminList(ctx, filter, page, perPage)
+}
+
 func (s *CategoryService) Update(ctx context.Context, id uuid.UUID, req *models.UpdateCategoryRequest) (*models.Category, error) {
 	if err := s.repo.Update(ctx, id, req); err != nil {
 		return nil, err

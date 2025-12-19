@@ -37,9 +37,9 @@ type Politician struct {
 	DistrictID *uuid.UUID `json:"district_id,omitempty"` // FK to congressional_districts
 
 	// Computed fields (populated when needed)
-	ArticleCount  int                      `json:"article_count,omitempty"`
-	PartyInfo     *PartyBrief              `json:"party_info,omitempty"`
-	PositionInfo  *GovernmentPositionInfo  `json:"position_info,omitempty"`
+	ArticleCount int                     `json:"article_count,omitempty"`
+	PartyInfo    *PartyBrief             `json:"party_info,omitempty"`
+	PositionInfo *GovernmentPositionInfo `json:"position_info,omitempty"`
 }
 
 // GovernmentPositionInfo is a lightweight version for embedding in Politician
@@ -63,16 +63,16 @@ type PartyBrief struct {
 }
 
 type PoliticianListItem struct {
-	ID           uuid.UUID              `json:"id"`
-	Name         string                 `json:"name"`
-	Slug         string                 `json:"slug"`
-	Photo        *string                `json:"photo,omitempty"`
-	Position     *string                `json:"position,omitempty"`
-	Party        *string                `json:"party,omitempty"`
-	Level        *string                `json:"level,omitempty"`
-	Branch       *string                `json:"branch,omitempty"`
-	TermStart    *time.Time             `json:"term_start,omitempty"`
-	TermEnd      *time.Time             `json:"term_end,omitempty"`
+	ID           uuid.UUID   `json:"id"`
+	Name         string      `json:"name"`
+	Slug         string      `json:"slug"`
+	Photo        *string     `json:"photo,omitempty"`
+	Position     *string     `json:"position,omitempty"`
+	Party        *string     `json:"party,omitempty"`
+	Level        *string     `json:"level,omitempty"`
+	Branch       *string     `json:"branch,omitempty"`
+	TermStart    *time.Time  `json:"term_start,omitempty"`
+	TermEnd      *time.Time  `json:"term_end,omitempty"`
 	ArticleCount int         `json:"article_count"`
 	PartyInfo    *PartyBrief `json:"party_info,omitempty"`
 }

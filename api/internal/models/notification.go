@@ -33,9 +33,9 @@ type Notification struct {
 	CreatedAt    time.Time        `json:"created_at"`
 
 	// Relations (populated when needed)
-	Actor      *NotificationActor `json:"actor,omitempty"`
-	ArticleRef *NotificationRef   `json:"article,omitempty"`
-	PoliticianRef *NotificationRef `json:"politician,omitempty"`
+	Actor         *NotificationActor `json:"actor,omitempty"`
+	ArticleRef    *NotificationRef   `json:"article,omitempty"`
+	PoliticianRef *NotificationRef   `json:"politician,omitempty"`
 }
 
 // NotificationActor is minimal user info for notifications

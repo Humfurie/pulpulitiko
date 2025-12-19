@@ -112,7 +112,8 @@ useSeoMeta({
           <!-- Bill Number & Chamber -->
           <div class="flex items-center gap-3 mb-2">
             <span class="font-mono text-lg font-bold text-gray-700">{{ bill.bill_number }}</span>
-            <span :class="[
+            <span
+:class="[
               'px-2 py-0.5 text-xs font-medium rounded capitalize',
               bill.chamber === 'senate' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
             ]">
@@ -132,7 +133,8 @@ useSeoMeta({
 
           <!-- Status & Dates -->
           <div class="mt-4 flex flex-wrap items-center gap-4">
-            <span :class="[
+            <span
+:class="[
               'px-4 py-1.5 text-sm font-semibold rounded-full border',
               statusColors[bill.status]
             ]">
@@ -210,7 +212,7 @@ useSeoMeta({
                       :src="author.photo"
                       :alt="author.name"
                       class="w-6 h-6 rounded-full object-cover"
-                    />
+                    >
                     <span>{{ author.name }}</span>
                   </NuxtLink>
                 </div>
@@ -271,7 +273,8 @@ useSeoMeta({
                 class="relative pl-10"
               >
                 <!-- Dot -->
-                <div :class="[
+                <div
+:class="[
                   'absolute left-2 w-5 h-5 rounded-full border-2 bg-white',
                   index === 0 ? 'border-red-600' : 'border-gray-300'
                 ]" />
@@ -279,7 +282,8 @@ useSeoMeta({
                 <!-- Content -->
                 <div>
                   <div class="flex items-center gap-3">
-                    <span :class="[
+                    <span
+:class="[
                       'px-2 py-0.5 text-xs font-medium rounded',
                       statusColors[item.status]
                     ]">
@@ -315,7 +319,8 @@ useSeoMeta({
                     {{ vote.chamber === 'senate' ? 'Senate' : 'House' }} • {{ formatDate(vote.vote_date) }}
                   </p>
                 </div>
-                <span :class="[
+                <span
+:class="[
                   'px-3 py-1 text-sm font-semibold rounded-full',
                   vote.is_passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 ]">
@@ -379,7 +384,8 @@ useSeoMeta({
                   Referred {{ formatShortDate(ref.referred_date) }}
                 </p>
               </div>
-              <span :class="[
+              <span
+:class="[
                 'px-3 py-1 text-sm font-medium rounded capitalize',
                 ref.status === 'approved' ? 'bg-green-100 text-green-700' :
                 ref.status === 'disapproved' ? 'bg-red-100 text-red-700' :

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Category, PaginatedCategories, ApiResponse } from '~/types'
 import type { TableColumn } from '@nuxt/ui'
+import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({
   layout: 'admin',
@@ -14,8 +15,12 @@ const baseUrl = import.meta.server ? config.apiInternalUrl : config.public.apiUr
 const page = ref(1)
 const loading = ref(false)
 const categories = ref<Category[]>([])
+const total = ref(0)
 const totalPages = ref(1)
 const error = ref('')
+const search = ref('')
+const sortBy = ref('name')
+const sortOrder = ref('asc')
 
 const columns: TableColumn<Category>[] = [
   { accessorKey: 'name', header: 'Name' },
@@ -29,14 +34,24 @@ async function fetchCategories() {
   error.value = ''
 
   try {
-    const response = await $fetch<ApiResponse<PaginatedCategories>>(`${baseUrl}/admin/categories?page=${page.value}&per_page=20`, {
+    const params = new URLSearchParams({
+      page: String(page.value),
+      per_page: '20',
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value
+    })
+
+    if (search.value) {
+      params.append('search', search.value)
+    }
+
+    const response = await $fetch<ApiResponse<PaginatedCategories>>(`${baseUrl}/admin/categories?${params}`, {
       headers: auth.getAuthHeaders()
     })
 
-    console.log('Categories API Response:', response)
     if (response.success) {
-      console.log('Categories data:', response.data.categories)
       categories.value = response.data.categories
+      total.value = response.data.total
       totalPages.value = response.data.total_pages
     }
   } catch (e: unknown) {
@@ -46,6 +61,11 @@ async function fetchCategories() {
 
   loading.value = false
 }
+
+const debouncedSearch = useDebounceFn(() => {
+  page.value = 1
+  fetchCategories()
+}, 300)
 
 async function deleteCategory(id: string) {
   if (!confirm('Are you sure you want to delete this category?')) return
@@ -64,6 +84,9 @@ async function deleteCategory(id: string) {
 
 onMounted(fetchCategories)
 watch(page, fetchCategories)
+watch(search, debouncedSearch)
+watch(sortBy, fetchCategories)
+watch(sortOrder, fetchCategories)
 
 useSeoMeta({
   title: 'Categories - Pulpulitiko Admin'
@@ -82,8 +105,42 @@ useSeoMeta({
     <UAlert v-if="error" color="error" :title="error" class="mb-4" />
 
     <UCard>
+      <template #header>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <UInput
+            v-model="search"
+            placeholder="Search categories..."
+            icon="i-heroicons-magnifying-glass"
+            class="flex-1"
+          />
+          <div class="flex gap-2">
+            <USelect
+              v-model="sortBy"
+              :options="[
+                { label: 'Name', value: 'name' },
+                { label: 'Slug', value: 'slug' },
+                { label: 'Created', value: 'created_at' }
+              ]"
+              class="w-32"
+            />
+            <USelect
+              v-model="sortOrder"
+              :options="[
+                { label: 'Asc', value: 'asc' },
+                { label: 'Desc', value: 'desc' }
+              ]"
+              class="w-24"
+            />
+          </div>
+        </div>
+        <div v-if="total > 0" class="text-sm text-gray-500 mt-2">
+          {{ total }} categor{{ total !== 1 ? 'ies' : 'y' }} total
+        </div>
+      </template>
+
       <div v-if="loading" class="py-8 text-center">
         <UIcon name="i-heroicons-arrow-path" class="size-8 animate-spin text-gray-400" />
+        <p class="mt-2 text-gray-500">Loading categories...</p>
       </div>
 
       <UTable
@@ -128,9 +185,12 @@ useSeoMeta({
         </template>
       </UTable>
 
-      <div v-else class="py-8 text-center text-gray-500">
-        No categories yet.
-        <NuxtLink to="/admin/categories/new" class="text-primary hover:underline">Create one</NuxtLink>
+      <div v-else class="py-12 text-center">
+        <UIcon name="i-heroicons-folder" class="size-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <p class="text-gray-500 dark:text-gray-400 mb-4">No categories yet.</p>
+        <UButton to="/admin/categories/new" variant="outline">
+          Create your first category
+        </UButton>
       </div>
 
       <template v-if="totalPages > 1" #footer>

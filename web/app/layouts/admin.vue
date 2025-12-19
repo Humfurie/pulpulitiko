@@ -12,12 +12,48 @@ watch(() => route.path, () => {
 
 // Navigation items with role requirements
 // roles: ['admin'] = admin only, ['admin', 'author'] = admin and author
+// Expandable groups state
+const expandedGroups = ref<Set<string>>(new Set(['Politicians']))
+
+// Load expanded state from localStorage
+onMounted(() => {
+  const saved = localStorage.getItem('sidebar-expanded')
+  if (saved) {
+    try {
+      expandedGroups.value = new Set(JSON.parse(saved))
+    } catch {
+      // Ignore parse errors
+    }
+  }
+})
+
+// Save expanded state to localStorage
+function toggleGroup(groupName: string) {
+  if (expandedGroups.value.has(groupName)) {
+    expandedGroups.value.delete(groupName)
+  } else {
+    expandedGroups.value.add(groupName)
+  }
+  localStorage.setItem('sidebar-expanded', JSON.stringify([...expandedGroups.value]))
+}
+
 const allNavigation = [
   { name: 'Dashboard', href: '/admin', icon: 'i-heroicons-home', roles: ['admin', 'author'] },
   { name: 'Articles', href: '/admin/articles', icon: 'i-heroicons-document-text', roles: ['admin', 'author'] },
   { name: 'Categories', href: '/admin/categories', icon: 'i-heroicons-folder', roles: ['admin', 'author'] },
-  { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
-  { name: 'Politicians', href: '/admin/politicians', icon: 'i-heroicons-user-circle', roles: ['admin', 'author'] },
+  // Politicians group with nested items
+  {
+    name: 'Politicians',
+    icon: 'i-heroicons-user-circle',
+    roles: ['admin', 'author'],
+    items: [
+      { name: 'All Politicians', href: '/admin/politicians', icon: 'i-heroicons-users', roles: ['admin', 'author'] },
+      { name: 'Positions', href: '/admin/positions', icon: 'i-heroicons-briefcase', roles: ['admin', 'author'] },
+      { name: 'Parties', href: '/admin/parties', icon: 'i-heroicons-flag', roles: ['admin', 'author'] },
+      { name: 'Tags', href: '/admin/tags', icon: 'i-heroicons-tag', roles: ['admin', 'author'] },
+      { name: 'Import', href: '/admin/import/politicians', icon: 'i-heroicons-arrow-up-tray', roles: ['admin'] }
+    ]
+  },
   { name: 'Polls', href: '/admin/polls', icon: 'i-heroicons-chart-pie', roles: ['admin'] },
   { name: 'Elections', href: '/admin/elections', icon: 'i-heroicons-clipboard-document-check', roles: ['admin'] },
   { name: 'Legislation', href: '/admin/legislation', icon: 'i-heroicons-scale', roles: ['admin'] },
@@ -34,9 +70,27 @@ const navigation = computed(() => {
   if (!userRole) return []
 
   return allNavigation.filter(item => {
-    return item.roles.includes(userRole)
+    // Filter top-level items
+    if (!item.roles.includes(userRole)) return false
+
+    // Filter nested items if they exist
+    if (item.items) {
+      item.items = item.items.filter(subItem => subItem.roles.includes(userRole))
+    }
+
+    return true
   })
 })
+
+// Check if a route or any of its children is active
+function isGroupActive(item: any) {
+  const currentPath = route.path
+  if (item.href && currentPath.startsWith(item.href)) return true
+  if (item.items) {
+    return item.items.some((subItem: any) => currentPath.startsWith(subItem.href))
+  }
+  return false
+}
 
 // Check if user is a regular user (not admin/author)
 const isRegularUser = computed(() => auth.user.value?.role === 'user')
@@ -131,20 +185,62 @@ function isActive(href: string) {
 
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-          <NuxtLink
-            v-for="item in navigation"
-            :key="item.name"
-            :to="item.href"
-            :class="[
-              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-              isActive(item.href)
-                ? 'bg-primary/10 text-primary'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-            ]"
-          >
-            <span :class="[item.icon, 'size-5']" />
-            {{ item.name }}
-          </NuxtLink>
+          <template v-for="item in navigation" :key="item.name">
+            <!-- Collapsible group -->
+            <div v-if="item.items" class="space-y-1">
+              <button
+                :class="[
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
+                  isGroupActive(item)
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ]"
+                @click="toggleGroup(item.name)"
+              >
+                <span :class="[item.icon, 'size-5']" />
+                <span class="flex-1 text-left">{{ item.name }}</span>
+                <span
+                  :class="[
+                    expandedGroups.has(item.name) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right',
+                    'size-4 transition-transform'
+                  ]"
+                />
+              </button>
+
+              <!-- Nested items -->
+              <div v-show="expandedGroups.has(item.name)" class="ml-6 space-y-1">
+                <NuxtLink
+                  v-for="subItem in item.items"
+                  :key="subItem.name"
+                  :to="subItem.href"
+                  :class="[
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive(subItem.href)
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ]"
+                >
+                  <span :class="[subItem.icon, 'size-4']" />
+                  {{ subItem.name }}
+                </NuxtLink>
+              </div>
+            </div>
+
+            <!-- Single item -->
+            <NuxtLink
+              v-else
+              :to="item.href"
+              :class="[
+                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                isActive(item.href)
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              ]"
+            >
+              <span :class="[item.icon, 'size-5']" />
+              {{ item.name }}
+            </NuxtLink>
+          </template>
         </nav>
 
         <!-- User section -->
@@ -228,20 +324,62 @@ function isActive(href: string) {
 
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-          <NuxtLink
-            v-for="item in navigation"
-            :key="item.name"
-            :to="item.href"
-            :class="[
-              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-              isActive(item.href)
-                ? 'bg-primary/10 text-primary'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-            ]"
-          >
-            <span :class="[item.icon, 'size-5']" />
-            {{ item.name }}
-          </NuxtLink>
+          <template v-for="item in navigation" :key="item.name">
+            <!-- Collapsible group -->
+            <div v-if="item.items" class="space-y-1">
+              <button
+                :class="[
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
+                  isGroupActive(item)
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ]"
+                @click="toggleGroup(item.name)"
+              >
+                <span :class="[item.icon, 'size-5']" />
+                <span class="flex-1 text-left">{{ item.name }}</span>
+                <span
+                  :class="[
+                    expandedGroups.has(item.name) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right',
+                    'size-4 transition-transform'
+                  ]"
+                />
+              </button>
+
+              <!-- Nested items -->
+              <div v-show="expandedGroups.has(item.name)" class="ml-6 space-y-1">
+                <NuxtLink
+                  v-for="subItem in item.items"
+                  :key="subItem.name"
+                  :to="subItem.href"
+                  :class="[
+                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    isActive(subItem.href)
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ]"
+                >
+                  <span :class="[subItem.icon, 'size-4']" />
+                  {{ subItem.name }}
+                </NuxtLink>
+              </div>
+            </div>
+
+            <!-- Single item -->
+            <NuxtLink
+              v-else
+              :to="item.href"
+              :class="[
+                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                isActive(item.href)
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              ]"
+            >
+              <span :class="[item.icon, 'size-5']" />
+              {{ item.name }}
+            </NuxtLink>
+          </template>
         </nav>
 
         <!-- User section -->

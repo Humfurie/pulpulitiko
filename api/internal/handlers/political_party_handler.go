@@ -271,3 +271,95 @@ func (h *PoliticalPartyHandler) DeleteJurisdiction(w http.ResponseWriter, r *htt
 
 	WriteSuccess(w, map[string]string{"message": "Jurisdiction deleted successfully"})
 }
+
+// Admin Position CRUD endpoints
+
+// GetPositionByID returns a position by ID (admin endpoint)
+func (h *PoliticalPartyHandler) GetPositionByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "Invalid position ID")
+		return
+	}
+
+	position, err := h.partyService.GetPositionByID(r.Context(), id)
+	if err != nil {
+		WriteInternalError(w, "Failed to get position")
+		return
+	}
+	if position == nil {
+		WriteNotFound(w, "Position not found")
+		return
+	}
+
+	WriteSuccess(w, position)
+}
+
+// CreatePosition creates a new government position
+func (h *PoliticalPartyHandler) CreatePosition(w http.ResponseWriter, r *http.Request) {
+	var req models.CreateGovernmentPositionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteBadRequest(w, "Invalid request body")
+		return
+	}
+
+	position, err := h.partyService.CreatePosition(r.Context(), &req)
+	if err != nil {
+		WriteInternalError(w, "Failed to create position")
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	WriteSuccess(w, position)
+}
+
+// UpdatePosition updates an existing government position
+func (h *PoliticalPartyHandler) UpdatePosition(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "Invalid position ID")
+		return
+	}
+
+	var req models.UpdateGovernmentPositionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteBadRequest(w, "Invalid request body")
+		return
+	}
+
+	position, err := h.partyService.UpdatePosition(r.Context(), id, &req)
+	if err != nil {
+		if err.Error() == "government position not found" {
+			WriteNotFound(w, "Position not found")
+			return
+		}
+		WriteInternalError(w, "Failed to update position")
+		return
+	}
+
+	WriteSuccess(w, position)
+}
+
+// DeletePosition deletes a government position
+func (h *PoliticalPartyHandler) DeletePosition(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		WriteBadRequest(w, "Invalid position ID")
+		return
+	}
+
+	err = h.partyService.DeletePosition(r.Context(), id)
+	if err != nil {
+		if err.Error() == "government position not found" {
+			WriteNotFound(w, "Position not found")
+			return
+		}
+		WriteInternalError(w, "Failed to delete position")
+		return
+	}
+
+	WriteSuccess(w, map[string]string{"message": "Position deleted successfully"})
+}

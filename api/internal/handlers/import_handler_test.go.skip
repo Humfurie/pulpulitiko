@@ -1,0 +1,770 @@
+package handlers
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
+)
+
+// Mock service
+
+type MockImportService struct {
+	mock.Mock
+}
+
+func (m *MockImportService) ValidateImport(ctx context.Context, rows []models.ImportRow) (*models.ImportValidationResult, error) {
+	args := m.Called(ctx, rows)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ImportValidationResult), args.Error(1)
+}
+
+func (m *MockImportService) StartImport(ctx context.Context, req *models.ProcessImportRequest, userID *uuid.UUID) (*models.PoliticianImportLog, error) {
+	args := m.Called(ctx, req, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.PoliticianImportLog), args.Error(1)
+}
+
+func (m *MockImportService) ListImportLogs(ctx context.Context, page, perPage int) (*models.PaginatedImportLogs, error) {
+	args := m.Called(ctx, page, perPage)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.PaginatedImportLogs), args.Error(1)
+}
+
+func (m *MockImportService) GetImportLog(ctx context.Context, id uuid.UUID) (*models.PoliticianImportLog, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.PoliticianImportLog), args.Error(1)
+}
+
+func (m *MockImportService) GenerateTemplate(ctx context.Context) (*excelize.File, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*excelize.File), args.Error(1)
+}
+
+func (m *MockImportService) GenerateErrorReport(ctx context.Context, importLogID uuid.UUID) (*excelize.File, error) {
+	args := m.Called(ctx, importLogID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*excelize.File), args.Error(1)
+}
+
+// Helper functions
+
+func createMultipartRequest(t *testing.T, fileContent []byte, filename string, extraFields map[string]string) *http.Request {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add file
+	part, err := writer.CreateFormFile("file", filename)
+	require.NoError(t, err)
+	_, err = part.Write(fileContent)
+	require.NoError(t, err)
+
+	// Add extra fields
+	for key, val := range extraFields {
+		_ = writer.WriteField(key, val)
+	}
+
+	err = writer.Close()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("POST", "/api/admin/import/politicians", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	return req
+}
+
+func addUserIDToContext(req *http.Request, userID uuid.UUID) *http.Request {
+	ctx := context.WithValue(req.Context(), "user_id", userID)
+	return req.WithContext(ctx)
+}
+
+// Tests for ValidatePoliticianImport
+
+func TestImportHandler_ValidatePoliticianImport(t *testing.T) {
+	t.Run("successfully validates import file", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		validationResult := &models.ImportValidationResult{
+			TotalRows:   2,
+			ValidRows:   2,
+			InvalidRows: 0,
+			Errors:      []models.ValidationError{},
+		}
+
+		mockService.On("ValidateImport", mock.Anything, mock.Anything).Return(validationResult, nil)
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		require.NoError(t, err)
+
+		data := response["data"].(map[string]interface{})
+		assert.Equal(t, "test.xlsx", data["filename"])
+		assert.Equal(t, float64(2), data["total_rows"])
+		assert.Equal(t, float64(2), data["valid_rows"])
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles validation with errors", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		validationResult := &models.ImportValidationResult{
+			TotalRows:   2,
+			ValidRows:   1,
+			InvalidRows: 1,
+			Errors: []models.ValidationError{
+				{Row: 2, Field: "party", Error: "Party not found"},
+			},
+		}
+
+		mockService.On("ValidateImport", mock.Anything, mock.Anything).Return(validationResult, nil)
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		require.NoError(t, err)
+
+		data := response["data"].(map[string]interface{})
+		assert.Equal(t, float64(1), data["invalid_rows"])
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles missing file", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		req := httptest.NewRequest("POST", "/api/admin/import/politicians/validate", bytes.NewBuffer([]byte{}))
+		req.Header.Set("Content-Type", "multipart/form-data")
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("handles service error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		mockService.On("ValidateImport", mock.Anything, mock.Anything).Return(nil, errors.New("validation service error"))
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles form parsing error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		// Create request with invalid multipart data
+		req := httptest.NewRequest("POST", "/api/admin/import/politicians/validate", bytes.NewBuffer([]byte("invalid")))
+		req.Header.Set("Content-Type", "multipart/form-data; boundary=----invalid")
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("handles large file gracefully", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		// Create a large file (11 MB, exceeding 10 MB limit)
+		largeContent := make([]byte, 11*1024*1024)
+		req := createMultipartRequest(t, largeContent, "large.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+}
+
+// Tests for ImportPoliticians
+
+func TestImportHandler_ImportPoliticians(t *testing.T) {
+	t.Run("successfully starts import", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		userID := uuid.New()
+		importLog := &models.PoliticianImportLog{
+			ID:       uuid.New(),
+			Filename: "test.xlsx",
+			Status:   "pending",
+		}
+
+		mockService.On("StartImport", mock.Anything, mock.Anything, &userID).Return(importLog, nil)
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", nil)
+		req = addUserIDToContext(req, userID)
+		rr := httptest.NewRecorder()
+
+		handler.ImportPoliticians(rr, req)
+
+		assert.Equal(t, http.StatusCreated, rr.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		require.NoError(t, err)
+
+		data := response["data"].(map[string]interface{})
+		assert.Equal(t, "test.xlsx", data["filename"])
+		assert.Equal(t, "pending", data["status"])
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("starts import with election ID", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		userID := uuid.New()
+		electionID := uuid.New()
+		importLog := &models.PoliticianImportLog{
+			ID:         uuid.New(),
+			Filename:   "test.xlsx",
+			Status:     "pending",
+			ElectionID: &electionID,
+		}
+
+		mockService.On("StartImport", mock.Anything, mock.Anything, &userID).Return(importLog, nil)
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", map[string]string{
+			"election_id": electionID.String(),
+		})
+		req = addUserIDToContext(req, userID)
+		rr := httptest.NewRecorder()
+
+		handler.ImportPoliticians(rr, req)
+
+		assert.Equal(t, http.StatusCreated, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles missing file", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		req := httptest.NewRequest("POST", "/api/admin/import/politicians", bytes.NewBuffer([]byte{}))
+		req.Header.Set("Content-Type", "multipart/form-data")
+		rr := httptest.NewRecorder()
+
+		handler.ImportPoliticians(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("handles service error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		userID := uuid.New()
+		mockService.On("StartImport", mock.Anything, mock.Anything, &userID).Return(nil, errors.New("import start failed"))
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", nil)
+		req = addUserIDToContext(req, userID)
+		rr := httptest.NewRecorder()
+
+		handler.ImportPoliticians(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles import without user ID", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		importLog := &models.PoliticianImportLog{
+			ID:       uuid.New(),
+			Filename: "test.xlsx",
+			Status:   "pending",
+		}
+
+		mockService.On("StartImport", mock.Anything, mock.Anything, (*uuid.UUID)(nil)).Return(importLog, nil)
+
+		req := createMultipartRequest(t, []byte("test excel content"), "test.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ImportPoliticians(rr, req)
+
+		assert.Equal(t, http.StatusCreated, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+// Tests for ListImportLogs
+
+func TestImportHandler_ListImportLogs(t *testing.T) {
+	t.Run("successfully lists import logs", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logs := &models.PaginatedImportLogs{
+			ImportLogs: []models.PoliticianImportLog{
+				{ID: uuid.New(), Filename: "import1.xlsx", Status: "completed"},
+				{ID: uuid.New(), Filename: "import2.xlsx", Status: "processing"},
+			},
+			Total:      2,
+			Page:       1,
+			PerPage:    20,
+			TotalPages: 1,
+		}
+
+		mockService.On("ListImportLogs", mock.Anything, 1, 20).Return(logs, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ListImportLogs(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		require.NoError(t, err)
+
+		data := response["data"].(map[string]interface{})
+		importLogs := data["import_logs"].([]interface{})
+		assert.Len(t, importLogs, 2)
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles custom pagination", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logs := &models.PaginatedImportLogs{
+			ImportLogs: []models.PoliticianImportLog{},
+			Total:      50,
+			Page:       2,
+			PerPage:    10,
+			TotalPages: 5,
+		}
+
+		mockService.On("ListImportLogs", mock.Anything, 2, 10).Return(logs, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs?page=2&per_page=10", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ListImportLogs(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles service error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		mockService.On("ListImportLogs", mock.Anything, 1, 20).Return(nil, errors.New("database error"))
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ListImportLogs(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+// Tests for GetImportLog
+
+func TestImportHandler_GetImportLog(t *testing.T) {
+	t.Run("successfully gets import log", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logID := uuid.New()
+		log := &models.PoliticianImportLog{
+			ID:       logID,
+			Filename: "test.xlsx",
+			Status:   "completed",
+		}
+
+		mockService.On("GetImportLog", mock.Anything, logID).Return(log, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/"+logID.String(), nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", logID.String())
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.GetImportLog(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		require.NoError(t, err)
+
+		data := response["data"].(map[string]interface{})
+		assert.Equal(t, logID.String(), data["id"])
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles invalid UUID", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/invalid-uuid", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "invalid-uuid")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.GetImportLog(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("handles non-existent log", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logID := uuid.New()
+		mockService.On("GetImportLog", mock.Anything, logID).Return(nil, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/"+logID.String(), nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", logID.String())
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.GetImportLog(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles service error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logID := uuid.New()
+		mockService.On("GetImportLog", mock.Anything, logID).Return(nil, errors.New("database error"))
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/"+logID.String(), nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", logID.String())
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.GetImportLog(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+// Tests for DownloadTemplate
+
+func TestImportHandler_DownloadTemplate(t *testing.T) {
+	t.Run("successfully downloads template", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		// Create a minimal Excel file
+		f := excelize.NewFile()
+		defer f.Close()
+
+		mockService.On("GenerateTemplate", mock.Anything).Return(f, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/template", nil)
+		rr := httptest.NewRecorder()
+
+		handler.DownloadTemplate(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", rr.Header().Get("Content-Type"))
+		assert.Contains(t, rr.Header().Get("Content-Disposition"), "politician_import_template.xlsx")
+		assert.NotEmpty(t, rr.Body.Bytes())
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles service error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		mockService.On("GenerateTemplate", mock.Anything).Return(nil, errors.New("template generation failed"))
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/template", nil)
+		rr := httptest.NewRecorder()
+
+		handler.DownloadTemplate(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+// Tests for DownloadErrorReport
+
+func TestImportHandler_DownloadErrorReport(t *testing.T) {
+	t.Run("successfully downloads error report", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logID := uuid.New()
+
+		// Create a minimal Excel file
+		f := excelize.NewFile()
+		defer f.Close()
+
+		mockService.On("GenerateErrorReport", mock.Anything, logID).Return(f, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/"+logID.String()+"/errors", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", logID.String())
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.DownloadErrorReport(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", rr.Header().Get("Content-Type"))
+		assert.Contains(t, rr.Header().Get("Content-Disposition"), "import_errors_"+logID.String()+".xlsx")
+		assert.NotEmpty(t, rr.Body.Bytes())
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles invalid UUID", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/invalid-uuid/errors", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", "invalid-uuid")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.DownloadErrorReport(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("handles error report not available", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logID := uuid.New()
+		mockService.On("GenerateErrorReport", mock.Anything, logID).Return(nil, nil)
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/"+logID.String()+"/errors", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", logID.String())
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.DownloadErrorReport(rr, req)
+
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles service error", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		logID := uuid.New()
+		mockService.On("GenerateErrorReport", mock.Anything, logID).Return(nil, errors.New("generation failed"))
+
+		req := httptest.NewRequest("GET", "/api/admin/import/politicians/logs/"+logID.String()+"/errors", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", logID.String())
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rr := httptest.NewRecorder()
+
+		handler.DownloadErrorReport(rr, req)
+
+		assert.Equal(t, http.StatusInternalServerError, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+}
+
+// Tests for GetUserIDFromRequest
+
+func TestGetUserIDFromRequest(t *testing.T) {
+	t.Run("successfully gets user ID from context", func(t *testing.T) {
+		userID := uuid.New()
+		req := httptest.NewRequest("GET", "/test", nil)
+		req = addUserIDToContext(req, userID)
+
+		result := GetUserIDFromRequest(req)
+
+		require.NotNil(t, result)
+		assert.Equal(t, userID, *result)
+	})
+
+	t.Run("returns nil when user ID not in context", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+
+		result := GetUserIDFromRequest(req)
+
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns nil when context value is wrong type", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		ctx := context.WithValue(req.Context(), "user_id", "not-a-uuid")
+		req = req.WithContext(ctx)
+
+		result := GetUserIDFromRequest(req)
+
+		assert.Nil(t, result)
+	})
+}
+
+// Edge case tests
+
+func TestImportHandler_EdgeCases(t *testing.T) {
+	t.Run("handles empty file upload", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		req := createMultipartRequest(t, []byte{}, "empty.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		// Validation should fail during parsing
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+	})
+
+	t.Run("handles file with special characters in name", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		validationResult := &models.ImportValidationResult{
+			TotalRows:   1,
+			ValidRows:   1,
+			InvalidRows: 0,
+		}
+
+		mockService.On("ValidateImport", mock.Anything, mock.Anything).Return(validationResult, nil)
+
+		req := createMultipartRequest(t, []byte("test content"), "file with spaces & special!.xlsx", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ValidatePoliticianImport(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("handles concurrent import requests", func(t *testing.T) {
+		mockService := new(MockImportService)
+		handler := NewImportHandler(mockService)
+
+		userID := uuid.New()
+		importLog1 := &models.PoliticianImportLog{ID: uuid.New(), Filename: "test1.xlsx", Status: "pending"}
+		importLog2 := &models.PoliticianImportLog{ID: uuid.New(), Filename: "test2.xlsx", Status: "pending"}
+
+		mockService.On("StartImport", mock.Anything, mock.Anything, &userID).Return(importLog1, nil).Once()
+		mockService.On("StartImport", mock.Anything, mock.Anything, &userID).Return(importLog2, nil).Once()
+
+		// First request
+		req1 := createMultipartRequest(t, []byte("content1"), "test1.xlsx", nil)
+		req1 = addUserIDToContext(req1, userID)
+		rr1 := httptest.NewRecorder()
+
+		// Second request
+		req2 := createMultipartRequest(t, []byte("content2"), "test2.xlsx", nil)
+		req2 = addUserIDToContext(req2, userID)
+		rr2 := httptest.NewRecorder()
+
+		// Execute concurrently
+		go handler.ImportPoliticians(rr1, req1)
+		go handler.ImportPoliticians(rr2, req2)
+
+		// Both should succeed
+		assert.Eventually(t, func() bool {
+			return rr1.Code == http.StatusCreated && rr2.Code == http.StatusCreated
+		}, 1*time.Second, 10*time.Millisecond)
+
+		mockService.AssertExpectations(t)
+	})
+}
+
+// Test helper to simulate actual file reading
+func TestImportHandler_FileReading(t *testing.T) {
+	t.Run("correctly reads multipart file content", func(t *testing.T) {
+		testContent := []byte("test file content 123")
+		req := createMultipartRequest(t, testContent, "test.xlsx", nil)
+
+		err := req.ParseMultipartForm(10 << 20)
+		require.NoError(t, err)
+
+		file, _, err := req.FormFile("file")
+		require.NoError(t, err)
+		defer file.Close()
+
+		content, err := io.ReadAll(file)
+		require.NoError(t, err)
+
+		assert.Equal(t, testContent, content)
+	})
+}

@@ -438,4 +438,3 @@ func (r *PoliticianCommentRepository) GetMentionedUsers(ctx context.Context, com
 
 	return users, nil
 }
-

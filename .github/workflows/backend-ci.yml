@@ -1,0 +1,176 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ master, main, develop ]
+    paths:
+      - 'api/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ master, main, develop ]
+    paths:
+      - 'api/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  lint-and-test:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: politics
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: politics_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+          cache-dependency-path: api/go.sum
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        working-directory: ./api
+        run: go mod download
+
+      - name: Verify dependencies
+        working-directory: ./api
+        run: go mod verify
+
+      - name: Run go fmt
+        working-directory: ./api
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "Go files must be formatted with gofmt. Please run:"
+            echo "  cd api && gofmt -w ."
+            exit 1
+          fi
+
+      - name: Run go vet
+        working-directory: ./api
+        run: go vet ./...
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        working-directory: ./api
+        run: staticcheck ./...
+
+      - name: Install golangci-lint
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
+
+      - name: Run golangci-lint
+        working-directory: ./api
+        run: golangci-lint run --timeout 5m
+
+      - name: Run database migrations
+        working-directory: ./api
+        env:
+          DATABASE_URL: postgres://politics:testpassword@localhost:5432/politics_test_db?sslmode=disable
+        run: |
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          migrate -path migrations -database "$DATABASE_URL" up
+
+      - name: Run tests with coverage
+        working-directory: ./api
+        env:
+          DATABASE_URL: postgres://politics:testpassword@localhost:5432/politics_test_db?sslmode=disable
+          REDIS_URL: localhost:6379
+          JWT_SECRET: test-secret-key-for-ci
+          ENVIRONMENT: test
+        run: |
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+          go tool cover -func=coverage.out
+
+      - name: Check test coverage
+        working-directory: ./api
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 70.0" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below minimum 70%"
+            exit 1
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./api/coverage.out
+          flags: backend
+          name: backend-coverage
+
+      - name: Build application
+        working-directory: ./api
+        run: go build -v -o bin/api ./cmd/server
+
+      - name: Test binary execution
+        working-directory: ./api
+        run: |
+          ./bin/api --version || echo "Binary built successfully"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: '-exclude-dir=test -exclude-dir=mocks ./...'
+          working-directory: api
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'api'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

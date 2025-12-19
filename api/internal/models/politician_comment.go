@@ -24,9 +24,9 @@ type PoliticianComment struct {
 	ModerationReason *string    `json:"moderation_reason,omitempty"`
 
 	// Relations
-	Author    *CommentAuthor    `json:"author,omitempty"`
+	Author    *CommentAuthor      `json:"author,omitempty"`
 	Replies   []PoliticianComment `json:"replies,omitempty"`
-	Reactions []ReactionSummary `json:"reactions,omitempty"`
+	Reactions []ReactionSummary   `json:"reactions,omitempty"`
 
 	// Computed fields
 	ReplyCount     int     `json:"reply_count,omitempty"`

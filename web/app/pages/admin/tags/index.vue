@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Tag, ApiResponse } from '~/types'
+import type { Tag, PaginatedTags, ApiResponse } from '~/types'
+import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({
   layout: 'admin',
@@ -13,20 +14,37 @@ const baseUrl = import.meta.server ? config.apiInternalUrl : config.public.apiUr
 const page = ref(1)
 const loading = ref(false)
 const tags = ref<Tag[]>([])
+const total = ref(0)
 const totalPages = ref(1)
 const error = ref('')
+const search = ref('')
+const sortBy = ref('name')
+const sortOrder = ref('asc')
 
 async function fetchTags() {
   loading.value = true
   error.value = ''
 
   try {
-    // Use public endpoint which returns all tags
-    const response = await $fetch<ApiResponse<Tag[]>>(`${baseUrl}/tags`)
+    const params = new URLSearchParams({
+      page: String(page.value),
+      per_page: '20',
+      sort_by: sortBy.value,
+      sort_order: sortOrder.value
+    })
+
+    if (search.value) {
+      params.append('search', search.value)
+    }
+
+    const response = await $fetch<ApiResponse<PaginatedTags>>(`${baseUrl}/admin/tags?${params}`, {
+      headers: auth.getAuthHeaders()
+    })
 
     if (response.success) {
-      tags.value = response.data
-      totalPages.value = 1
+      tags.value = response.data.tags
+      total.value = response.data.total
+      totalPages.value = response.data.total_pages
     }
   } catch (e: unknown) {
     const err = e as { data?: { error?: { message?: string } } }
@@ -35,6 +53,11 @@ async function fetchTags() {
 
   loading.value = false
 }
+
+const debouncedSearch = useDebounceFn(() => {
+  page.value = 1
+  fetchTags()
+}, 300)
 
 async function deleteTag(id: string) {
   if (!confirm('Are you sure you want to delete this tag?')) return
@@ -53,6 +76,9 @@ async function deleteTag(id: string) {
 
 onMounted(fetchTags)
 watch(page, fetchTags)
+watch(search, debouncedSearch)
+watch(sortBy, fetchTags)
+watch(sortOrder, fetchTags)
 
 useSeoMeta({
   title: 'Tags - Pulpulitiko Admin'
@@ -71,6 +97,37 @@ useSeoMeta({
     <UAlert v-if="error" color="error" :title="error" class="mb-4" />
 
     <UCard>
+      <template #header>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <UInput
+            v-model="search"
+            placeholder="Search tags..."
+            icon="i-heroicons-magnifying-glass"
+            class="flex-1"
+          />
+          <div class="flex gap-2">
+            <USelect
+              v-model="sortBy"
+              :options="[
+                { label: 'Name', value: 'name' },
+                { label: 'Created', value: 'created_at' }
+              ]"
+              class="w-32"
+            />
+            <USelect
+              v-model="sortOrder"
+              :options="[
+                { label: 'Asc', value: 'asc' },
+                { label: 'Desc', value: 'desc' }
+              ]"
+              class="w-24"
+            />
+          </div>
+        </div>
+        <div v-if="total > 0" class="text-sm text-gray-500 mt-2">
+          {{ total }} tag{{ total !== 1 ? 's' : '' }} total
+        </div>
+      </template>
       <div v-if="loading" class="py-12 text-center">
         <UIcon name="i-heroicons-arrow-path" class="size-8 animate-spin text-gray-400" />
         <p class="mt-2 text-gray-500">Loading tags...</p>

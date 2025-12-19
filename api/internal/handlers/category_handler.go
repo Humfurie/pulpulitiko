@@ -71,35 +71,32 @@ func (h *CategoryHandler) GetArticlesBySlug(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-// GET /api/admin/categories
+// GET /api/admin/categories - List all categories with pagination, search, and sorting (admin)
 func (h *CategoryHandler) AdminList(w http.ResponseWriter, r *http.Request) {
 	page, perPage := GetPaginationParams(r)
 
-	categories, err := h.categoryService.List(r.Context())
+	search := r.URL.Query().Get("search")
+	sortBy := r.URL.Query().Get("sort_by")
+	sortOrder := r.URL.Query().Get("sort_order")
+
+	filter := &models.CategoryFilter{}
+	if search != "" {
+		filter.Search = &search
+	}
+	if sortBy != "" {
+		filter.SortBy = &sortBy
+	}
+	if sortOrder != "" {
+		filter.SortOrder = &sortOrder
+	}
+
+	paginatedCategories, err := h.categoryService.AdminList(r.Context(), filter, page, perPage)
 	if err != nil {
 		WriteInternalError(w, "failed to fetch categories")
 		return
 	}
 
-	// Calculate pagination
-	total := len(categories)
-	totalPages := (total + perPage - 1) / perPage
-	start := (page - 1) * perPage
-	end := start + perPage
-	if start > total {
-		start = total
-	}
-	if end > total {
-		end = total
-	}
-
-	WriteSuccess(w, map[string]interface{}{
-		"categories":  categories[start:end],
-		"total":       total,
-		"page":        page,
-		"per_page":    perPage,
-		"total_pages": totalPages,
-	})
+	WriteSuccess(w, paginatedCategories)
 }
 
 // GET /api/admin/categories/:id

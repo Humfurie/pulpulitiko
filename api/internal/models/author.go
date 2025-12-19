@@ -63,12 +63,12 @@ type UpdateAuthorRequest struct {
 
 // UserProfile represents a public user profile with comment activity
 type UserProfile struct {
-	ID           uuid.UUID  `json:"id"`
-	Name         string     `json:"name"`
-	Slug         string     `json:"slug"`
-	Avatar       *string    `json:"avatar,omitempty"`
-	Bio          *string    `json:"bio,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	CommentCount int        `json:"comment_count"`
-	ReplyCount   int        `json:"reply_count"`
+	ID           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
+	Slug         string    `json:"slug"`
+	Avatar       *string   `json:"avatar,omitempty"`
+	Bio          *string   `json:"bio,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	CommentCount int       `json:"comment_count"`
+	ReplyCount   int       `json:"reply_count"`
 }

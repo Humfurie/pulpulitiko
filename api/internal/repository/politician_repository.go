@@ -111,12 +111,14 @@ func (r *PoliticianRepository) GetBySlug(ctx context.Context, slug string) (*mod
 }
 
 func (r *PoliticianRepository) List(ctx context.Context, filter *models.PoliticianFilter, page, perPage int) (*models.PaginatedPoliticians, error) {
-	// Build base query with article count
+	// Build base query with article count and party info
 	baseQuery := `
 		SELECT p.id, p.name, p.slug, p.photo, p.position, p.party, p.term_start, p.term_end,
 			(SELECT COUNT(*) FROM articles a WHERE a.primary_politician_id = p.id AND a.deleted_at IS NULL) +
-			(SELECT COUNT(*) FROM article_politicians ap JOIN articles a ON ap.article_id = a.id WHERE ap.politician_id = p.id AND a.deleted_at IS NULL) as article_count
+			(SELECT COUNT(*) FROM article_politicians ap JOIN articles a ON ap.article_id = a.id WHERE ap.politician_id = p.id AND a.deleted_at IS NULL) as article_count,
+			pp.id, pp.name, pp.slug, pp.abbreviation, pp.logo, pp.color
 		FROM politicians p
+		LEFT JOIN political_parties pp ON p.party_id = pp.id
 		WHERE p.deleted_at IS NULL
 	`
 	countQuery := "SELECT COUNT(*) FROM politicians p WHERE p.deleted_at IS NULL"
@@ -135,6 +137,12 @@ func (r *PoliticianRepository) List(ctx context.Context, filter *models.Politici
 		if filter.Party != nil && *filter.Party != "" {
 			conditions = append(conditions, fmt.Sprintf("p.party = $%d", argNum))
 			args = append(args, *filter.Party)
+			argNum++
+		}
+
+		if filter.PartyID != nil {
+			conditions = append(conditions, fmt.Sprintf("p.party_id = $%d", argNum))
+			args = append(args, *filter.PartyID)
 			argNum++
 		}
 
@@ -173,10 +181,31 @@ func (r *PoliticianRepository) List(ctx context.Context, filter *models.Politici
 	politicians := []models.PoliticianListItem{}
 	for rows.Next() {
 		var p models.PoliticianListItem
-		err := rows.Scan(&p.ID, &p.Name, &p.Slug, &p.Photo, &p.Position, &p.Party, &p.TermStart, &p.TermEnd, &p.ArticleCount)
+		var partyID *uuid.UUID
+		var partyName, partySlug *string
+		var partyAbbr, partyLogo, partyColor *string
+
+		err := rows.Scan(
+			&p.ID, &p.Name, &p.Slug, &p.Photo, &p.Position, &p.Party,
+			&p.TermStart, &p.TermEnd, &p.ArticleCount,
+			&partyID, &partyName, &partySlug, &partyAbbr, &partyLogo, &partyColor,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan politician: %w", err)
 		}
+
+		// Populate PartyInfo if party exists
+		if partyID != nil && partyName != nil && partySlug != nil {
+			p.PartyInfo = &models.PartyBrief{
+				ID:           *partyID,
+				Name:         *partyName,
+				Slug:         *partySlug,
+				Abbreviation: partyAbbr,
+				Logo:         partyLogo,
+				Color:        partyColor,
+			}
+		}
+
 		politicians = append(politicians, p)
 	}
 

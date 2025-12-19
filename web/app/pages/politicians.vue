@@ -9,6 +9,9 @@ const api = useApi()
 const route = useRoute()
 const router = useRouter()
 
+// Search query
+const searchQuery = ref('')
+
 // View mode from query param (default: position)
 const viewMode = computed({
   get: () => (route.query.view as string) || 'position',
@@ -16,6 +19,19 @@ const viewMode = computed({
 })
 
 const { data: politicians, pending, error } = await useAsyncData('all-politicians', () => api.getPoliticians())
+
+// Filtered politicians based on search query
+const filteredPoliticians = computed(() => {
+  if (!politicians.value) return []
+  if (!searchQuery.value.trim()) return politicians.value
+
+  const query = searchQuery.value.toLowerCase().trim()
+  return politicians.value.filter(p =>
+    p.name.toLowerCase().includes(query) ||
+    p.position?.toLowerCase().includes(query) ||
+    p.party?.toLowerCase().includes(query)
+  )
+})
 
 // Position hierarchy definition (flat list, ordered by importance)
 const positionList = [
@@ -39,10 +55,10 @@ function isFormerOfficial(position: string | undefined): boolean {
 
 // Group politicians by position (flat list, only current office holders)
 const politiciansByPosition = computed(() => {
-  if (!politicians.value) return []
+  if (!filteredPoliticians.value) return []
 
   // Filter out former officials first
-  const currentOfficials = politicians.value.filter(p => !isFormerOfficial(p.position))
+  const currentOfficials = filteredPoliticians.value.filter(p => !isFormerOfficial(p.position))
 
   const result: Array<{
     title: string
@@ -76,9 +92,9 @@ const politiciansByPosition = computed(() => {
 
 // Group politicians by party
 const politiciansByParty = computed(() => {
-  if (!politicians.value) return new Map<string, Politician[]>()
+  if (!filteredPoliticians.value) return new Map<string, Politician[]>()
   const grouped = new Map<string, Politician[]>()
-  politicians.value.forEach((p: Politician) => {
+  filteredPoliticians.value.forEach((p: Politician) => {
     const party = p.party || 'Independent'
     if (!grouped.has(party)) {
       grouped.set(party, [])
@@ -115,6 +131,23 @@ useHead({
         </h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">
           Browse all politicians covered in our articles
+        </p>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="mb-6">
+        <UInput
+          v-model="searchQuery"
+          placeholder="Search by name, position, or party..."
+          icon="i-heroicons-magnifying-glass"
+          size="lg"
+          class="max-w-md"
+        />
+        <p v-if="searchQuery && filteredPoliticians.length === 0" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          No politicians found matching "{{ searchQuery }}"
+        </p>
+        <p v-else-if="searchQuery" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Found {{ filteredPoliticians.length }} politician{{ filteredPoliticians.length !== 1 ? 's' : '' }}
         </p>
       </div>
 

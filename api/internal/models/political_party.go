@@ -74,18 +74,18 @@ type PaginatedPoliticalParties struct {
 
 // Government Position represents a normalized position type
 type GovernmentPosition struct {
-	ID           uuid.UUID  `json:"id"`
-	Name         string     `json:"name"`
-	Slug         string     `json:"slug"`
-	Level        string     `json:"level"`  // national, regional, provincial, city, municipal, barangay
-	Branch       string     `json:"branch"` // executive, legislative, judicial
-	DisplayOrder int        `json:"display_order"`
-	Description  *string    `json:"description,omitempty"`
-	MaxTerms     *int       `json:"max_terms,omitempty"`
-	TermYears    int        `json:"term_years"`
-	IsElected    bool       `json:"is_elected"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID           uuid.UUID `json:"id"`
+	Name         string    `json:"name"`
+	Slug         string    `json:"slug"`
+	Level        string    `json:"level"`  // national, regional, provincial, city, municipal, barangay
+	Branch       string    `json:"branch"` // executive, legislative, judicial
+	DisplayOrder int       `json:"display_order"`
+	Description  *string   `json:"description,omitempty"`
+	MaxTerms     *int      `json:"max_terms,omitempty"`
+	TermYears    int       `json:"term_years"`
+	IsElected    bool      `json:"is_elected"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type GovernmentPositionListItem struct {
@@ -96,6 +96,30 @@ type GovernmentPositionListItem struct {
 	Branch       string    `json:"branch"`
 	DisplayOrder int       `json:"display_order"`
 	IsElected    bool      `json:"is_elected"`
+}
+
+type CreateGovernmentPositionRequest struct {
+	Name         string  `json:"name" validate:"required"`
+	Slug         string  `json:"slug" validate:"required"`
+	Level        string  `json:"level" validate:"required,oneof=national regional provincial city municipal barangay district"`
+	Branch       string  `json:"branch" validate:"required,oneof=executive legislative judicial"`
+	DisplayOrder int     `json:"display_order" validate:"gte=0"`
+	Description  *string `json:"description,omitempty"`
+	MaxTerms     *int    `json:"max_terms,omitempty" validate:"omitempty,gte=0"`
+	TermYears    int     `json:"term_years" validate:"required,gte=1"`
+	IsElected    bool    `json:"is_elected"`
+}
+
+type UpdateGovernmentPositionRequest struct {
+	Name         *string `json:"name,omitempty"`
+	Slug         *string `json:"slug,omitempty"`
+	Level        *string `json:"level,omitempty" validate:"omitempty,oneof=national regional provincial city municipal barangay district"`
+	Branch       *string `json:"branch,omitempty" validate:"omitempty,oneof=executive legislative judicial"`
+	DisplayOrder *int    `json:"display_order,omitempty" validate:"omitempty,gte=0"`
+	Description  *string `json:"description,omitempty"`
+	MaxTerms     *int    `json:"max_terms,omitempty" validate:"omitempty,gte=0"`
+	TermYears    *int    `json:"term_years,omitempty" validate:"omitempty,gte=1"`
+	IsElected    *bool   `json:"is_elected,omitempty"`
 }
 
 // Politician Jurisdiction maps a politician to their jurisdiction
@@ -110,10 +134,10 @@ type PoliticianJurisdiction struct {
 	CreatedAt    time.Time  `json:"created_at"`
 
 	// Joined fields
-	Region   *RegionListItem             `json:"region,omitempty"`
-	Province *ProvinceListItem           `json:"province,omitempty"`
-	City     *CityMunicipalityListItem   `json:"city,omitempty"`
-	Barangay *BarangayListItem           `json:"barangay,omitempty"`
+	Region   *RegionListItem           `json:"region,omitempty"`
+	Province *ProvinceListItem         `json:"province,omitempty"`
+	City     *CityMunicipalityListItem `json:"city,omitempty"`
+	Barangay *BarangayListItem         `json:"barangay,omitempty"`
 }
 
 type CreatePoliticianJurisdictionRequest struct {

@@ -26,3 +26,17 @@ type UpdateCategoryRequest struct {
 	Slug        *string `json:"slug,omitempty" validate:"omitempty,min=2,max=100"`
 	Description *string `json:"description,omitempty"`
 }
+
+type CategoryFilter struct {
+	Search    *string
+	SortBy    *string // name, created_at
+	SortOrder *string // asc, desc
+}
+
+type PaginatedCategories struct {
+	Categories []Category `json:"data"`
+	Total      int        `json:"total"`
+	Page       int        `json:"page"`
+	PerPage    int        `json:"per_page"`
+	TotalPages int        `json:"total_pages"`
+}

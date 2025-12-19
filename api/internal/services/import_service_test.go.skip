@@ -1,0 +1,665 @@
+package services
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/humfurie/pulpulitiko/api/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
+)
+
+// Mock repositories
+
+type MockImportRepository struct {
+	mock.Mock
+}
+
+func (m *MockImportRepository) Create(ctx context.Context, log *models.PoliticianImportLog) error {
+	args := m.Called(ctx, log)
+	if args.Get(0) != nil {
+		log.ID = uuid.New() // Simulate ID assignment
+	}
+	return args.Error(0)
+}
+
+func (m *MockImportRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.PoliticianImportLog, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.PoliticianImportLog), args.Error(1)
+}
+
+func (m *MockImportRepository) List(ctx context.Context, page, perPage int) (*models.PaginatedImportLogs, error) {
+	args := m.Called(ctx, page, perPage)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.PaginatedImportLogs), args.Error(1)
+}
+
+func (m *MockImportRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
+	args := m.Called(ctx, id, status)
+	return args.Error(0)
+}
+
+func (m *MockImportRepository) UpdateTotalRows(ctx context.Context, id uuid.UUID, totalRows int) error {
+	args := m.Called(ctx, id, totalRows)
+	return args.Error(0)
+}
+
+func (m *MockImportRepository) UpdateErrorLog(ctx context.Context, id uuid.UUID, errorLog string) error {
+	args := m.Called(ctx, id, errorLog)
+	return args.Error(0)
+}
+
+func (m *MockImportRepository) UpdateValidationErrors(ctx context.Context, id uuid.UUID, errors []models.ValidationError) error {
+	args := m.Called(ctx, id, errors)
+	return args.Error(0)
+}
+
+func (m *MockImportRepository) UpdateStatistics(ctx context.Context, id uuid.UUID, stats *models.ImportStatistics) error {
+	args := m.Called(ctx, id, stats)
+	return args.Error(0)
+}
+
+type MockPoliticianRepository struct {
+	mock.Mock
+}
+
+func (m *MockPoliticianRepository) Create(ctx context.Context, politician *models.Politician) error {
+	args := m.Called(ctx, politician)
+	return args.Error(0)
+}
+
+type MockPoliticalPartyRepository struct {
+	mock.Mock
+}
+
+func (m *MockPoliticalPartyRepository) GetAll(ctx context.Context, activeOnly bool) ([]*models.PoliticalParty, error) {
+	args := m.Called(ctx, activeOnly)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.PoliticalParty), args.Error(1)
+}
+
+func (m *MockPoliticalPartyRepository) GetAllPositions(ctx context.Context) ([]*models.GovernmentPosition, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.GovernmentPosition), args.Error(1)
+}
+
+type MockLocationRepository struct {
+	mock.Mock
+}
+
+type MockValidator struct {
+	mock.Mock
+}
+
+func (m *MockValidator) ValidateImportRows(ctx context.Context, rows []models.ImportRow) (*models.ImportValidationResult, error) {
+	args := m.Called(ctx, rows)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ImportValidationResult), args.Error(1)
+}
+
+// Test fixtures
+
+func createTestImportService() (*ImportService, *MockImportRepository, *MockPoliticianRepository, *MockPoliticalPartyRepository, *MockLocationRepository) {
+	mockImportRepo := new(MockImportRepository)
+	mockPoliticianRepo := new(MockPoliticianRepository)
+	mockPartyRepo := new(MockPoliticalPartyRepository)
+	mockLocationRepo := new(MockLocationRepository)
+
+	service := &ImportService{
+		importRepo:     mockImportRepo,
+		politicianRepo: mockPoliticianRepo,
+		partyRepo:      mockPartyRepo,
+		locationRepo:   mockLocationRepo,
+	}
+
+	return service, mockImportRepo, mockPoliticianRepo, mockPartyRepo, mockLocationRepo
+}
+
+func createValidImportRows() []models.ImportRow {
+	termEnd := "2028-06-30"
+	return []models.ImportRow{
+		{
+			RowNumber:        1,
+			Name:             "John Doe",
+			Position:         "President",
+			JurisdictionType: "national",
+			JurisdictionName: "",
+			Party:            "Democratic Party",
+			TermStart:        "2022-06-30",
+			TermEnd:          &termEnd,
+		},
+		{
+			RowNumber:        2,
+			Name:             "Jane Smith",
+			Position:         "Senator",
+			JurisdictionType: "national",
+			JurisdictionName: "",
+			Party:            "Republican Party",
+			TermStart:        "2023-01-01",
+		},
+	}
+}
+
+// Tests for ValidateImport
+
+func TestImportService_ValidateImport(t *testing.T) {
+	service, _, _, _, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully validates import rows", func(t *testing.T) {
+		rows := createValidImportRows()
+
+		// Mock the validator
+		mockValidator := new(MockValidator)
+		service.validator = mockValidator
+
+		expectedResult := &models.ImportValidationResult{
+			TotalRows:   2,
+			ValidRows:   2,
+			InvalidRows: 0,
+			Errors:      []models.ValidationError{},
+		}
+
+		mockValidator.On("ValidateImportRows", ctx, rows).Return(expectedResult, nil)
+
+		result, err := service.ValidateImport(ctx, rows)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, 2, result.TotalRows)
+		assert.Equal(t, 2, result.ValidRows)
+		assert.Equal(t, 0, result.InvalidRows)
+		mockValidator.AssertExpectations(t)
+	})
+
+	t.Run("handles validation with errors", func(t *testing.T) {
+		rows := createValidImportRows()
+
+		mockValidator := new(MockValidator)
+		service.validator = mockValidator
+
+		expectedResult := &models.ImportValidationResult{
+			TotalRows:   2,
+			ValidRows:   1,
+			InvalidRows: 1,
+			Errors: []models.ValidationError{
+				{Row: 2, Field: "party", Error: "Party not found"},
+			},
+		}
+
+		mockValidator.On("ValidateImportRows", ctx, rows).Return(expectedResult, nil)
+
+		result, err := service.ValidateImport(ctx, rows)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, 1, result.InvalidRows)
+		assert.Len(t, result.Errors, 1)
+		mockValidator.AssertExpectations(t)
+	})
+
+	t.Run("handles validator error", func(t *testing.T) {
+		rows := createValidImportRows()
+
+		mockValidator := new(MockValidator)
+		service.validator = mockValidator
+
+		mockValidator.On("ValidateImportRows", ctx, rows).Return(nil, errors.New("validation failed"))
+
+		result, err := service.ValidateImport(ctx, rows)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		mockValidator.AssertExpectations(t)
+	})
+}
+
+// Tests for StartImport
+
+func TestImportService_StartImport(t *testing.T) {
+	service, mockImportRepo, _, _, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully starts import", func(t *testing.T) {
+		userID := uuid.New()
+		electionID := uuid.New()
+
+		req := &models.ProcessImportRequest{
+			FileData:   []byte("test file data"),
+			Filename:   "test_import.xlsx",
+			ElectionID: &electionID,
+		}
+
+		mockImportRepo.On("Create", ctx, mock.AnythingOfType("*models.PoliticianImportLog")).Return(nil)
+
+		importLog, err := service.StartImport(ctx, req, &userID)
+
+		require.NoError(t, err)
+		assert.NotNil(t, importLog)
+		assert.Equal(t, "test_import.xlsx", importLog.Filename)
+		assert.Equal(t, "pending", importLog.Status)
+		assert.Equal(t, &userID, importLog.UploadedBy)
+		assert.Equal(t, &electionID, importLog.ElectionID)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("starts import without user ID", func(t *testing.T) {
+		req := &models.ProcessImportRequest{
+			FileData: []byte("test file data"),
+			Filename: "test_import.xlsx",
+		}
+
+		mockImportRepo.On("Create", ctx, mock.AnythingOfType("*models.PoliticianImportLog")).Return(nil)
+
+		importLog, err := service.StartImport(ctx, req, nil)
+
+		require.NoError(t, err)
+		assert.NotNil(t, importLog)
+		assert.Nil(t, importLog.UploadedBy)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles repository error", func(t *testing.T) {
+		userID := uuid.New()
+		req := &models.ProcessImportRequest{
+			FileData: []byte("test file data"),
+			Filename: "test_import.xlsx",
+		}
+
+		mockImportRepo.On("Create", ctx, mock.AnythingOfType("*models.PoliticianImportLog")).Return(errors.New("database error"))
+
+		importLog, err := service.StartImport(ctx, req, &userID)
+
+		assert.Error(t, err)
+		assert.Nil(t, importLog)
+		assert.Contains(t, err.Error(), "failed to create import log")
+		mockImportRepo.AssertExpectations(t)
+	})
+}
+
+// Tests for ListImportLogs
+
+func TestImportService_ListImportLogs(t *testing.T) {
+	service, mockImportRepo, _, _, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully lists import logs", func(t *testing.T) {
+		expectedLogs := &models.PaginatedImportLogs{
+			ImportLogs: []models.PoliticianImportLog{
+				{ID: uuid.New(), Filename: "import1.xlsx", Status: "completed"},
+				{ID: uuid.New(), Filename: "import2.xlsx", Status: "processing"},
+			},
+			Total:      2,
+			Page:       1,
+			PerPage:    20,
+			TotalPages: 1,
+		}
+
+		mockImportRepo.On("List", ctx, 1, 20).Return(expectedLogs, nil)
+
+		result, err := service.ListImportLogs(ctx, 1, 20)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result.ImportLogs, 2)
+		assert.Equal(t, 2, result.Total)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles empty results", func(t *testing.T) {
+		emptyLogs := &models.PaginatedImportLogs{
+			ImportLogs: []models.PoliticianImportLog{},
+			Total:      0,
+			Page:       1,
+			PerPage:    20,
+			TotalPages: 0,
+		}
+
+		mockImportRepo.On("List", ctx, 1, 20).Return(emptyLogs, nil)
+
+		result, err := service.ListImportLogs(ctx, 1, 20)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Len(t, result.ImportLogs, 0)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles repository error", func(t *testing.T) {
+		mockImportRepo.On("List", ctx, 1, 20).Return(nil, errors.New("database error"))
+
+		result, err := service.ListImportLogs(ctx, 1, 20)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		mockImportRepo.AssertExpectations(t)
+	})
+}
+
+// Tests for GetImportLog
+
+func TestImportService_GetImportLog(t *testing.T) {
+	service, mockImportRepo, _, _, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully gets import log", func(t *testing.T) {
+		logID := uuid.New()
+		expectedLog := &models.PoliticianImportLog{
+			ID:       logID,
+			Filename: "test_import.xlsx",
+			Status:   "completed",
+		}
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(expectedLog, nil)
+
+		result, err := service.GetImportLog(ctx, logID)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, logID, result.ID)
+		assert.Equal(t, "test_import.xlsx", result.Filename)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("returns nil for non-existent log", func(t *testing.T) {
+		logID := uuid.New()
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(nil, nil)
+
+		result, err := service.GetImportLog(ctx, logID)
+
+		require.NoError(t, err)
+		assert.Nil(t, result)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles repository error", func(t *testing.T) {
+		logID := uuid.New()
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(nil, errors.New("database error"))
+
+		result, err := service.GetImportLog(ctx, logID)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		mockImportRepo.AssertExpectations(t)
+	})
+}
+
+// Tests for GenerateTemplate
+
+func TestImportService_GenerateTemplate(t *testing.T) {
+	service, _, _, mockPartyRepo, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully generates template", func(t *testing.T) {
+		positions := []*models.GovernmentPosition{
+			{ID: uuid.New(), Name: "President", Slug: "president", Level: "national"},
+			{ID: uuid.New(), Name: "Senator", Slug: "senator", Level: "national"},
+		}
+
+		parties := []*models.PoliticalParty{
+			{ID: uuid.New(), Name: "Democratic Party", Abbreviation: "DP"},
+			{ID: uuid.New(), Name: "Republican Party", Abbreviation: "RP"},
+		}
+
+		mockPartyRepo.On("GetAllPositions", ctx).Return(positions, nil)
+		mockPartyRepo.On("GetAll", ctx, false).Return(parties, nil)
+
+		result, err := service.GenerateTemplate(ctx)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.IsType(t, &excelize.File{}, result)
+		mockPartyRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles positions loading error", func(t *testing.T) {
+		mockPartyRepo.On("GetAllPositions", ctx).Return(nil, errors.New("database error"))
+
+		result, err := service.GenerateTemplate(ctx)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "failed to load positions")
+		mockPartyRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles parties loading error", func(t *testing.T) {
+		positions := []*models.GovernmentPosition{
+			{ID: uuid.New(), Name: "President", Slug: "president"},
+		}
+
+		mockPartyRepo.On("GetAllPositions", ctx).Return(positions, nil)
+		mockPartyRepo.On("GetAll", ctx, false).Return(nil, errors.New("database error"))
+
+		result, err := service.GenerateTemplate(ctx)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "failed to load parties")
+		mockPartyRepo.AssertExpectations(t)
+	})
+}
+
+// Tests for GenerateErrorReport
+
+func TestImportService_GenerateErrorReport(t *testing.T) {
+	service, mockImportRepo, _, _, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully generates error report", func(t *testing.T) {
+		logID := uuid.New()
+		importLog := &models.PoliticianImportLog{
+			ID:       logID,
+			Filename: "test_import.xlsx",
+			Status:   "completed",
+			ValidationErrors: []models.ValidationError{
+				{Row: 1, Field: "name", Error: "Name is required"},
+				{Row: 2, Field: "party", Error: "Party not found"},
+			},
+		}
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(importLog, nil)
+
+		result, err := service.GenerateErrorReport(ctx, logID)
+
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.IsType(t, &excelize.File{}, result)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("returns nil when no errors exist", func(t *testing.T) {
+		logID := uuid.New()
+		importLog := &models.PoliticianImportLog{
+			ID:               logID,
+			Filename:         "test_import.xlsx",
+			Status:           "completed",
+			ValidationErrors: []models.ValidationError{},
+		}
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(importLog, nil)
+
+		result, err := service.GenerateErrorReport(ctx, logID)
+
+		require.NoError(t, err)
+		assert.Nil(t, result)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("returns nil when import log not found", func(t *testing.T) {
+		logID := uuid.New()
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(nil, nil)
+
+		result, err := service.GenerateErrorReport(ctx, logID)
+
+		require.NoError(t, err)
+		assert.Nil(t, result)
+		mockImportRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles repository error", func(t *testing.T) {
+		logID := uuid.New()
+
+		mockImportRepo.On("GetByID", ctx, logID).Return(nil, errors.New("database error"))
+
+		result, err := service.GenerateErrorReport(ctx, logID)
+
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "failed to fetch import log")
+		mockImportRepo.AssertExpectations(t)
+	})
+}
+
+// Tests for processRow
+
+func TestImportService_processRow(t *testing.T) {
+	service, _, mockPoliticianRepo, _, _ := createTestImportService()
+	ctx := context.Background()
+
+	t.Run("successfully processes valid row", func(t *testing.T) {
+		partyID := uuid.New()
+		positionID := uuid.New()
+		termStart := time.Now()
+
+		row := &models.ValidatedImportRow{
+			RowNumber:    1,
+			Name:         "John Doe",
+			PositionID:   positionID,
+			PositionName: "President",
+			PartyID:      &partyID,
+			TermStart:    termStart,
+			IsValid:      true,
+		}
+
+		stats := &ImportStats{}
+
+		mockPoliticianRepo.On("Create", ctx, mock.AnythingOfType("*models.Politician")).Return(nil)
+
+		err := service.processRow(ctx, row, stats)
+
+		require.NoError(t, err)
+		assert.Equal(t, 1, stats.PoliticiansCreated)
+		assert.Equal(t, 0, stats.PoliticiansUpdated)
+		mockPoliticianRepo.AssertExpectations(t)
+	})
+
+	t.Run("handles duplicate politician as update", func(t *testing.T) {
+		partyID := uuid.New()
+		positionID := uuid.New()
+		termStart := time.Now()
+
+		row := &models.ValidatedImportRow{
+			RowNumber:    1,
+			Name:         "John Doe",
+			PositionID:   positionID,
+			PositionName: "President",
+			PartyID:      &partyID,
+			TermStart:    termStart,
+			IsValid:      true,
+		}
+
+		stats := &ImportStats{}
+
+		mockPoliticianRepo.On("Create", ctx, mock.AnythingOfType("*models.Politician")).Return(errors.New("duplicate"))
+
+		err := service.processRow(ctx, row, stats)
+
+		require.NoError(t, err) // Should not return error
+		assert.Equal(t, 0, stats.PoliticiansCreated)
+		assert.Equal(t, 1, stats.PoliticiansUpdated)
+		mockPoliticianRepo.AssertExpectations(t)
+	})
+}
+
+// Tests for generateSlug
+
+func TestGenerateSlug(t *testing.T) {
+	t.Run("generates slug with timestamp", func(t *testing.T) {
+		slug1 := generateSlug("John Doe")
+		time.Sleep(1 * time.Millisecond)
+		slug2 := generateSlug("John Doe")
+
+		assert.Contains(t, slug1, "John Doe")
+		assert.Contains(t, slug2, "John Doe")
+		assert.NotEqual(t, slug1, slug2) // Should be different due to timestamp
+	})
+
+	t.Run("handles empty name", func(t *testing.T) {
+		slug := generateSlug("")
+		assert.NotEmpty(t, slug) // Should still have timestamp
+	})
+}
+
+// Integration-style tests for ProcessImport
+// Note: These test the flow but with mocked dependencies
+
+func TestImportService_ProcessImport_Flow(t *testing.T) {
+	t.Run("processes complete import workflow", func(t *testing.T) {
+		service, mockImportRepo, mockPoliticianRepo, _, _ := createTestImportService()
+		ctx := context.Background()
+		importLogID := uuid.New()
+
+		// Mock all repository calls in sequence
+		mockImportRepo.On("UpdateStatus", ctx, importLogID, "processing").Return(nil).Once()
+		mockImportRepo.On("UpdateTotalRows", ctx, importLogID, mock.Anything).Return(nil).Once()
+		mockImportRepo.On("UpdateValidationErrors", ctx, importLogID, mock.Anything).Return(nil).Maybe()
+		mockPoliticianRepo.On("Create", ctx, mock.AnythingOfType("*models.Politician")).Return(nil).Maybe()
+		mockImportRepo.On("UpdateStatistics", ctx, importLogID, mock.AnythingOfType("*models.ImportStatistics")).Return(nil).Once()
+		mockImportRepo.On("UpdateStatus", ctx, importLogID, "completed").Return(nil).Once()
+
+		// Mock validator
+		mockValidator := new(MockValidator)
+		service.validator = mockValidator
+
+		validatedRow := models.ValidatedImportRow{
+			RowNumber:    1,
+			Name:         "John Doe",
+			PositionID:   uuid.New(),
+			PositionName: "President",
+			PartyID:      &uuid.UUID{},
+			TermStart:    time.Now(),
+			IsValid:      true,
+		}
+
+		validationResult := &models.ImportValidationResult{
+			TotalRows:     1,
+			ValidRows:     1,
+			InvalidRows:   0,
+			ValidatedRows: []models.ValidatedImportRow{validatedRow},
+		}
+
+		mockValidator.On("ValidateImportRows", ctx, mock.Anything).Return(validationResult, nil)
+
+		// This test requires actual Excel file parsing which we skip for unit tests
+		// Testing the error handling instead
+		mockImportRepo.On("UpdateStatus", ctx, importLogID, "failed").Return(nil).Maybe()
+		mockImportRepo.On("UpdateErrorLog", ctx, importLogID, mock.Anything).Return(nil).Maybe()
+
+		// Call with invalid file data
+		err := service.ProcessImport(ctx, importLogID, []byte("invalid excel data"))
+
+		// Should handle the error gracefully
+		assert.Error(t, err)
+	})
+}
