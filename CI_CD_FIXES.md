@@ -183,6 +183,29 @@ Approximately **12-20 minutes** (jobs run in parallel)
 5. `docker-compose.test.yml` - Fixed Dockerfile paths, added web port mapping
 6. **Created**: `docker-compose.ci.yml` - New CI overlay configuration
 
+## Duplicate Workflows Removed
+
+**Problem**: Multiple workflows with duplicate functionality were running simultaneously, causing confusion and wasted CI minutes.
+
+**Deleted**:
+1. `.github/workflows/api.yml` - Replaced by `backend-ci.yml`
+2. `.github/workflows/web.yml` - Replaced by `frontend-ci.yml`
+3. `.github/workflows/integration.yml` - Replaced by `integration-tests.yml`
+4. `.github/workflows/security.yml` - Security scans now in backend-ci.yml and frontend-ci.yml
+
+**Remaining Active Workflows**:
+- `backend-ci.yml` - Backend CI with linting, testing, security (Gosec, Trivy)
+- `frontend-ci.yml` - Frontend CI with linting, testing, security (npm audit, Snyk, Trivy)
+- `integration-tests.yml` - Docker integration and E2E tests
+- `claude.yml` - Claude Code integration
+- `claude-code-review.yml` - Automated code reviews
+
+**Impact**:
+- ✅ No more duplicate workflow runs
+- ✅ Clearer CI/CD pipeline
+- ✅ Reduced CI minutes usage
+- ✅ Easier to maintain
+
 ## Next Steps
 
 1. **Push changes to repository** - Triggers CI/CD workflows
