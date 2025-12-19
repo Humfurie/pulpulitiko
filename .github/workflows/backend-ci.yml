@@ -58,7 +58,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('api/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
@@ -145,6 +145,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -155,22 +158,22 @@ jobs:
           go-version: '1.22'
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: '-exclude-dir=test -exclude-dir=mocks ./...'
-          working-directory: ./api
+        working-directory: ./api
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -exclude-dir=test -exclude-dir=mocks ./...
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: 'api'
+          scan-ref: './api'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'

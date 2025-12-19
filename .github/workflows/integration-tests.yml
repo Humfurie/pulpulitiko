@@ -105,16 +105,16 @@ jobs:
         if: always()
         run: |
           echo "=== API Logs ==="
-          docker logs pulpulitiko-api --tail 100
+          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs api --tail 100
 
           echo "=== Web Logs ==="
-          docker logs pulpulitiko-web --tail 100
+          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs web --tail 100
 
           echo "=== Postgres Logs ==="
-          docker logs pulpulitiko-postgres --tail 50
+          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs postgres --tail 50
 
           echo "=== Redis Logs ==="
-          docker logs pulpulitiko-redis --tail 50
+          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs redis --tail 50
 
       - name: Cleanup
         if: always()
