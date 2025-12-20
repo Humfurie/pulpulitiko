@@ -104,17 +104,19 @@ jobs:
       - name: Check logs for errors
         if: always()
         run: |
+          COMPOSE_CMD="docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml"
+
           echo "=== API Logs ==="
-          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs api --tail 100
+          $COMPOSE_CMD logs api --tail 100
 
           echo "=== Web Logs ==="
-          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs web --tail 100
+          $COMPOSE_CMD logs web --tail 100
 
           echo "=== Postgres Logs ==="
-          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs postgres --tail 50
+          $COMPOSE_CMD logs postgres --tail 50
 
           echo "=== Redis Logs ==="
-          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs redis --tail 50
+          $COMPOSE_CMD logs redis --tail 50
 
       - name: Cleanup
         if: always()

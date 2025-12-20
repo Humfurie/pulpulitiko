@@ -1,4 +1,12 @@
 <script setup lang="ts">
+interface NavigationItem {
+  name: string
+  href?: string
+  icon: string
+  roles: string[]
+  items?: NavigationItem[]
+}
+
 const auth = useAuth()
 const route = useRoute()
 
@@ -83,11 +91,11 @@ const navigation = computed(() => {
 })
 
 // Check if a route or any of its children is active
-function isGroupActive(item: any) {
+function isGroupActive(item: NavigationItem) {
   const currentPath = route.path
   if (item.href && currentPath.startsWith(item.href)) return true
   if (item.items) {
-    return item.items.some((subItem: any) => currentPath.startsWith(subItem.href))
+    return item.items.some((subItem: NavigationItem) => subItem.href && currentPath.startsWith(subItem.href))
   }
   return false
 }

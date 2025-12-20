@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useGrouping } from './useGrouping'
-import type { GroupByOption, UseGroupingOptions } from './useGrouping'
 
 // Test data types
 interface TestPerson {
@@ -55,9 +54,9 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(Object.keys(groupedItems.value)).toHaveLength(3)
-      expect(groupedItems.value.Engineering).toHaveLength(2)
-      expect(groupedItems.value.Sales).toHaveLength(2)
-      expect(groupedItems.value.Marketing).toHaveLength(1)
+      expect(groupedItems.value.Engineering!).toHaveLength(2)
+      expect(groupedItems.value.Sales!).toHaveLength(2)
+      expect(groupedItems.value.Marketing!).toHaveLength(1)
     })
 
     it('should return all items in empty group when groupBy is empty', async () => {
@@ -70,8 +69,8 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(Object.keys(groupedItems.value)).toEqual([''])
-      expect(groupedItems.value['']).toHaveLength(5)
-      expect(groupedItems.value['']).toEqual(testPeople)
+      expect(groupedItems.value['']!).toHaveLength(5)
+      expect(groupedItems.value['']!).toEqual(testPeople)
     })
 
     it('should handle empty items array', async () => {
@@ -84,7 +83,7 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(Object.keys(groupedItems.value)).toEqual([''])
-      expect(groupedItems.value['']).toHaveLength(0)
+      expect(groupedItems.value['']!).toHaveLength(0)
       expect(groupNames.value).toHaveLength(0)
     })
 
@@ -111,12 +110,12 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(Object.keys(groupedItems.value)).toHaveLength(2)
-      expect(groupedItems.value.Electronics).toHaveLength(3)
-      expect(groupedItems.value.Furniture).toHaveLength(2)
+      expect(groupedItems.value.Electronics!).toHaveLength(3)
+      expect(groupedItems.value.Furniture!).toHaveLength(2)
     })
 
     it('should handle single item', async () => {
-      const items = ref([testPeople[0]])
+      const items = ref([testPeople[0]!])
       const groupBy = ref('department')
       const getGroupKey = (item: TestPerson, field: string) => item[field as keyof TestPerson] as string
 
@@ -125,7 +124,7 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(Object.keys(groupedItems.value)).toEqual(['Engineering'])
-      expect(groupedItems.value.Engineering).toHaveLength(1)
+      expect(groupedItems.value.Engineering!).toHaveLength(1)
     })
   })
 
@@ -616,7 +615,7 @@ describe('useGrouping', () => {
       const { groupedItems } = useGrouping(items, groupBy, getGroupKey)
 
       await nextTick()
-      const initialEngineeringCount = groupedItems.value.Engineering.length
+      const initialEngineeringCount = groupedItems.value.Engineering!.length
 
       items.value.push({
         id: 6,
@@ -627,7 +626,7 @@ describe('useGrouping', () => {
       })
       await nextTick()
 
-      expect(groupedItems.value.Engineering.length).toBe(initialEngineeringCount + 1)
+      expect(groupedItems.value.Engineering!.length).toBe(initialEngineeringCount + 1)
     })
 
     it('should handle removing items', async () => {
@@ -773,7 +772,7 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(groupedItems.value[longName]).toBeDefined()
-      expect(groupedItems.value[longName].length).toBe(1)
+      expect(groupedItems.value[longName]!.length).toBe(1)
     })
   })
 

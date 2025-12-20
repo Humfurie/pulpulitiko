@@ -17,7 +17,7 @@ const dragging = ref(false)
 
 // Validation state
 const validating = ref(false)
-const validationResult = ref<any>(null)
+const validationResult = ref<unknown>(null)
 
 // Import state
 const importing = ref(false)
@@ -25,14 +25,14 @@ const importSuccess = ref(false)
 const error = ref('')
 
 // Import logs state
-const importLogs = ref<any[]>([])
+const importLogs = ref<unknown[]>([])
 const loadingLogs = ref(false)
 
 // Handle file selection
 function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    selectedFile.value = target.files[0]
+    selectedFile.value = target.files[0] || null
     validationResult.value = null
     importSuccess.value = false
     error.value = ''
@@ -54,7 +54,7 @@ function handleDrop(event: DragEvent) {
   dragging.value = false
 
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
-    selectedFile.value = event.dataTransfer.files[0]
+    selectedFile.value = event.dataTransfer.files[0] || null
     validationResult.value = null
     importSuccess.value = false
     error.value = ''
@@ -75,7 +75,7 @@ async function validateFile() {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
 
-    const response = await $fetch<ApiResponse<any>>(`${baseUrl}/admin/import/politicians/validate`, {
+    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/import/politicians/validate`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: formData
@@ -106,7 +106,7 @@ async function importFile() {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
 
-    const response = await $fetch<ApiResponse<any>>(`${baseUrl}/admin/import/politicians`, {
+    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/import/politicians`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: formData
@@ -133,7 +133,7 @@ async function fetchImportLogs() {
   loadingLogs.value = true
 
   try {
-    const response = await $fetch<ApiResponse<any>>(`${baseUrl}/admin/import/politicians/logs`, {
+    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/import/politicians/logs`, {
       headers: auth.getAuthHeaders()
     })
 
@@ -164,7 +164,7 @@ async function downloadTemplate() {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
-  } catch (e: unknown) {
+  } catch {
     error.value = 'Failed to download template'
   }
 }
@@ -185,7 +185,7 @@ async function downloadErrorReport(logId: string) {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
-  } catch (e: unknown) {
+  } catch {
     error.value = 'Failed to download error report'
   }
 }
