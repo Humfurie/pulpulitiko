@@ -3,14 +3,10 @@ version: 2
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
-    - vendor
-    - third_party
-  skip-files:
-    - ".*_test.go"
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
   sort-results: true
@@ -41,17 +37,15 @@ linters:
     - noctx         # Finds sending http request without context.Context
     - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed
     - rowserrcheck  # Checks whether Err of rows is checked successfully
-    - exportloopref # Checks for pointers to enclosing loop variables
+    - copyloopvar   # Checks for pointers to enclosing loop variables (replaces exportloopref)
     - gci           # Controls Go package import order and makes it always deterministic
 
   disable:
     - exhaustive    # Can be too strict
-    - exhauststruct # Can be too strict
     - funlen        # Can be too opinionated
     - gochecknoglobals # Sometimes globals are necessary
     - gocognit      # Similar to gocyclo
     - godox         # Allow TODO comments
-    - gomnd         # Can be too strict about magic numbers
     - lll           # Line length can be handled by formatters
     - nlreturn      # Can be too opinionous
     - wsl           # Whitespace linter can be too strict
@@ -138,6 +132,11 @@ linters-settings:
 
 issues:
   exclude-use-default: false
+  exclude-dirs:
+    - vendor
+    - third_party
+  exclude-files:
+    - ".*_test.go"
   exclude-rules:
     # Exclude some linters from running on tests files
     - path: _test\.go

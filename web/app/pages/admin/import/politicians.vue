@@ -1,6 +1,43 @@
 <script setup lang="ts">
 import type { ApiResponse } from '~/types'
 
+// Type definitions for import API responses
+interface ValidationError {
+  row: number
+  field: string
+  message: string
+  error?: string
+  value?: string
+  suggestions?: string[]
+}
+
+interface ValidationResult {
+  total_rows: number
+  valid_rows: number
+  invalid_rows: number
+  errors: ValidationError[]
+}
+
+interface ImportLog {
+  id: string
+  filename: string
+  status: string
+  total_rows: number
+  successful_rows: number
+  successful_imports?: number
+  failed_rows: number
+  failed_imports?: number
+  politicians_created?: number
+  created_at: string
+  started_at?: string
+  error_message?: string
+  validation_errors?: number | ValidationError[]
+}
+
+interface ImportLogsData {
+  import_logs: ImportLog[]
+}
+
 definePageMeta({
   layout: 'admin',
   middleware: 'admin'
@@ -17,7 +54,7 @@ const dragging = ref(false)
 
 // Validation state
 const validating = ref(false)
-const validationResult = ref<unknown>(null)
+const validationResult = ref<ValidationResult | null>(null)
 
 // Import state
 const importing = ref(false)
@@ -25,7 +62,7 @@ const importSuccess = ref(false)
 const error = ref('')
 
 // Import logs state
-const importLogs = ref<unknown[]>([])
+const importLogs = ref<ImportLog[]>([])
 const loadingLogs = ref(false)
 
 // Handle file selection
@@ -75,7 +112,7 @@ async function validateFile() {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
 
-    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/import/politicians/validate`, {
+    const response = await $fetch<ApiResponse<ValidationResult>>(`${baseUrl}/admin/import/politicians/validate`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: formData
@@ -106,7 +143,7 @@ async function importFile() {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
 
-    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/import/politicians`, {
+    const response = await $fetch<ApiResponse<null>>(`${baseUrl}/admin/import/politicians`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: formData
@@ -133,7 +170,7 @@ async function fetchImportLogs() {
   loadingLogs.value = true
 
   try {
-    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/import/politicians/logs`, {
+    const response = await $fetch<ApiResponse<ImportLogsData>>(`${baseUrl}/admin/import/politicians/logs`, {
       headers: auth.getAuthHeaders()
     })
 
@@ -198,6 +235,17 @@ function getStatusColor(status: string) {
     case 'failed': return 'error'
     default: return 'neutral'
   }
+}
+
+// Format date safely
+function formatDate(date: string | undefined) {
+  if (!date) return 'N/A'
+  return new Date(date).toLocaleString()
+}
+
+// Check if validation errors is an array
+function hasValidationErrors(log: ImportLog) {
+  return Array.isArray(log.validation_errors) && log.validation_errors.length > 0
 }
 
 onMounted(() => {
@@ -406,12 +454,12 @@ useSeoMeta({
               </div>
 
               <p class="text-xs text-gray-500 mt-2">
-                Started: {{ new Date(log.started_at).toLocaleString() }}
+                Started: {{ formatDate(log.started_at) }}
               </p>
             </div>
 
             <UButton
-              v-if="log.status === 'failed' && log.validation_errors && log.validation_errors.length > 0"
+              v-if="log.status === 'failed' && hasValidationErrors(log)"
               variant="ghost"
               size="sm"
               icon="i-heroicons-arrow-down-tray"
