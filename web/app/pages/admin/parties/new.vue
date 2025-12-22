@@ -39,7 +39,7 @@ async function handleSubmit() {
   error.value = ''
 
   try {
-    const response = await $fetch<ApiResponse<any>>(`${baseUrl}/admin/parties`, {
+    const response = await $fetch<ApiResponse<unknown>>(`${baseUrl}/admin/parties`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: {

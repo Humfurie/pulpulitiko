@@ -191,23 +191,18 @@ func (r *PositionHistoryRepository) GetCurrentHolder(ctx context.Context, req *m
 	} else if req.RegionID != nil {
 		query += fmt.Sprintf(" AND ph.region_id = $%d", argIndex)
 		args = append(args, *req.RegionID)
-		argIndex++
 	} else if req.ProvinceID != nil {
 		query += fmt.Sprintf(" AND ph.province_id = $%d", argIndex)
 		args = append(args, *req.ProvinceID)
-		argIndex++
 	} else if req.CityID != nil {
 		query += fmt.Sprintf(" AND ph.city_id = $%d", argIndex)
 		args = append(args, *req.CityID)
-		argIndex++
 	} else if req.BarangayID != nil {
 		query += fmt.Sprintf(" AND ph.barangay_id = $%d", argIndex)
 		args = append(args, *req.BarangayID)
-		argIndex++
 	} else if req.DistrictID != nil {
 		query += fmt.Sprintf(" AND ph.district_id = $%d", argIndex)
 		args = append(args, *req.DistrictID)
-		argIndex++
 	}
 
 	history := &models.PoliticianPositionHistory{}

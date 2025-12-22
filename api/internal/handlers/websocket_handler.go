@@ -253,7 +253,9 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 func (c *Client) readPump(h *WebSocketHandler) {
 	defer func() {
 		c.Hub.unregister <- c
-		c.Conn.Close()
+		if err := c.Conn.Close(); err != nil {
+			log.Error().Err(err).Msg("Failed to close WebSocket connection in readPump")
+		}
 	}()
 
 	c.Conn.SetReadLimit(512 * 1024) // 512KB max message size
@@ -300,7 +302,9 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
-		c.Conn.Close()
+		if err := c.Conn.Close(); err != nil {
+			log.Error().Err(err).Msg("Failed to close WebSocket connection in writePump")
+		}
 	}()
 
 	for {

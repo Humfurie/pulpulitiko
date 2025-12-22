@@ -21,7 +21,7 @@ func ParseImportFile(fileData []byte) ([]models.ImportRow, error) {
 	// Get the first sheet (Politicians sheet)
 	sheets := f.GetSheetList()
 	if len(sheets) == 0 {
-		return nil, fmt.Errorf("Excel file has no sheets")
+		return nil, fmt.Errorf("excel file has no sheets")
 	}
 
 	sheetName := sheets[0]
@@ -31,7 +31,7 @@ func ParseImportFile(fileData []byte) ([]models.ImportRow, error) {
 	}
 
 	if len(rows) < 2 {
-		return nil, fmt.Errorf("Excel file must have at least a header row and one data row")
+		return nil, fmt.Errorf("excel file must have at least a header row and one data row")
 	}
 
 	// Parse header row to find column indices

@@ -79,7 +79,7 @@ export function useGrouping<T>(
     Object.keys(groups)
       .sort()
       .forEach((key) => {
-        sortedGroups[key] = groups[key]
+        sortedGroups[key] = groups[key]!
       })
 
     return sortedGroups
