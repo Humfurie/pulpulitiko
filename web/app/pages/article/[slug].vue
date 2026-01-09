@@ -1,31 +1,10 @@
 <script setup lang="ts">
 const route = useRoute()
 const api = useApi()
+const { sanitizeRichContent } = useSanitizedHtml()
+const { sanitizeForSchema, countWordsInHtml } = useTextUtils()
 
 const slug = computed(() => route.params.slug as string)
-
-// Helper function to sanitize text for Schema.org JSON-LD
-// Strips HTML tags and ensures safe content for JSON serialization
-function sanitizeForSchema(html: string | undefined): string | undefined {
-  if (!html) return undefined
-
-  // Strip HTML tags
-  const withoutTags = html.replace(/<[^>]*>/g, '')
-
-  // Decode common HTML entities to prevent double-encoding
-  const decoded = withoutTags
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-
-  // Trim and normalize whitespace
-  const normalized = decoded.replace(/\s+/g, ' ').trim()
-
-  // Truncate to reasonable length (Google recommends max 5000 characters for articleBody)
-  return normalized.length > 5000 ? normalized.substring(0, 4997) + '...' : normalized
-}
 
 const { data: article, error, status } = await useAsyncData(
   `article-${slug.value}`,
@@ -37,6 +16,9 @@ const { data: relatedArticles } = await useAsyncData(
   () => api.getRelatedArticles(slug.value),
   { watch: [slug] }
 )
+
+// Sanitize article content for safe display (XSS protection)
+const sanitizedContent = computed(() => sanitizeRichContent(article.value?.content))
 
 // Calculate reading time (average 200 words per minute)
 const readingTime = computed(() => {
@@ -95,12 +77,23 @@ useSeoMeta({
   ogType: 'article',
   ogUrl: () => `${siteUrl}/article/${slug.value}`,
   ogLocale: 'en_PH',
+  // Article-specific meta tags
+  articleSection: computed(() => article.value?.category?.name),
+  articleTag: computed(() => article.value?.tags?.map(t => t.name)),
   articlePublishedTime: computed(() => article.value?.published_at),
   articleAuthor: computed(() => article.value?.author?.name ? [article.value.author.name] : undefined),
+  // Enhanced robots directives
+  robots: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+  // Open Graph locale variations
+  ogLocaleAlternate: ['en_US', 'tl_PH'],
+  // Twitter enhancements
   twitterCard: 'summary_large_image',
   twitterTitle: () => article.value?.title,
   twitterDescription: () => article.value?.summary || '',
-  twitterImage: () => ogImageUrl.value
+  twitterImage: () => ogImageUrl.value,
+  twitterSite: '@pulpulitiko',
+  // Mobile browser theme color
+  themeColor: '#f97316'
 })
 
 // Canonical URL
@@ -132,6 +125,18 @@ useHead({
           datePublished: article.value?.published_at,
           dateModified: article.value?.updated_at || article.value?.published_at,
           articleBody,
+          // Content categorization
+          articleSection: article.value?.category?.name || 'Politics',
+          keywords: article.value?.tags?.map(t => t.name).join(', '),
+          // Geographic context
+          spatialCoverage: {
+            '@type': 'Place',
+            name: 'Philippines'
+          },
+          // Content accessibility
+          isAccessibleForFree: true,
+          // Word count (accurate DOMParser-based calculation)
+          wordCount: countWordsInHtml(article.value?.content || ''),
           author: article.value?.author ? {
             '@type': 'Person',
             name: article.value.author.name,
@@ -360,10 +365,9 @@ useHead({
         </p>
 
         <!-- Content -->
-        <!-- eslint-disable-next-line vue/no-v-html -->
         <div
           class="article-content prose prose-lg dark:prose-invert max-w-none"
-          v-html="article.content"
+          v-html="sanitizedContent"
         />
 
         <!-- Tags Section -->

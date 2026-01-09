@@ -8,6 +8,7 @@ definePageMeta({
 const route = useRoute()
 const api = useApi()
 const auth = useAuth()
+const { sanitizeComment } = useSanitizedHtml()
 
 const slug = computed(() => route.params.slug as string)
 
@@ -366,6 +367,11 @@ async function toggleReaction(commentId: string, reaction: string, hasReacted: b
 function formatContentWithMentions(content: string): string {
   // Replace @username with highlighted span
   return content.replace(/@(\w+(?:\s+\w+)?)/g, '<span class="text-primary font-medium cursor-pointer hover:underline">@$1</span>')
+}
+
+// Sanitize formatted content for safe display (XSS protection)
+function getSanitizedCommentContent(content: string): string {
+  return sanitizeComment(formatContentWithMentions(content))
 }
 
 // Format count (1000 → 1k, 1000000 → 1M)
@@ -745,7 +751,7 @@ useHead(() => ({
                       </div>
                       <p
                         class="mt-1 text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap"
-                        v-html="formatContentWithMentions(comment.content)"
+                        v-html="getSanitizedCommentContent(comment.content)"
                       />
 
                       <!-- Comment actions -->
@@ -901,10 +907,9 @@ useHead(() => ({
                                   {{ formatRelativeTime(reply.created_at) }}
                                 </span>
                               </div>
-                              <!-- eslint-disable-next-line vue/no-v-html -->
                               <p
                                 class="mt-1 text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap"
-                                v-html="formatContentWithMentions(reply.content)"
+                                v-html="getSanitizedCommentContent(reply.content)"
                               />
                             </div>
                           </div>

@@ -38,8 +38,8 @@ jobs:
 
           MINIO_ACCESS_KEY=minioadmin
           MINIO_SECRET_KEY=minioadmin
-          MINIO_ENDPOINT=minio:9000
-          MINIO_PUBLIC_ENDPOINT=localhost:9000
+          MINIO_ENDPOINT=minio-test:9000
+          MINIO_PUBLIC_ENDPOINT=http://localhost:9000
           MINIO_BUCKET=pulpulitiko-test
           MINIO_USE_SSL=false
 
@@ -283,8 +283,8 @@ jobs:
           JWT_SECRET=test-jwt-secret-key-for-integration-tests
           MINIO_ACCESS_KEY=minioadmin
           MINIO_SECRET_KEY=minioadmin
-          MINIO_ENDPOINT=minio:9000
-          MINIO_PUBLIC_ENDPOINT=localhost:9000
+          MINIO_ENDPOINT=minio-test:9000
+          MINIO_PUBLIC_ENDPOINT=http://localhost:9000
           MINIO_BUCKET=pulpulitiko-test
           MINIO_USE_SSL=false
           API_PORT=8080

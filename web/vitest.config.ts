@@ -2,8 +2,10 @@ import { defineVitestConfig } from '@nuxt/test-utils/config'
 
 export default defineVitestConfig({
   test: {
-    environment: 'happy-dom',
+    environment: 'jsdom',
     globals: true,
+    // Exclude E2E tests (run with Playwright instead)
+    exclude: ['**/node_modules/**', '**/tests/e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

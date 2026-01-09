@@ -34,13 +34,15 @@ type CommentService struct {
 	repo                *repository.CommentRepository
 	articleRepo         *repository.ArticleRepository
 	notificationService *NotificationService
+	sanitizer           *HTMLSanitizer
 }
 
-func NewCommentService(repo *repository.CommentRepository, articleRepo *repository.ArticleRepository, notificationService *NotificationService) *CommentService {
+func NewCommentService(repo *repository.CommentRepository, articleRepo *repository.ArticleRepository, notificationService *NotificationService, sanitizer *HTMLSanitizer) *CommentService {
 	return &CommentService{
 		repo:                repo,
 		articleRepo:         articleRepo,
 		notificationService: notificationService,
+		sanitizer:           sanitizer,
 	}
 }
 
@@ -76,21 +78,30 @@ func (s *CommentService) CreateComment(ctx context.Context, articleSlug string, 
 		// Single-level threading is enforced at DB level
 	}
 
+	// Sanitize comment content to prevent XSS attacks
+	sanitizedContent := s.sanitizer.SanitizeComment(req.Content)
+
+	// Create sanitized request
+	sanitizedReq := &models.CreateCommentRequest{
+		Content:  sanitizedContent,
+		ParentID: req.ParentID,
+	}
+
 	// Determine initial status based on profanity check
 	status := models.CommentStatusActive
-	if containsProfanity(req.Content) {
+	if containsProfanity(sanitizedContent) {
 		status = models.CommentStatusUnderReview
 	}
 
-	comment, err := s.repo.Create(ctx, article.ID, userID, req, status)
+	comment, err := s.repo.Create(ctx, article.ID, userID, sanitizedReq, status)
 	if err != nil {
 		return nil, err
 	}
 
 	// Process mentions and create notifications
 	if s.notificationService != nil {
-		// Save mentions and get mentioned user IDs
-		mentionedUserIDs, _ := s.repo.SaveMentions(ctx, comment.ID, req.Content)
+		// Save mentions and get mentioned user IDs (use sanitized content)
+		mentionedUserIDs, _ := s.repo.SaveMentions(ctx, comment.ID, sanitizedContent)
 
 		// Create notifications for mentions
 		for _, mentionedUserID := range mentionedUserIDs {
@@ -165,7 +176,10 @@ func (s *CommentService) UpdateComment(ctx context.Context, id uuid.UUID, userID
 		return nil, fmt.Errorf("not authorized to edit this comment")
 	}
 
-	if err := s.repo.Update(ctx, id, req.Content); err != nil {
+	// Sanitize comment content to prevent XSS attacks
+	sanitizedContent := s.sanitizer.SanitizeComment(req.Content)
+
+	if err := s.repo.Update(ctx, id, sanitizedContent); err != nil {
 		return nil, err
 	}
 

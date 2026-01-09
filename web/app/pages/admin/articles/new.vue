@@ -9,6 +9,7 @@ definePageMeta({
 
 const auth = useAuth()
 const api = useApi()
+const { countWordsInHtml } = useTextUtils()
 const router = useRouter()
 const config = useRuntimeConfig()
 const baseUrl = import.meta.server ? config.apiInternalUrl : config.public.apiUrl
@@ -31,12 +32,8 @@ const form = reactive({
   politician_ids: [] as string[]
 })
 
-// Word count calculation
-const wordCount = computed(() => {
-  if (!form.content) return 0
-  const text = form.content.replace(/<[^>]*>/g, '').trim()
-  return text.split(/\s+/).filter(word => word.length > 0).length
-})
+// Word count calculation using DOMParser for accurate HTML parsing
+const wordCount = computed(() => countWordsInHtml(form.content))
 
 const wordCountStatus = computed(() => {
   const count = wordCount.value
@@ -331,6 +328,7 @@ useSeoMeta({
                         :color="wordCountStatus.color"
                         variant="soft"
                         size="sm"
+                        :aria-label="`Article has ${wordCount} words, status: ${wordCountStatus.label}`"
                       >
                         {{ wordCount }} words - {{ wordCountStatus.label }}
                       </UBadge>

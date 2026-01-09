@@ -1,5 +1,14 @@
 name: Dependabot Auto-Merge
 
+# SECURITY NOTE: This workflow uses pull_request_target for Dependabot compatibility.
+# pull_request_target runs with write permissions, so we implement these safety measures:
+# 1. Only runs for dependabot[bot] user (verified in if condition)
+# 2. Only auto-merges patch updates (no breaking changes)
+# 3. Waits for all CI checks to pass before any action
+# 4. Uses explicit SHA checkout (not PR HEAD) when checking out code
+# 5. Manual review required for minor/major updates
+# 6. All permissions explicitly scoped (no default permissions)
+
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
@@ -7,14 +16,27 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  # All other permissions explicitly denied by not listing them
 
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    # Only run for Dependabot PRs
+    # SECURITY: Only run for Dependabot PRs
     if: github.event.pull_request.user.login == 'dependabot[bot]'
-    
+
     steps:
+      - name: Verify Dependabot PR
+        run: |
+          if [ "${{ github.event.pull_request.user.login }}" != "dependabot[bot]" ]; then
+            echo "❌ Not a Dependabot PR, exiting"
+            exit 1
+          fi
+          echo "✅ Verified Dependabot PR"
+
+      # SECURITY: If code checkout is needed, use base branch SHA, not PR code
+      # - uses: actions/checkout@v4
+      #   with:
+      #     ref: ${{ github.event.pull_request.base.sha }}
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2

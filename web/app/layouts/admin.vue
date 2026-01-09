@@ -110,8 +110,16 @@ function isActive(href: string) {
 
 <template>
   <div class="min-h-screen bg-gray-100 dark:bg-gray-950">
+    <!-- Skip to main content for keyboard users -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-green-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+    >
+      Skip to main content
+    </a>
+
     <!-- Mobile header -->
-    <header v-if="!isRegularUser" class="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <header v-if="!isRegularUser" role="banner" class="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div class="flex items-center justify-between px-4 py-3">
         <UButton
           variant="ghost"
@@ -184,7 +192,7 @@ function isActive(href: string) {
         </div>
 
         <!-- Navigation -->
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav role="navigation" aria-label="Admin navigation" class="flex-1 p-4 space-y-1 overflow-y-auto">
           <template v-for="item in navigation" :key="item.name">
             <!-- Collapsible group -->
             <div v-if="item.items" class="space-y-1">
@@ -323,7 +331,7 @@ function isActive(href: string) {
         </div>
 
         <!-- Navigation -->
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav role="navigation" aria-label="Admin navigation" class="flex-1 p-4 space-y-1 overflow-y-auto">
           <template v-for="item in navigation" :key="item.name">
             <!-- Collapsible group -->
             <div v-if="item.items" class="space-y-1">
@@ -438,7 +446,7 @@ function isActive(href: string) {
     </aside>
 
     <!-- Simple header for regular users -->
-    <header v-else class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <header v-else role="banner" class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
         <NuxtLink to="/">
           <img
@@ -473,7 +481,7 @@ function isActive(href: string) {
     </header>
 
     <!-- Main content -->
-    <main :class="isRegularUser ? '' : 'lg:pl-64'">
+    <main id="main-content" role="main" :class="isRegularUser ? '' : 'lg:pl-64'">
       <div :class="isRegularUser ? 'max-w-4xl mx-auto px-4 py-8' : 'p-4 pt-16 lg:p-8 lg:pt-8'">
         <slot />
       </div>
