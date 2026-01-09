@@ -1,7 +1,7 @@
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('render:response', (response) => {
     // Only apply CSP in non-development environments or when explicitly enabled
-    const isDev = process.dev || process.env.NODE_ENV === 'development'
+    const isDev = import.meta.dev
     const config = useRuntimeConfig()
 
     // CSP directives

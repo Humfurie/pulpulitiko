@@ -1,7 +1,6 @@
-/// <reference types="vitest" />
-
 // Vitest global types for IDE support
 import type { TestAPI } from 'vitest'
+import 'vitest'
 
 declare global {
   const describe: TestAPI['describe']

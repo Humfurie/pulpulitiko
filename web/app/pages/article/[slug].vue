@@ -160,13 +160,11 @@ useHead({
         }
 
         // Remove undefined fields
-        Object.keys(schema).forEach(key => {
-          if (schema[key] === undefined) {
-            delete schema[key]
-          }
-        })
+        const cleanedSchema = Object.fromEntries(
+          Object.entries(schema).filter(([, value]) => value !== undefined)
+        )
 
-        return JSON.stringify(schema)
+        return JSON.stringify(cleanedSchema)
       })
     },
     {

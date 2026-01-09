@@ -34,12 +34,26 @@ function generateSlug() {
     .replace(/^-+|-+$/g, '')
 }
 
+interface Party {
+  id: string
+  name: string
+  slug: string
+  abbreviation?: string | null
+  logo?: string | null
+  color?: string | null
+  description?: string | null
+  founded_year?: number | null
+  website?: string | null
+  is_major: boolean
+  is_active: boolean
+}
+
 async function handleSubmit() {
   loading.value = true
   error.value = ''
 
   try {
-    const response = await $fetch<ApiResponse<any>>(`${baseUrl}/admin/parties`, {
+    const response = await $fetch<ApiResponse<Party>>(`${baseUrl}/admin/parties`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: {

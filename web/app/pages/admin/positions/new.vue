@@ -33,12 +33,25 @@ function generateSlug() {
     .replace(/^-+|-+$/g, '')
 }
 
+interface Position {
+  id: string
+  name: string
+  slug: string
+  level: string
+  branch: string
+  display_order: number
+  description?: string | null
+  max_terms?: number | null
+  term_years: number
+  is_elected: boolean
+}
+
 async function handleSubmit() {
   loading.value = true
   error.value = ''
 
   try {
-    const response = await $fetch<ApiResponse<any>>(`${baseUrl}/admin/positions`, {
+    const response = await $fetch<ApiResponse<Position>>(`${baseUrl}/admin/positions`, {
       method: 'POST',
       headers: auth.getAuthHeaders(),
       body: {

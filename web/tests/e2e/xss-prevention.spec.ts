@@ -296,7 +296,6 @@ test.describe('XSS Prevention - OWASP Top 10 Payloads', () => {
 
     // Check that eval() or Function() are not being used in inline scripts
     // This is a basic check - actual code may use these legitimately
-    const pageContent = await page.content()
     const articleContent = await page.locator('.article-content, [class*="prose"]').textContent()
 
     // Ensure malicious eval patterns aren't in content

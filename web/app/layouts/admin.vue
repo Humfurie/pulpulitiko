@@ -82,12 +82,21 @@ const navigation = computed(() => {
   })
 })
 
+// Navigation item types
+interface NavItem {
+  name: string
+  href?: string
+  icon: string
+  roles: string[]
+  items?: NavItem[]
+}
+
 // Check if a route or any of its children is active
-function isGroupActive(item: any) {
+function isGroupActive(item: NavItem) {
   const currentPath = route.path
   if (item.href && currentPath.startsWith(item.href)) return true
   if (item.items) {
-    return item.items.some((subItem: any) => currentPath.startsWith(subItem.href))
+    return item.items.some((subItem: NavItem) => currentPath.startsWith(subItem.href || ''))
   }
   return false
 }

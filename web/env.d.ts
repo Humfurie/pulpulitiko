@@ -14,7 +14,7 @@ interface ImportMeta {
 
 // DOMPurify types
 declare module 'isomorphic-dompurify' {
-  import { DOMPurifyI } from 'dompurify'
+  import type { DOMPurifyI } from 'dompurify'
   const DOMPurify: DOMPurifyI
   export default DOMPurify
 }

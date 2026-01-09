@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useGrouping } from './useGrouping'
-import type { GroupByOption, UseGroupingOptions } from './useGrouping'
 
 // Test data types
 interface TestPerson {
