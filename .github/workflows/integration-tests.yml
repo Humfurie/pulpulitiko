@@ -130,6 +130,7 @@ jobs:
 
           # Drop and recreate database to ensure clean state
           echo "Ensuring clean database state..."
+          docker exec pulpulitiko-postgres psql -U politics -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'politics_test_db' AND pid <> pg_backend_pid();"
           docker exec pulpulitiko-postgres psql -U politics -d postgres -c "DROP DATABASE IF EXISTS politics_test_db;"
           docker exec pulpulitiko-postgres psql -U politics -d postgres -c "CREATE DATABASE politics_test_db;"
           echo "Database recreated successfully"
@@ -343,6 +344,7 @@ jobs:
 
           # Drop and recreate database to ensure clean state
           echo "Ensuring clean database state..."
+          docker exec pulpulitiko-postgres psql -U politics -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'politics_test_db' AND pid <> pg_backend_pid();"
           docker exec pulpulitiko-postgres psql -U politics -d postgres -c "DROP DATABASE IF EXISTS politics_test_db;"
           docker exec pulpulitiko-postgres psql -U politics -d postgres -c "CREATE DATABASE politics_test_db;"
           echo "Database recreated successfully"

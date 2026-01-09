@@ -26,7 +26,6 @@ linters:
     - unused        # Check for unused constants, variables, functions and types
 
     # Additional recommended linters
-    - gofmt         # Check whether code was gofmt-ed
     - goimports     # Check import statements are formatted well
     - gocritic      # Provides diagnostics that check for bugs, performance and style issues
     - gosec         # Inspects source code for security problems

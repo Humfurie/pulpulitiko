@@ -130,15 +130,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-size-metrics
-          path: web/.build-size.txt
+          path: ./web/.build-size.txt
           retention-days: 30
+          if-no-files-found: error
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: web/.output
+          path: ./web/.output
           retention-days: 7
+          if-no-files-found: error
 
   accessibility-test:
     name: Accessibility Testing
@@ -165,7 +167,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-build
-          path: web/.output
+          path: ./web/.output
 
       - name: Run accessibility tests with axe-core
         working-directory: ./web
