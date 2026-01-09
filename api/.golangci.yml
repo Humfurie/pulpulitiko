@@ -26,7 +26,7 @@ linters:
     - unused        # Check for unused constants, variables, functions and types
 
     # Additional recommended linters
-    - goimports     # Check import statements are formatted well
+    # Note: goimports is a formatter and cannot be enabled as a linter in v2.x
     - gocritic      # Provides diagnostics that check for bugs, performance and style issues
     - gosec         # Inspects source code for security problems
     - misspell      # Finds commonly misspelled English words
