@@ -127,11 +127,10 @@ jobs:
           echo "$BUILD_SIZE_BYTES" > .build-size.txt
 
       - name: Upload build size metrics
-        working-directory: ./web
         uses: actions/upload-artifact@v4
         with:
           name: build-size-metrics
-          path: .build-size.txt
+          path: ./web/.build-size.txt
           retention-days: 30
           if-no-files-found: error
 

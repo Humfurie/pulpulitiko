@@ -160,10 +160,4 @@ issues:
   max-same-issues: 0
   new: false
 
-severity:
-  default-severity: warning
-  rules:
-    - linters:
-        - errcheck
-        - gosec
-      severity: error
+# Note: severity section removed as it's not supported in golangci-lint v2.x in this format

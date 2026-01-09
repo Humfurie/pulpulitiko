@@ -175,7 +175,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: '-no-ssa -exclude-dir=test -exclude-dir=mocks ./api/...'
+          args: -no-ssa -exclude-dir=test -exclude-dir=mocks ./api/...
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
