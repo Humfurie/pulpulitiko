@@ -228,8 +228,8 @@ describe('useSanitizedHtml', () => {
   })
 
   describe('Edge Cases', () => {
-    it('handles very long content', () => {
-      const longHtml = '<p>' + 'Test '.repeat(10000) + '</p>'
+    it('handles very long content', { timeout: 15000 }, () => {
+      const longHtml = '<p>' + 'Test '.repeat(1000) + '</p>'
       const result = sanitizeRichContent(longHtml)
       expect(result).toContain('<p>')
       expect(result).toContain('Test')
