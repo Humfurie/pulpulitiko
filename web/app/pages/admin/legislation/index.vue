@@ -15,6 +15,10 @@ const search = ref('')
 const currentPage = ref(1)
 const perPage = 20
 
+// Grouping configuration
+type LegislationGroupBy = '' | 'chamber' | 'status'
+const groupBy = ref<LegislationGroupBy>('')
+
 // Data
 const { data: sessionsData } = useAsyncData('admin-sessions', () => api.getLegislativeSessions())
 const { data: topicsData } = useAsyncData('admin-topics', () => api.getBillTopics())
@@ -40,7 +44,7 @@ const bills = computed(() => billsData.value?.bills || [])
 const total = computed(() => billsData.value?.total || 0)
 const totalPages = computed(() => billsData.value?.total_pages || 1)
 
-// Status display mapping
+// Status display mapping (needed before grouping)
 const statusLabels: Record<BillStatus, string> = {
   filed: 'Filed',
   pending_committee: 'Pending Committee',
@@ -80,6 +84,39 @@ const statusColors: Record<BillStatus, BadgeColor> = {
   archived: 'neutral'
 }
 
+// Group by options
+const groupByOptions = [
+  { label: 'No Grouping', value: '' },
+  { label: 'By Chamber', value: 'chamber' },
+  { label: 'By Status', value: 'status' }
+]
+
+// Use grouping composable
+const {
+  expandedGroups,
+  groupedItems: groupedBills,
+  toggleGroup,
+  expandAll,
+  collapseAll,
+  hasExpandedGroups,
+  allGroupsExpanded
+} = useGrouping(
+  bills,
+  groupBy,
+  (bill, groupByValue) => {
+    if (groupByValue === 'chamber') {
+      return bill.chamber ? bill.chamber.charAt(0).toUpperCase() + bill.chamber.slice(1) : 'Unknown Chamber'
+    } else if (groupByValue === 'status') {
+      return statusLabels[bill.status] || 'Unknown Status'
+    }
+    return ''
+  },
+  {
+    storageKey: 'admin-legislation-expanded-groups',
+    defaultExpanded: false
+  }
+)
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-PH', {
     year: 'numeric',
@@ -108,7 +145,7 @@ useSeoMeta({
 
     <!-- Filters -->
     <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <UInput
           v-model="search"
           placeholder="Search bills..."
@@ -133,8 +170,37 @@ useSeoMeta({
           value-key="value"
           placeholder="Status"
         />
-        <div class="text-sm text-gray-500 self-center">
-          {{ total }} bill{{ total !== 1 ? 's' : '' }}
+        <USelect
+          v-model="groupBy"
+          :options="groupByOptions"
+          placeholder="Group by"
+        />
+        <div class="flex items-center gap-3 self-center">
+          <span class="text-sm text-gray-500">
+            {{ total }} bill{{ total !== 1 ? 's' : '' }}
+          </span>
+          <div v-if="groupBy" class="flex gap-1">
+            <UButton
+              variant="ghost"
+              size="xs"
+              icon="i-heroicons-chevron-double-down"
+              :disabled="allGroupsExpanded"
+              title="Expand all groups"
+              @click="expandAll"
+            >
+              Expand All
+            </UButton>
+            <UButton
+              variant="ghost"
+              size="xs"
+              icon="i-heroicons-chevron-double-up"
+              :disabled="!hasExpandedGroups"
+              title="Collapse all groups"
+              @click="collapseAll"
+            >
+              Collapse All
+            </UButton>
+          </div>
         </div>
       </div>
     </div>
@@ -172,6 +238,98 @@ useSeoMeta({
         <p class="text-gray-500">No bills found</p>
       </div>
 
+      <!-- Grouped View -->
+      <div v-else-if="bills.length && groupBy" class="p-6 space-y-6">
+        <div v-for="(groupBills, groupName) in groupedBills" :key="groupName" class="space-y-2">
+          <!-- Group Header -->
+          <button
+            :aria-expanded="expandedGroups.has(groupName)"
+            :aria-controls="`legislation-group-${groupName}`"
+            class="flex items-center gap-2 w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 rounded-lg transition-colors"
+            @click="toggleGroup(groupName)"
+          >
+            <UIcon
+              :name="expandedGroups.has(groupName) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+              class="size-5 text-gray-600 dark:text-gray-400"
+            />
+            <span class="font-semibold text-gray-900 dark:text-white">{{ groupName }}</span>
+            <UBadge color="primary" variant="subtle" size="sm">{{ groupBills.length }}</UBadge>
+          </button>
+
+          <!-- Group Content -->
+          <div
+            v-if="expandedGroups.has(groupName)"
+            :id="`legislation-group-${groupName}`"
+            role="region"
+            :aria-label="`${groupName} bills`"
+            class="overflow-x-auto"
+          >
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+              <thead class="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Bill
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Chamber
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Filed
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                <tr v-for="bill in groupBills" :key="bill.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td class="px-6 py-4">
+                    <div class="text-sm font-mono font-medium text-gray-900 dark:text-white">
+                      {{ bill.bill_number }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">
+                      {{ bill.short_title || bill.title }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="capitalize text-sm">{{ bill.chamber }}</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <UBadge :color="statusColors[bill.status]" variant="subtle" size="xs">
+                      {{ statusLabels[bill.status] }}
+                    </UBadge>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {{ formatDate(bill.filed_date) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <UButton
+                        :to="`/legislation/${bill.slug}`"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-heroicons-eye"
+                        target="_blank"
+                      />
+                      <UButton
+                        :to="`/admin/legislation/${bill.id}`"
+                        variant="ghost"
+                        size="xs"
+                        icon="i-heroicons-pencil"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ungrouped View -->
       <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
         <thead class="bg-gray-50 dark:bg-gray-800">
           <tr>

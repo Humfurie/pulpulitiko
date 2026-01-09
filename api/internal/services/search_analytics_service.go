@@ -38,14 +38,14 @@ func (s *SearchAnalyticsService) GetAnalytics(ctx context.Context, timeRange mod
 
 	// Get all analytics data concurrently
 	type result struct {
-		topTerms     []models.TopSearchTerm
-		trends       []models.SearchTrend
-		polStats     []models.PoliticianSearchStats
-		topArticles  []models.TopClickedArticle
-		totalSearch  int
-		uniqueTerms  int
-		totalClicks  int
-		err          error
+		topTerms    []models.TopSearchTerm
+		trends      []models.SearchTrend
+		polStats    []models.PoliticianSearchStats
+		topArticles []models.TopClickedArticle
+		totalSearch int
+		uniqueTerms int
+		totalClicks int
+		err         error
 	}
 
 	ch := make(chan result, 5)

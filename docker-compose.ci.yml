@@ -1,0 +1,49 @@
+services:
+  # Override API to expose port for CI testing
+  api:
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+    environment:
+      APP_ENV: ci
+      APP_PORT: "8080"
+      DATABASE_URL: postgres://politics:${POSTGRES_PASSWORD:-testpassword}@postgres:5432/${POSTGRES_DB:-politics_test_db}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio.humfurie.org
+      MINIO_PUBLIC_ENDPOINT: minio.humfurie.org
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-pulpulitiko-test}
+      MINIO_USE_SSL: "true"
+      JWT_SECRET: ${JWT_SECRET:-test-jwt-secret}
+    labels: []
+
+  # Override Web to expose port for CI testing
+  web:
+    ports:
+      - "3000:3000"
+    networks:
+      - default
+    environment:
+      NODE_ENV: production
+      NUXT_PUBLIC_API_URL: http://localhost:8080/api
+      NUXT_API_INTERNAL_URL: http://api:8080/api
+    labels: []
+
+  # Ensure postgres only uses default network
+  postgres:
+    networks:
+      - default
+
+  # Ensure redis only uses default network
+  redis:
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+  # Disable proxy network for CI
+  proxy:
+    driver: bridge

@@ -12,6 +12,10 @@ const page = ref(1)
 const perPage = ref(20)
 const filter = ref<ElectionFilter>({})
 
+// Grouping configuration
+type ElectionGroupBy = '' | 'type' | 'status'
+const groupBy = ref<ElectionGroupBy>('')
+
 const { data, status, refresh: _refresh } = await useAsyncData(
   () => api.getElections(filter.value, page.value, perPage.value),
   { watch: [page, filter] }
@@ -34,6 +38,42 @@ const electionStatuses: { value: ElectionStatus | ''; label: string }[] = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' }
 ]
+
+// Group by options
+const groupByOptions = [
+  { label: 'No Grouping', value: '' },
+  { label: 'By Type', value: 'type' },
+  { label: 'By Status', value: 'status' }
+]
+
+// Computed for elections list
+const elections = computed(() => data.value?.elections || [])
+
+// Use grouping composable
+const {
+  expandedGroups,
+  groupedItems: groupedElections,
+  toggleGroup,
+  expandAll,
+  collapseAll,
+  hasExpandedGroups,
+  allGroupsExpanded
+} = useGrouping(
+  elections,
+  groupBy,
+  (election, groupByValue) => {
+    if (groupByValue === 'type') {
+      return election.election_type ? election.election_type.charAt(0).toUpperCase() + election.election_type.slice(1) : 'Unknown Type'
+    } else if (groupByValue === 'status') {
+      return election.status ? election.status.charAt(0).toUpperCase() + election.status.slice(1) : 'Unknown Status'
+    }
+    return ''
+  },
+  {
+    storageKey: 'admin-elections-expanded-groups',
+    defaultExpanded: false
+  }
+)
 
 function applyFilter(key: keyof ElectionFilter, value: string | undefined) {
   if (value === '' || value === undefined) {
@@ -118,8 +158,41 @@ useSeoMeta({
           </select>
         </div>
 
+        <div class="flex-1 min-w-[150px]">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group By</label>
+          <USelect
+            v-model="groupBy"
+            :options="groupByOptions"
+            placeholder="Group by"
+          />
+        </div>
+
         <div class="flex-[2] min-w-[200px]">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <span>Search</span>
+            <div v-if="groupBy" class="inline-flex gap-1 ml-2">
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-chevron-double-down"
+                :disabled="allGroupsExpanded"
+                title="Expand all groups"
+                @click="expandAll"
+              >
+                Expand All
+              </UButton>
+              <UButton
+                variant="ghost"
+                size="xs"
+                icon="i-heroicons-chevron-double-up"
+                :disabled="!hasExpandedGroups"
+                title="Collapse all groups"
+                @click="collapseAll"
+              >
+                Collapse All
+              </UButton>
+            </div>
+          </label>
           <UInput
             :model-value="filter.search || ''"
             placeholder="Search elections..."
@@ -137,7 +210,115 @@ useSeoMeta({
 
     <!-- Elections Table -->
     <div v-else-if="data?.elections.length" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <!-- Grouped View -->
+      <div v-if="groupBy" class="p-6 space-y-6">
+        <div v-for="(groupElections, groupName) in groupedElections" :key="groupName" class="space-y-2">
+          <!-- Group Header -->
+          <button
+            :aria-expanded="expandedGroups.has(groupName)"
+            :aria-controls="`elections-group-${groupName}`"
+            class="flex items-center gap-2 w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 rounded-lg transition-colors"
+            @click="toggleGroup(groupName)"
+          >
+            <UIcon
+              :name="expandedGroups.has(groupName) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+              class="size-5 text-gray-600 dark:text-gray-400"
+            />
+            <span class="font-semibold text-gray-900 dark:text-white">{{ groupName }}</span>
+            <UBadge color="primary" variant="subtle" size="sm">{{ groupElections.length }}</UBadge>
+          </button>
+
+          <!-- Group Content -->
+          <div
+            v-if="expandedGroups.has(groupName)"
+            :id="`elections-group-${groupName}`"
+            role="region"
+            :aria-label="`${groupName} elections`"
+            class="overflow-x-auto"
+          >
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Election
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Stats
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr
+                  v-for="election in groupElections"
+                  :key="election.id"
+                  class="hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                >
+                  <td class="px-6 py-4">
+                    <div>
+                      <NuxtLink
+                        :to="`/admin/elections/${election.id}`"
+                        class="font-medium text-gray-900 dark:text-white hover:text-primary-600"
+                      >
+                        {{ election.name }}
+                      </NuxtLink>
+                      <div v-if="election.is_featured" class="mt-1">
+                        <UBadge color="warning" variant="subtle" size="xs">Featured</UBadge>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 capitalize">
+                    {{ election.election_type }}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {{ formatDate(election.election_date) }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <UBadge :color="getStatusColor(election.status)" variant="subtle" class="capitalize">
+                      {{ election.status }}
+                    </UBadge>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    <div>{{ election.position_count }} positions</div>
+                    <div>{{ election.candidate_count }} candidates</div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <UButton
+                        :to="`/elections/${election.slug}`"
+                        size="xs"
+                        variant="ghost"
+                        icon="i-heroicons-eye"
+                        target="_blank"
+                      />
+                      <UButton
+                        :to="`/admin/elections/${election.id}`"
+                        size="xs"
+                        variant="ghost"
+                        icon="i-heroicons-pencil-square"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ungrouped View -->
+      <table v-else class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-900">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">

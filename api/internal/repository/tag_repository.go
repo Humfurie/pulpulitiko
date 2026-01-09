@@ -100,6 +100,80 @@ func (r *TagRepository) List(ctx context.Context) ([]models.Tag, error) {
 	return tags, nil
 }
 
+func (r *TagRepository) AdminList(ctx context.Context, filter *models.TagFilter, page, perPage int) (*models.PaginatedTags, error) {
+	// Build WHERE clause
+	whereClause := "WHERE deleted_at IS NULL"
+	args := []interface{}{}
+	argCount := 0
+
+	if filter.Search != nil && *filter.Search != "" {
+		argCount++
+		whereClause += fmt.Sprintf(" AND (name ILIKE $%d OR slug ILIKE $%d)", argCount, argCount)
+		args = append(args, "%"+*filter.Search+"%")
+	}
+
+	// Build ORDER BY clause
+	orderClause := "ORDER BY name ASC" // default
+	if filter.SortBy != nil && *filter.SortBy != "" {
+		sortBy := *filter.SortBy
+		sortOrder := "ASC"
+		if filter.SortOrder != nil && *filter.SortOrder != "" {
+			sortOrder = *filter.SortOrder
+		}
+		// Validate sort by to prevent SQL injection
+		if sortBy == "name" || sortBy == "created_at" || sortBy == "slug" {
+			orderClause = fmt.Sprintf("ORDER BY %s %s", sortBy, sortOrder)
+		}
+	}
+
+	// Count total matching records
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM tags %s", whereClause)
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count tags: %w", err)
+	}
+
+	// Calculate pagination
+	offset := (page - 1) * perPage
+	totalPages := (total + perPage - 1) / perPage
+
+	// Build main query with pagination
+	argCount++
+	query := fmt.Sprintf(`
+		SELECT id, name, slug, created_at, updated_at
+		FROM tags
+		%s
+		%s
+		LIMIT $%d OFFSET $%d
+	`, whereClause, orderClause, argCount, argCount+1)
+	args = append(args, perPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tags: %w", err)
+	}
+	defer rows.Close()
+
+	tags := []models.Tag{}
+	for rows.Next() {
+		var tag models.Tag
+		err := rows.Scan(&tag.ID, &tag.Name, &tag.Slug, &tag.CreatedAt, &tag.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan tag: %w", err)
+		}
+		tags = append(tags, tag)
+	}
+
+	return &models.PaginatedTags{
+		Tags:       tags,
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: totalPages,
+	}, nil
+}
+
 func (r *TagRepository) Update(ctx context.Context, id uuid.UUID, req *models.UpdateTagRequest) error {
 	query := `
 		UPDATE tags

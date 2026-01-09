@@ -64,82 +64,82 @@ type LegislativeSessionListItem struct {
 
 // Committee represents a legislative committee
 type Committee struct {
-	ID                uuid.UUID          `json:"id"`
-	Chamber           string             `json:"chamber"`
-	Name              string             `json:"name"`
-	Slug              string             `json:"slug"`
-	Description       *string            `json:"description,omitempty"`
-	ChairpersonID     *uuid.UUID         `json:"chairperson_id,omitempty"`
-	ViceChairpersonID *uuid.UUID         `json:"vice_chairperson_id,omitempty"`
-	IsActive          bool               `json:"is_active"`
-	CreatedAt         time.Time          `json:"created_at"`
-	UpdatedAt         time.Time          `json:"updated_at"`
-	DeletedAt         *time.Time         `json:"deleted_at,omitempty"`
+	ID                uuid.UUID           `json:"id"`
+	Chamber           string              `json:"chamber"`
+	Name              string              `json:"name"`
+	Slug              string              `json:"slug"`
+	Description       *string             `json:"description,omitempty"`
+	ChairpersonID     *uuid.UUID          `json:"chairperson_id,omitempty"`
+	ViceChairpersonID *uuid.UUID          `json:"vice_chairperson_id,omitempty"`
+	IsActive          bool                `json:"is_active"`
+	CreatedAt         time.Time           `json:"created_at"`
+	UpdatedAt         time.Time           `json:"updated_at"`
+	DeletedAt         *time.Time          `json:"deleted_at,omitempty"`
 	Chairperson       *PoliticianListItem `json:"chairperson,omitempty"`
 	ViceChairperson   *PoliticianListItem `json:"vice_chairperson,omitempty"`
 }
 
 type CommitteeListItem struct {
-	ID          uuid.UUID `json:"id"`
-	Chamber     string    `json:"chamber"`
-	Name        string    `json:"name"`
-	Slug        string    `json:"slug"`
-	IsActive    bool      `json:"is_active"`
-	BillCount   int       `json:"bill_count"`
+	ID        uuid.UUID `json:"id"`
+	Chamber   string    `json:"chamber"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	IsActive  bool      `json:"is_active"`
+	BillCount int       `json:"bill_count"`
 }
 
 // Bill represents a legislative bill
 type Bill struct {
-	ID               uuid.UUID    `json:"id"`
-	SessionID        uuid.UUID    `json:"session_id"`
-	Chamber          string       `json:"chamber"`
-	BillNumber       string       `json:"bill_number"`
-	Title            string       `json:"title"`
-	Slug             string       `json:"slug"`
-	ShortTitle       *string      `json:"short_title,omitempty"`
-	Summary          *string      `json:"summary,omitempty"`
-	FullText         *string      `json:"full_text,omitempty"`
-	Significance     *string      `json:"significance,omitempty"`
-	Status           string       `json:"status"`
-	FiledDate        time.Time    `json:"filed_date"`
-	LastActionDate   *time.Time   `json:"last_action_date,omitempty"`
-	DateSigned       *time.Time   `json:"date_signed,omitempty"`
-	RepublicActNumber *string     `json:"republic_act_number,omitempty"`
-	CreatedAt        time.Time    `json:"created_at"`
-	UpdatedAt        time.Time    `json:"updated_at"`
-	DeletedAt        *time.Time   `json:"deleted_at,omitempty"`
+	ID                uuid.UUID  `json:"id"`
+	SessionID         uuid.UUID  `json:"session_id"`
+	Chamber           string     `json:"chamber"`
+	BillNumber        string     `json:"bill_number"`
+	Title             string     `json:"title"`
+	Slug              string     `json:"slug"`
+	ShortTitle        *string    `json:"short_title,omitempty"`
+	Summary           *string    `json:"summary,omitempty"`
+	FullText          *string    `json:"full_text,omitempty"`
+	Significance      *string    `json:"significance,omitempty"`
+	Status            string     `json:"status"`
+	FiledDate         time.Time  `json:"filed_date"`
+	LastActionDate    *time.Time `json:"last_action_date,omitempty"`
+	DateSigned        *time.Time `json:"date_signed,omitempty"`
+	RepublicActNumber *string    `json:"republic_act_number,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty"`
 
 	// Joined fields
-	Session           *LegislativeSessionListItem `json:"session,omitempty"`
-	Authors           []BillAuthor                `json:"authors,omitempty"`
-	PrincipalAuthors  []PoliticianListItem        `json:"principal_authors,omitempty"`
-	Committees        []BillCommittee             `json:"committees,omitempty"`
-	StatusHistory     []BillStatusHistoryItem     `json:"status_history,omitempty"`
-	Topics            []BillTopic                 `json:"topics,omitempty"`
-	Votes             []BillVote                  `json:"votes,omitempty"`
+	Session          *LegislativeSessionListItem `json:"session,omitempty"`
+	Authors          []BillAuthor                `json:"authors,omitempty"`
+	PrincipalAuthors []PoliticianListItem        `json:"principal_authors,omitempty"`
+	Committees       []BillCommittee             `json:"committees,omitempty"`
+	StatusHistory    []BillStatusHistoryItem     `json:"status_history,omitempty"`
+	Topics           []BillTopic                 `json:"topics,omitempty"`
+	Votes            []BillVote                  `json:"votes,omitempty"`
 }
 
 type BillListItem struct {
-	ID             uuid.UUID    `json:"id"`
-	Chamber        string       `json:"chamber"`
-	BillNumber     string       `json:"bill_number"`
-	Title          string       `json:"title"`
-	Slug           string       `json:"slug"`
-	ShortTitle     *string      `json:"short_title,omitempty"`
-	Status         string       `json:"status"`
-	FiledDate      time.Time    `json:"filed_date"`
-	LastActionDate *time.Time   `json:"last_action_date,omitempty"`
-	AuthorCount    int          `json:"author_count"`
-	TopicNames     []string     `json:"topic_names,omitempty"`
+	ID             uuid.UUID  `json:"id"`
+	Chamber        string     `json:"chamber"`
+	BillNumber     string     `json:"bill_number"`
+	Title          string     `json:"title"`
+	Slug           string     `json:"slug"`
+	ShortTitle     *string    `json:"short_title,omitempty"`
+	Status         string     `json:"status"`
+	FiledDate      time.Time  `json:"filed_date"`
+	LastActionDate *time.Time `json:"last_action_date,omitempty"`
+	AuthorCount    int        `json:"author_count"`
+	TopicNames     []string   `json:"topic_names,omitempty"`
 }
 
 // BillAuthor represents an author of a bill
 type BillAuthor struct {
-	ID                uuid.UUID          `json:"id"`
-	BillID            uuid.UUID          `json:"bill_id"`
-	PoliticianID      uuid.UUID          `json:"politician_id"`
-	IsPrincipalAuthor bool               `json:"is_principal_author"`
-	CreatedAt         time.Time          `json:"created_at"`
+	ID                uuid.UUID           `json:"id"`
+	BillID            uuid.UUID           `json:"bill_id"`
+	PoliticianID      uuid.UUID           `json:"politician_id"`
+	IsPrincipalAuthor bool                `json:"is_principal_author"`
+	CreatedAt         time.Time           `json:"created_at"`
 	Politician        *PoliticianListItem `json:"politician,omitempty"`
 }
 
@@ -183,11 +183,11 @@ type BillVote struct {
 
 // PoliticianVote represents an individual politician's vote
 type PoliticianVote struct {
-	ID           uuid.UUID          `json:"id"`
-	BillVoteID   uuid.UUID          `json:"bill_vote_id"`
-	PoliticianID uuid.UUID          `json:"politician_id"`
-	Vote         string             `json:"vote"`
-	CreatedAt    time.Time          `json:"created_at"`
+	ID           uuid.UUID           `json:"id"`
+	BillVoteID   uuid.UUID           `json:"bill_vote_id"`
+	PoliticianID uuid.UUID           `json:"politician_id"`
+	Vote         string              `json:"vote"`
+	CreatedAt    time.Time           `json:"created_at"`
 	Politician   *PoliticianListItem `json:"politician,omitempty"`
 }
 
@@ -279,13 +279,13 @@ type PaginatedBills struct {
 
 // Politician voting record summary
 type PoliticianVotingRecord struct {
-	PoliticianID  uuid.UUID `json:"politician_id"`
-	TotalVotes    int       `json:"total_votes"`
-	YeaVotes      int       `json:"yea_votes"`
-	NayVotes      int       `json:"nay_votes"`
-	AbstainVotes  int       `json:"abstain_votes"`
-	AbsentVotes   int       `json:"absent_votes"`
-	AttendanceRate float64  `json:"attendance_rate"`
+	PoliticianID   uuid.UUID `json:"politician_id"`
+	TotalVotes     int       `json:"total_votes"`
+	YeaVotes       int       `json:"yea_votes"`
+	NayVotes       int       `json:"nay_votes"`
+	AbstainVotes   int       `json:"abstain_votes"`
+	AbsentVotes    int       `json:"absent_votes"`
+	AttendanceRate float64   `json:"attendance_rate"`
 }
 
 type PoliticianBillVote struct {

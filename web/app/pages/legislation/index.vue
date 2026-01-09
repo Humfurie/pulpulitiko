@@ -158,7 +158,7 @@ useSeoMeta({
                   type="text"
                   placeholder="Bill number or title..."
                   class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
+                >
               </div>
 
               <!-- Chamber -->

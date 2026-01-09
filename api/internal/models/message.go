@@ -85,13 +85,13 @@ type PaginatedMessages struct {
 type WSMessageType string
 
 const (
-	WSMessageTypeNewMessage    WSMessageType = "new_message"
-	WSMessageTypeMessageRead   WSMessageType = "message_read"
-	WSMessageTypeTyping        WSMessageType = "typing"
-	WSMessageTypeStopTyping    WSMessageType = "stop_typing"
-	WSMessageTypeUserOnline    WSMessageType = "user_online"
-	WSMessageTypeUserOffline   WSMessageType = "user_offline"
-	WSMessageTypeConversation  WSMessageType = "conversation_update"
+	WSMessageTypeNewMessage   WSMessageType = "new_message"
+	WSMessageTypeMessageRead  WSMessageType = "message_read"
+	WSMessageTypeTyping       WSMessageType = "typing"
+	WSMessageTypeStopTyping   WSMessageType = "stop_typing"
+	WSMessageTypeUserOnline   WSMessageType = "user_online"
+	WSMessageTypeUserOffline  WSMessageType = "user_offline"
+	WSMessageTypeConversation WSMessageType = "conversation_update"
 )
 
 // WSMessage represents a WebSocket message

@@ -64,3 +64,18 @@ type ResetPasswordRequest struct {
 	Token       string `json:"token" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required,min=8"`
 }
+
+type UserFilter struct {
+	Search    *string
+	RoleSlug  *string
+	SortBy    *string // name, email, created_at
+	SortOrder *string // asc, desc
+}
+
+type PaginatedUsers struct {
+	Users      []User `json:"data"`
+	Total      int    `json:"total"`
+	Page       int    `json:"page"`
+	PerPage    int    `json:"per_page"`
+	TotalPages int    `json:"total_pages"`
+}

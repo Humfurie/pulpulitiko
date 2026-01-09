@@ -18,20 +18,20 @@ const (
 
 // Comment represents a comment on an article
 type Comment struct {
-	ID        uuid.UUID  `json:"id"`
-	ArticleID uuid.UUID  `json:"article_id"`
-	UserID    uuid.UUID  `json:"user_id"`
-	ParentID  *uuid.UUID `json:"parent_id,omitempty"` // NULL for root comments, set for replies
-	Content   string     `json:"content"`             // Markdown content
-	Status    CommentStatus `json:"status"`           // Moderation status: active, under_review, spam, hidden
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	ID        uuid.UUID     `json:"id"`
+	ArticleID uuid.UUID     `json:"article_id"`
+	UserID    uuid.UUID     `json:"user_id"`
+	ParentID  *uuid.UUID    `json:"parent_id,omitempty"` // NULL for root comments, set for replies
+	Content   string        `json:"content"`             // Markdown content
+	Status    CommentStatus `json:"status"`              // Moderation status: active, under_review, spam, hidden
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+	DeletedAt *time.Time    `json:"deleted_at,omitempty"`
 
 	// Moderation fields
-	ModeratedBy     *uuid.UUID `json:"moderated_by,omitempty"`
-	ModeratedAt     *time.Time `json:"moderated_at,omitempty"`
-	ModerationReason *string   `json:"moderation_reason,omitempty"`
+	ModeratedBy      *uuid.UUID `json:"moderated_by,omitempty"`
+	ModeratedAt      *time.Time `json:"moderated_at,omitempty"`
+	ModerationReason *string    `json:"moderation_reason,omitempty"`
 
 	// Relations (populated when needed)
 	Author    *CommentAuthor    `json:"author,omitempty"` // User info displayed as "author" in JSON for frontend compatibility
@@ -63,9 +63,9 @@ type CommentReaction struct {
 
 // ReactionSummary shows reaction counts and if current user reacted
 type ReactionSummary struct {
-	Reaction    string `json:"reaction"`
-	Count       int    `json:"count"`
-	HasReacted  bool   `json:"has_reacted"` // Whether current user has this reaction
+	Reaction   string `json:"reaction"`
+	Count      int    `json:"count"`
+	HasReacted bool   `json:"has_reacted"` // Whether current user has this reaction
 }
 
 // CommentMention represents a @mention in a comment

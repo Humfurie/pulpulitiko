@@ -32,6 +32,34 @@ func (h *TagHandler) List(w http.ResponseWriter, r *http.Request) {
 	WriteSuccess(w, tags)
 }
 
+// GET /api/admin/tags - List all tags with pagination, search, and sorting (admin)
+func (h *TagHandler) AdminList(w http.ResponseWriter, r *http.Request) {
+	page, perPage := GetPaginationParams(r)
+
+	search := r.URL.Query().Get("search")
+	sortBy := r.URL.Query().Get("sort_by")
+	sortOrder := r.URL.Query().Get("sort_order")
+
+	filter := &models.TagFilter{}
+	if search != "" {
+		filter.Search = &search
+	}
+	if sortBy != "" {
+		filter.SortBy = &sortBy
+	}
+	if sortOrder != "" {
+		filter.SortOrder = &sortOrder
+	}
+
+	paginatedTags, err := h.tagService.AdminList(r.Context(), filter, page, perPage)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch tags")
+		return
+	}
+
+	WriteSuccess(w, paginatedTags)
+}
+
 // GET /api/tags/:slug
 func (h *TagHandler) GetArticlesBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")

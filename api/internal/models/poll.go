@@ -28,21 +28,21 @@ const (
 
 // Poll represents a user or admin created poll
 type Poll struct {
-	ID                    uuid.UUID  `json:"id"`
-	UserID                uuid.UUID  `json:"user_id"`
-	Title                 string     `json:"title"`
-	Slug                  string     `json:"slug"`
-	Description           *string    `json:"description,omitempty"`
-	Category              string     `json:"category"`
-	Status                string     `json:"status"`
-	PoliticianID          *uuid.UUID `json:"politician_id,omitempty"`
-	ElectionID            *uuid.UUID `json:"election_id,omitempty"`
-	BillID                *uuid.UUID `json:"bill_id,omitempty"`
+	ID           uuid.UUID  `json:"id"`
+	UserID       uuid.UUID  `json:"user_id"`
+	Title        string     `json:"title"`
+	Slug         string     `json:"slug"`
+	Description  *string    `json:"description,omitempty"`
+	Category     string     `json:"category"`
+	Status       string     `json:"status"`
+	PoliticianID *uuid.UUID `json:"politician_id,omitempty"`
+	ElectionID   *uuid.UUID `json:"election_id,omitempty"`
+	BillID       *uuid.UUID `json:"bill_id,omitempty"`
 	// Location scoping (optional - if all nil, poll is national)
-	RegionID           *uuid.UUID `json:"region_id,omitempty"`
-	ProvinceID         *uuid.UUID `json:"province_id,omitempty"`
-	CityMunicipalityID *uuid.UUID `json:"city_municipality_id,omitempty"`
-	BarangayID         *uuid.UUID `json:"barangay_id,omitempty"`
+	RegionID              *uuid.UUID `json:"region_id,omitempty"`
+	ProvinceID            *uuid.UUID `json:"province_id,omitempty"`
+	CityMunicipalityID    *uuid.UUID `json:"city_municipality_id,omitempty"`
+	BarangayID            *uuid.UUID `json:"barangay_id,omitempty"`
 	IsAnonymous           bool       `json:"is_anonymous"`
 	AllowMultipleVotes    bool       `json:"allow_multiple_votes"`
 	ShowResultsBeforeVote bool       `json:"show_results_before_vote"`
@@ -60,29 +60,29 @@ type Poll struct {
 	DeletedAt             *time.Time `json:"deleted_at,omitempty"`
 
 	// Joined fields
-	Author     *PollAuthor       `json:"author,omitempty"`
-	Options    []PollOption      `json:"options,omitempty"`
-	Politician *PoliticianBrief  `json:"politician,omitempty"`
-	Election   *ElectionBrief    `json:"election,omitempty"`
-	Bill       *BillBrief        `json:"bill,omitempty"`
-	Location   *LocationBrief    `json:"location,omitempty"` // Human-readable location
-	UserVote   *uuid.UUID        `json:"user_vote,omitempty"` // Option ID user voted for
+	Author     *PollAuthor      `json:"author,omitempty"`
+	Options    []PollOption     `json:"options,omitempty"`
+	Politician *PoliticianBrief `json:"politician,omitempty"`
+	Election   *ElectionBrief   `json:"election,omitempty"`
+	Bill       *BillBrief       `json:"bill,omitempty"`
+	Location   *LocationBrief   `json:"location,omitempty"`  // Human-readable location
+	UserVote   *uuid.UUID       `json:"user_vote,omitempty"` // Option ID user voted for
 }
 
 type PollListItem struct {
-	ID           uuid.UUID  `json:"id"`
-	Title        string     `json:"title"`
-	Slug         string     `json:"slug"`
-	Category     string     `json:"category"`
-	Status       string     `json:"status"`
-	IsFeatured   bool       `json:"is_featured"`
-	TotalVotes   int        `json:"total_votes"`
-	CommentCount int        `json:"comment_count"`
-	EndsAt       *time.Time `json:"ends_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
+	ID           uuid.UUID   `json:"id"`
+	Title        string      `json:"title"`
+	Slug         string      `json:"slug"`
+	Category     string      `json:"category"`
+	Status       string      `json:"status"`
+	IsFeatured   bool        `json:"is_featured"`
+	TotalVotes   int         `json:"total_votes"`
+	CommentCount int         `json:"comment_count"`
+	EndsAt       *time.Time  `json:"ends_at,omitempty"`
+	CreatedAt    time.Time   `json:"created_at"`
 	Author       *PollAuthor `json:"author,omitempty"`
-	OptionCount  int        `json:"option_count"`
-	Location     *string    `json:"location,omitempty"` // Human-readable location display name
+	OptionCount  int         `json:"option_count"`
+	Location     *string     `json:"location,omitempty"` // Human-readable location display name
 }
 
 type PollAuthor struct {
@@ -113,15 +113,15 @@ type BillBrief struct {
 
 // LocationBrief represents a human-readable location for polls
 type LocationBrief struct {
-	RegionID           *uuid.UUID `json:"region_id,omitempty"`
-	RegionName         *string    `json:"region_name,omitempty"`
-	ProvinceID         *uuid.UUID `json:"province_id,omitempty"`
-	ProvinceName       *string    `json:"province_name,omitempty"`
-	CityMunicipalityID *uuid.UUID `json:"city_municipality_id,omitempty"`
-	CityMunicipalityName *string  `json:"city_municipality_name,omitempty"`
-	BarangayID         *uuid.UUID `json:"barangay_id,omitempty"`
-	BarangayName       *string    `json:"barangay_name,omitempty"`
-	DisplayName        string     `json:"display_name"` // e.g., "Quezon City, Metro Manila, NCR"
+	RegionID             *uuid.UUID `json:"region_id,omitempty"`
+	RegionName           *string    `json:"region_name,omitempty"`
+	ProvinceID           *uuid.UUID `json:"province_id,omitempty"`
+	ProvinceName         *string    `json:"province_name,omitempty"`
+	CityMunicipalityID   *uuid.UUID `json:"city_municipality_id,omitempty"`
+	CityMunicipalityName *string    `json:"city_municipality_name,omitempty"`
+	BarangayID           *uuid.UUID `json:"barangay_id,omitempty"`
+	BarangayName         *string    `json:"barangay_name,omitempty"`
+	DisplayName          string     `json:"display_name"` // e.g., "Quezon City, Metro Manila, NCR"
 }
 
 // PollOption represents a choice in a poll
@@ -147,40 +147,40 @@ type PollVote struct {
 
 // PollComment represents a comment on a poll
 type PollComment struct {
-	ID               uuid.UUID        `json:"id"`
-	PollID           uuid.UUID        `json:"poll_id"`
-	UserID           uuid.UUID        `json:"user_id"`
-	ParentID         *uuid.UUID       `json:"parent_id,omitempty"`
-	Content          string           `json:"content"`
-	Status           string           `json:"status"`
-	ModeratedBy      *uuid.UUID       `json:"moderated_by,omitempty"`
-	ModeratedAt      *time.Time       `json:"moderated_at,omitempty"`
-	ModerationReason *string          `json:"moderation_reason,omitempty"`
-	CreatedAt        time.Time        `json:"created_at"`
-	UpdatedAt        time.Time        `json:"updated_at"`
-	DeletedAt        *time.Time       `json:"deleted_at,omitempty"`
+	ID               uuid.UUID  `json:"id"`
+	PollID           uuid.UUID  `json:"poll_id"`
+	UserID           uuid.UUID  `json:"user_id"`
+	ParentID         *uuid.UUID `json:"parent_id,omitempty"`
+	Content          string     `json:"content"`
+	Status           string     `json:"status"`
+	ModeratedBy      *uuid.UUID `json:"moderated_by,omitempty"`
+	ModeratedAt      *time.Time `json:"moderated_at,omitempty"`
+	ModerationReason *string    `json:"moderation_reason,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	DeletedAt        *time.Time `json:"deleted_at,omitempty"`
 
 	// Joined fields
-	Author     *CommentAuthor     `json:"author,omitempty"`
-	Reactions  []ReactionSummary  `json:"reactions,omitempty"`
-	ReplyCount int                `json:"reply_count,omitempty"`
+	Author     *CommentAuthor    `json:"author,omitempty"`
+	Reactions  []ReactionSummary `json:"reactions,omitempty"`
+	ReplyCount int               `json:"reply_count,omitempty"`
 }
 
 // Request types
 
 type CreatePollRequest struct {
-	Title                 string     `json:"title" validate:"required,max=300"`
-	Slug                  string     `json:"slug" validate:"required,max=300"`
-	Description           *string    `json:"description,omitempty"`
-	Category              string     `json:"category" validate:"required,oneof=general election legislation politician policy local_issue national_issue"`
-	PoliticianID          *uuid.UUID `json:"politician_id,omitempty"`
-	ElectionID            *uuid.UUID `json:"election_id,omitempty"`
-	BillID                *uuid.UUID `json:"bill_id,omitempty"`
+	Title        string     `json:"title" validate:"required,max=300"`
+	Slug         string     `json:"slug" validate:"required,max=300"`
+	Description  *string    `json:"description,omitempty"`
+	Category     string     `json:"category" validate:"required,oneof=general election legislation politician policy local_issue national_issue"`
+	PoliticianID *uuid.UUID `json:"politician_id,omitempty"`
+	ElectionID   *uuid.UUID `json:"election_id,omitempty"`
+	BillID       *uuid.UUID `json:"bill_id,omitempty"`
 	// Location scoping (optional - if all nil, poll is national)
-	RegionID           *uuid.UUID `json:"region_id,omitempty"`
-	ProvinceID         *uuid.UUID `json:"province_id,omitempty"`
-	CityMunicipalityID *uuid.UUID `json:"city_municipality_id,omitempty"`
-	BarangayID         *uuid.UUID `json:"barangay_id,omitempty"`
+	RegionID              *uuid.UUID `json:"region_id,omitempty"`
+	ProvinceID            *uuid.UUID `json:"province_id,omitempty"`
+	CityMunicipalityID    *uuid.UUID `json:"city_municipality_id,omitempty"`
+	BarangayID            *uuid.UUID `json:"barangay_id,omitempty"`
 	IsAnonymous           bool       `json:"is_anonymous"`
 	AllowMultipleVotes    bool       `json:"allow_multiple_votes"`
 	ShowResultsBeforeVote bool       `json:"show_results_before_vote"`
@@ -190,21 +190,21 @@ type CreatePollRequest struct {
 }
 
 type UpdatePollRequest struct {
-	Title                 *string    `json:"title,omitempty" validate:"omitempty,max=300"`
-	Slug                  *string    `json:"slug,omitempty" validate:"omitempty,max=300"`
-	Description           *string    `json:"description,omitempty"`
-	Category              *string    `json:"category,omitempty" validate:"omitempty,oneof=general election legislation politician policy local_issue national_issue"`
-	IsAnonymous           *bool      `json:"is_anonymous,omitempty"`
-	AllowMultipleVotes    *bool      `json:"allow_multiple_votes,omitempty"`
-	ShowResultsBeforeVote *bool      `json:"show_results_before_vote,omitempty"`
-	StartsAt              *string    `json:"starts_at,omitempty"`
-	EndsAt                *string    `json:"ends_at,omitempty"`
+	Title                 *string `json:"title,omitempty" validate:"omitempty,max=300"`
+	Slug                  *string `json:"slug,omitempty" validate:"omitempty,max=300"`
+	Description           *string `json:"description,omitempty"`
+	Category              *string `json:"category,omitempty" validate:"omitempty,oneof=general election legislation politician policy local_issue national_issue"`
+	IsAnonymous           *bool   `json:"is_anonymous,omitempty"`
+	AllowMultipleVotes    *bool   `json:"allow_multiple_votes,omitempty"`
+	ShowResultsBeforeVote *bool   `json:"show_results_before_vote,omitempty"`
+	StartsAt              *string `json:"starts_at,omitempty"`
+	EndsAt                *string `json:"ends_at,omitempty"`
 }
 
 type AdminUpdatePollRequest struct {
 	UpdatePollRequest
-	Status      *string `json:"status,omitempty" validate:"omitempty,oneof=draft pending_approval active closed rejected"`
-	IsFeatured  *bool   `json:"is_featured,omitempty"`
+	Status     *string `json:"status,omitempty" validate:"omitempty,oneof=draft pending_approval active closed rejected"`
+	IsFeatured *bool   `json:"is_featured,omitempty"`
 }
 
 type ApprovePollRequest struct {
@@ -224,21 +224,21 @@ type CreatePollCommentRequest struct {
 // Filter types
 
 type PollFilter struct {
-	Category           *string
-	Status             *string
-	UserID             *uuid.UUID
-	PoliticianID       *uuid.UUID
-	ElectionID         *uuid.UUID
-	IsFeatured         *bool
-	Search             *string
-	ActiveOnly         bool
+	Category     *string
+	Status       *string
+	UserID       *uuid.UUID
+	PoliticianID *uuid.UUID
+	ElectionID   *uuid.UUID
+	IsFeatured   *bool
+	Search       *string
+	ActiveOnly   bool
 	// Location filters
 	RegionID           *uuid.UUID
 	ProvinceID         *uuid.UUID
 	CityMunicipalityID *uuid.UUID
 	BarangayID         *uuid.UUID
 	// If true, include national polls (no location) along with location-filtered results
-	IncludeNational    bool
+	IncludeNational bool
 }
 
 // Paginated types
@@ -268,7 +268,7 @@ type PollResults struct {
 }
 
 type VoteResponse struct {
-	Success  bool         `json:"success"`
-	Message  string       `json:"message"`
-	Results  *PollResults `json:"results,omitempty"`
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	Results *PollResults `json:"results,omitempty"`
 }

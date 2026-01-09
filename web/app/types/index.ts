@@ -332,6 +332,14 @@ export interface PaginatedTags {
   total_pages: number
 }
 
+export interface PaginatedUsers {
+  users: Author[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
 export interface CreateTagRequest {
   name: string
   slug: string

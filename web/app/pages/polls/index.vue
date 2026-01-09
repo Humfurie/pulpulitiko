@@ -133,13 +133,13 @@ const getCategoryLabel = (cat: PollCategory) => {
             <div class="flex flex-col sm:flex-row gap-4">
               <!-- Search -->
               <div class="flex-1">
-                <form @submit.prevent="handleSearch" class="flex">
+                <form class="flex" @submit.prevent="handleSearch">
                   <input
                     v-model="searchInput"
                     type="text"
                     placeholder="Search polls..."
                     class="flex-1 rounded-l-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  >
                   <button
                     type="submit"
                     class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700"
@@ -166,10 +166,10 @@ const getCategoryLabel = (cat: PollCategory) => {
           <!-- Loading State -->
           <div v-if="pending" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div v-for="n in 6" :key="n" class="bg-white rounded-lg shadow-sm p-6 animate-pulse">
-              <div class="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-              <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
-              <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+              <div class="h-4 bg-gray-200 rounded w-1/4 mb-4"/>
+              <div class="h-6 bg-gray-200 rounded w-3/4 mb-4"/>
+              <div class="h-4 bg-gray-200 rounded w-full mb-2"/>
+              <div class="h-4 bg-gray-200 rounded w-2/3"/>
             </div>
           </div>
 
@@ -230,8 +230,8 @@ const getCategoryLabel = (cat: PollCategory) => {
                     :src="poll.author.avatar"
                     :alt="poll.author.name"
                     class="w-6 h-6 rounded-full mr-2"
-                  />
-                  <span class="w-6 h-6 rounded-full bg-gray-300 mr-2 flex items-center justify-center text-xs text-white" v-else>
+                  >
+                  <span v-else class="w-6 h-6 rounded-full bg-gray-300 mr-2 flex items-center justify-center text-xs text-white">
                     {{ poll.author.name.charAt(0) }}
                   </span>
                   <span>{{ poll.author.name }}</span>
@@ -245,9 +245,9 @@ const getCategoryLabel = (cat: PollCategory) => {
           <div v-if="totalPages > 1" class="mt-8 flex justify-center">
             <nav class="flex items-center space-x-2">
               <button
-                @click="goToPage(page - 1)"
                 :disabled="page <= 1"
                 class="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="goToPage(page - 1)"
               >
                 Previous
               </button>
@@ -255,13 +255,13 @@ const getCategoryLabel = (cat: PollCategory) => {
               <template v-for="p in totalPages" :key="p">
                 <button
                   v-if="p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1)"
-                  @click="goToPage(p)"
                   :class="[
                     'px-3 py-2 rounded-lg border',
                     p === page
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                   ]"
+                  @click="goToPage(p)"
                 >
                   {{ p }}
                 </button>
@@ -274,9 +274,9 @@ const getCategoryLabel = (cat: PollCategory) => {
               </template>
 
               <button
-                @click="goToPage(page + 1)"
                 :disabled="page >= totalPages"
                 class="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="goToPage(page + 1)"
               >
                 Next
               </button>
@@ -318,13 +318,13 @@ const getCategoryLabel = (cat: PollCategory) => {
               <button
                 v-for="cat in categories.filter(c => c.value)"
                 :key="cat.value"
-                @click="selectedCategory = cat.value"
                 :class="[
                   'w-full text-left px-3 py-2 rounded-lg text-sm transition-colors',
                   selectedCategory === cat.value
                     ? 'bg-blue-100 text-blue-800'
                     : 'hover:bg-gray-100 text-gray-700'
                 ]"
+                @click="selectedCategory = cat.value"
               >
                 {{ cat.label }}
               </button>

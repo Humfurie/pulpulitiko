@@ -31,10 +31,10 @@ type Article struct {
 	UpdatedAt           time.Time     `json:"updated_at"`
 
 	// Relations (populated when needed)
-	Author             *Author      `json:"author,omitempty"`
-	Category           *Category    `json:"category,omitempty"`
-	Tags               []Tag        `json:"tags,omitempty"`
-	PrimaryPolitician  *Politician  `json:"primary_politician,omitempty"`
+	Author               *Author      `json:"author,omitempty"`
+	Category             *Category    `json:"category,omitempty"`
+	Tags                 []Tag        `json:"tags,omitempty"`
+	PrimaryPolitician    *Politician  `json:"primary_politician,omitempty"`
 	MentionedPoliticians []Politician `json:"mentioned_politicians,omitempty"`
 }
 

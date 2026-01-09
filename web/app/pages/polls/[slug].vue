@@ -155,10 +155,10 @@ const getWinningOption = () => {
 
       <!-- Loading State -->
       <div v-if="pending" class="bg-white rounded-lg shadow-sm p-8 animate-pulse">
-        <div class="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-        <div class="h-8 bg-gray-200 rounded w-3/4 mb-6"></div>
+        <div class="h-6 bg-gray-200 rounded w-1/4 mb-4"/>
+        <div class="h-8 bg-gray-200 rounded w-3/4 mb-6"/>
         <div class="space-y-4">
-          <div v-for="n in 4" :key="n" class="h-12 bg-gray-200 rounded"></div>
+          <div v-for="n in 4" :key="n" class="h-12 bg-gray-200 rounded"/>
         </div>
       </div>
 
@@ -218,8 +218,8 @@ const getWinningOption = () => {
                 :src="poll.author.avatar"
                 :alt="poll.author.name"
                 class="w-8 h-8 rounded-full mr-2"
-              />
-              <span class="w-8 h-8 rounded-full bg-gray-300 mr-2 flex items-center justify-center text-sm text-white" v-else>
+              >
+              <span v-else class="w-8 h-8 rounded-full bg-gray-300 mr-2 flex items-center justify-center text-sm text-white">
                 {{ poll.author.name.charAt(0) }}
               </span>
               <span>{{ poll.author.name }}</span>
@@ -250,7 +250,6 @@ const getWinningOption = () => {
             <div
               v-for="option in poll.options"
               :key="option.id"
-              @click="!hasVoted && isPollActive && (selectedOption = option.id)"
               :class="[
                 'relative rounded-lg border-2 transition-all overflow-hidden',
                 hasVoted || !isPollActive
@@ -261,6 +260,7 @@ const getWinningOption = () => {
                   : 'border-gray-200',
                 poll.user_vote === option.id ? 'border-green-500 bg-green-50' : ''
               ]"
+              @click="!hasVoted && isPollActive && (selectedOption = option.id)"
             >
               <!-- Progress bar background -->
               <div
@@ -270,7 +270,7 @@ const getWinningOption = () => {
                   getWinningOption()?.id === option.id ? 'bg-blue-100' : 'bg-gray-100'
                 ]"
                 :style="{ width: `${getOptionPercentage(option)}%` }"
-              ></div>
+              />
 
               <!-- Option content -->
               <div class="relative px-4 py-3 flex items-center justify-between">
@@ -322,14 +322,14 @@ const getWinningOption = () => {
           <!-- Vote Button -->
           <div v-if="isPollActive && !hasVoted" class="mt-6">
             <button
-              @click="castVote"
               :disabled="!selectedOption || voting"
               class="w-full py-3 px-6 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              @click="castVote"
             >
               <span v-if="voting" class="flex items-center justify-center">
                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                 </svg>
                 Submitting Vote...
               </span>
@@ -360,8 +360,8 @@ const getWinningOption = () => {
                 :src="poll.politician.photo"
                 :alt="poll.politician.name"
                 class="w-10 h-10 rounded-full object-cover mr-3"
-              />
-              <div class="w-10 h-10 rounded-full bg-gray-300 mr-3 flex items-center justify-center text-white font-medium" v-else>
+              >
+              <div v-else class="w-10 h-10 rounded-full bg-gray-300 mr-3 flex items-center justify-center text-white font-medium">
                 {{ poll.politician.name.charAt(0) }}
               </div>
               <div>

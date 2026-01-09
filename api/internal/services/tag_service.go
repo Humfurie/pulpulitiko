@@ -41,6 +41,10 @@ func (s *TagService) List(ctx context.Context) ([]models.Tag, error) {
 	return s.repo.List(ctx)
 }
 
+func (s *TagService) AdminList(ctx context.Context, filter *models.TagFilter, page, perPage int) (*models.PaginatedTags, error) {
+	return s.repo.AdminList(ctx, filter, page, perPage)
+}
+
 func (s *TagService) Update(ctx context.Context, id uuid.UUID, req *models.UpdateTagRequest) (*models.Tag, error) {
 	if err := s.repo.Update(ctx, id, req); err != nil {
 		return nil, err

@@ -35,24 +35,24 @@ const (
 
 // Election represents an election event
 type Election struct {
-	ID                       uuid.UUID  `json:"id"`
-	Name                     string     `json:"name"`
-	Slug                     string     `json:"slug"`
-	ElectionType             string     `json:"election_type"`
-	Description              *string    `json:"description,omitempty"`
-	ElectionDate             time.Time  `json:"election_date"`
-	RegistrationStart        *time.Time `json:"registration_start,omitempty"`
-	RegistrationEnd          *time.Time `json:"registration_end,omitempty"`
-	CampaignStart            *time.Time `json:"campaign_start,omitempty"`
-	CampaignEnd              *time.Time `json:"campaign_end,omitempty"`
-	Status                   string     `json:"status"`
-	IsFeatured               bool       `json:"is_featured"`
-	VoterTurnoutPercentage   *float64   `json:"voter_turnout_percentage,omitempty"`
-	TotalRegisteredVoters    *int       `json:"total_registered_voters,omitempty"`
-	TotalVotesCast           *int       `json:"total_votes_cast,omitempty"`
-	CreatedAt                time.Time  `json:"created_at"`
-	UpdatedAt                time.Time  `json:"updated_at"`
-	DeletedAt                *time.Time `json:"deleted_at,omitempty"`
+	ID                     uuid.UUID  `json:"id"`
+	Name                   string     `json:"name"`
+	Slug                   string     `json:"slug"`
+	ElectionType           string     `json:"election_type"`
+	Description            *string    `json:"description,omitempty"`
+	ElectionDate           time.Time  `json:"election_date"`
+	RegistrationStart      *time.Time `json:"registration_start,omitempty"`
+	RegistrationEnd        *time.Time `json:"registration_end,omitempty"`
+	CampaignStart          *time.Time `json:"campaign_start,omitempty"`
+	CampaignEnd            *time.Time `json:"campaign_end,omitempty"`
+	Status                 string     `json:"status"`
+	IsFeatured             bool       `json:"is_featured"`
+	VoterTurnoutPercentage *float64   `json:"voter_turnout_percentage,omitempty"`
+	TotalRegisteredVoters  *int       `json:"total_registered_voters,omitempty"`
+	TotalVotesCast         *int       `json:"total_votes_cast,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
+	DeletedAt              *time.Time `json:"deleted_at,omitempty"`
 
 	// Joined fields
 	Positions  []ElectionPositionListItem `json:"positions,omitempty"`
@@ -213,19 +213,19 @@ type CreateElectionRequest struct {
 }
 
 type UpdateElectionRequest struct {
-	Name                     *string  `json:"name,omitempty" validate:"omitempty,max=300"`
-	Slug                     *string  `json:"slug,omitempty" validate:"omitempty,max=300"`
-	Description              *string  `json:"description,omitempty"`
-	ElectionDate             *string  `json:"election_date,omitempty"`     // YYYY-MM-DD
-	RegistrationStart        *string  `json:"registration_start,omitempty"` // YYYY-MM-DD
-	RegistrationEnd          *string  `json:"registration_end,omitempty"`   // YYYY-MM-DD
-	CampaignStart            *string  `json:"campaign_start,omitempty"`     // YYYY-MM-DD
-	CampaignEnd              *string  `json:"campaign_end,omitempty"`       // YYYY-MM-DD
-	Status                   *string  `json:"status,omitempty" validate:"omitempty,oneof=upcoming ongoing completed cancelled"`
-	IsFeatured               *bool    `json:"is_featured,omitempty"`
-	VoterTurnoutPercentage   *float64 `json:"voter_turnout_percentage,omitempty"`
-	TotalRegisteredVoters    *int     `json:"total_registered_voters,omitempty"`
-	TotalVotesCast           *int     `json:"total_votes_cast,omitempty"`
+	Name                   *string  `json:"name,omitempty" validate:"omitempty,max=300"`
+	Slug                   *string  `json:"slug,omitempty" validate:"omitempty,max=300"`
+	Description            *string  `json:"description,omitempty"`
+	ElectionDate           *string  `json:"election_date,omitempty"`      // YYYY-MM-DD
+	RegistrationStart      *string  `json:"registration_start,omitempty"` // YYYY-MM-DD
+	RegistrationEnd        *string  `json:"registration_end,omitempty"`   // YYYY-MM-DD
+	CampaignStart          *string  `json:"campaign_start,omitempty"`     // YYYY-MM-DD
+	CampaignEnd            *string  `json:"campaign_end,omitempty"`       // YYYY-MM-DD
+	Status                 *string  `json:"status,omitempty" validate:"omitempty,oneof=upcoming ongoing completed cancelled"`
+	IsFeatured             *bool    `json:"is_featured,omitempty"`
+	VoterTurnoutPercentage *float64 `json:"voter_turnout_percentage,omitempty"`
+	TotalRegisteredVoters  *int     `json:"total_registered_voters,omitempty"`
+	TotalVotesCast         *int     `json:"total_votes_cast,omitempty"`
 }
 
 type CreateElectionPositionRequest struct {

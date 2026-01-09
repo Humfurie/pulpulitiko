@@ -171,6 +171,18 @@ func (s *PoliticalPartyService) GetPositionBySlug(ctx context.Context, slug stri
 	return s.repo.GetPositionBySlug(ctx, slug)
 }
 
+func (s *PoliticalPartyService) CreatePosition(ctx context.Context, req *models.CreateGovernmentPositionRequest) (*models.GovernmentPosition, error) {
+	return s.repo.CreatePosition(ctx, req)
+}
+
+func (s *PoliticalPartyService) UpdatePosition(ctx context.Context, id uuid.UUID, req *models.UpdateGovernmentPositionRequest) (*models.GovernmentPosition, error) {
+	return s.repo.UpdatePosition(ctx, id, req)
+}
+
+func (s *PoliticalPartyService) DeletePosition(ctx context.Context, id uuid.UUID) error {
+	return s.repo.DeletePosition(ctx, id)
+}
+
 // Politician Jurisdiction methods
 
 func (s *PoliticalPartyService) CreateJurisdiction(ctx context.Context, req *models.CreatePoliticianJurisdictionRequest) (*models.PoliticianJurisdiction, error) {

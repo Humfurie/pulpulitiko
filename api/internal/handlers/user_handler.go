@@ -160,3 +160,35 @@ func (h *UserHandler) GetUserReplies(w http.ResponseWriter, r *http.Request) {
 
 	WriteSuccess(w, replies)
 }
+
+// AdminList GET /api/admin/users - List all users with pagination, search, and sorting (admin)
+func (h *UserHandler) AdminList(w http.ResponseWriter, r *http.Request) {
+	page, perPage := GetPaginationParams(r)
+
+	search := r.URL.Query().Get("search")
+	roleSlug := r.URL.Query().Get("role")
+	sortBy := r.URL.Query().Get("sort_by")
+	sortOrder := r.URL.Query().Get("sort_order")
+
+	filter := &models.UserFilter{}
+	if search != "" {
+		filter.Search = &search
+	}
+	if roleSlug != "" {
+		filter.RoleSlug = &roleSlug
+	}
+	if sortBy != "" {
+		filter.SortBy = &sortBy
+	}
+	if sortOrder != "" {
+		filter.SortOrder = &sortOrder
+	}
+
+	paginatedUsers, err := h.userRepo.AdminList(r.Context(), filter, page, perPage)
+	if err != nil {
+		WriteInternalError(w, "failed to fetch users")
+		return
+	}
+
+	WriteSuccess(w, paginatedUsers)
+}

@@ -356,13 +356,13 @@ func generateSlug(name string) string {
 
 func seedPoliticians(ctx context.Context, conn *pgx.Conn) error {
 	politicians := []struct {
-		name       string
-		slug       string
-		position   string
-		party      string
-		shortBio   string
-		termStart  string
-		termEnd    string
+		name      string
+		slug      string
+		position  string
+		party     string
+		shortBio  string
+		termStart string
+		termEnd   string
 	}{
 		// =====================================================
 		// EXECUTIVE BRANCH

@@ -422,6 +422,7 @@ func main() {
 		r.Post("/categories/{id}/restore", categoryHandler.Restore)
 
 		// Tags
+		r.Get("/tags", tagHandler.AdminList)
 		r.Get("/tags/{id}", tagHandler.AdminGetByID)
 		r.Post("/tags", tagHandler.Create)
 		r.Put("/tags/{id}", tagHandler.Update)
@@ -470,6 +471,15 @@ func main() {
 			r.Post("/", politicalPartyHandler.CreateParty)
 			r.Put("/{id}", politicalPartyHandler.UpdateParty)
 			r.Delete("/{id}", politicalPartyHandler.DeleteParty)
+		})
+
+		// Government Positions management (admin only)
+		r.Route("/positions", func(r chi.Router) {
+			r.Use(authMiddleware.RequireAdmin)
+			r.Get("/{id}", politicalPartyHandler.GetPositionByID)
+			r.Post("/", politicalPartyHandler.CreatePosition)
+			r.Put("/{id}", politicalPartyHandler.UpdatePosition)
+			r.Delete("/{id}", politicalPartyHandler.DeletePosition)
 		})
 
 		// Politician Jurisdictions management (admin only)
@@ -526,7 +536,7 @@ func main() {
 		// Users management (admin only)
 		r.Route("/users", func(r chi.Router) {
 			r.Use(authMiddleware.RequireAdmin)
-			r.Get("/", authorHandler.AdminList)
+			r.Get("/", userHandler.AdminList)
 			r.Get("/{id}", authorHandler.AdminGetByID)
 			r.Post("/", authorHandler.AdminCreate)
 			r.Put("/{id}", authorHandler.AdminUpdate)

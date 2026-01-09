@@ -75,12 +75,12 @@ useSeoMeta({
             src="/pulpulitiko.png"
             alt="Pulpulitiko"
             class="h-10 w-auto mx-auto dark:hidden"
-          />
+          >
           <img
             src="/pulpulitiko_dark.png"
             alt="Pulpulitiko"
             class="h-10 w-auto mx-auto hidden dark:block"
-          />
+          >
         </NuxtLink>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">

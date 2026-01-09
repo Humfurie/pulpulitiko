@@ -8,7 +8,7 @@ import (
 )
 
 type EmailService struct {
-	apiKey  string
+	apiKey    string
 	fromEmail string
 	fromName  string
 	siteURL   string

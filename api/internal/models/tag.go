@@ -23,3 +23,17 @@ type UpdateTagRequest struct {
 	Name *string `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
 	Slug *string `json:"slug,omitempty" validate:"omitempty,min=2,max=100"`
 }
+
+type TagFilter struct {
+	Search    *string
+	SortBy    *string // name, created_at
+	SortOrder *string // asc, desc
+}
+
+type PaginatedTags struct {
+	Tags       []Tag `json:"data"`
+	Total      int   `json:"total"`
+	Page       int   `json:"page"`
+	PerPage    int   `json:"per_page"`
+	TotalPages int   `json:"total_pages"`
+}

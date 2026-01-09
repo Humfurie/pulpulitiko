@@ -125,6 +125,89 @@ func (r *UserRepository) List(ctx context.Context) ([]models.User, error) {
 	return users, nil
 }
 
+func (r *UserRepository) AdminList(ctx context.Context, filter *models.UserFilter, page, perPage int) (*models.PaginatedUsers, error) {
+	baseQuery := `
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		LEFT JOIN authors a ON a.email = u.email AND a.deleted_at IS NULL
+		WHERE u.deleted_at IS NULL`
+
+	args := []interface{}{}
+	argCount := 0
+
+	if filter.Search != nil && *filter.Search != "" {
+		argCount++
+		baseQuery += fmt.Sprintf(" AND (u.name ILIKE $%d OR u.email ILIKE $%d)", argCount, argCount)
+		args = append(args, "%"+*filter.Search+"%")
+	}
+
+	if filter.RoleSlug != nil && *filter.RoleSlug != "" {
+		argCount++
+		baseQuery += fmt.Sprintf(" AND r.slug = $%d", argCount)
+		args = append(args, *filter.RoleSlug)
+	}
+
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	var total int
+	err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	orderClause := "ORDER BY u.created_at DESC"
+	if filter.SortBy != nil && *filter.SortBy != "" {
+		sortBy := *filter.SortBy
+		sortOrder := "ASC"
+		if filter.SortOrder != nil && *filter.SortOrder != "" {
+			sortOrder = *filter.SortOrder
+		}
+		if sortBy == "name" {
+			orderClause = fmt.Sprintf("ORDER BY u.name %s", sortOrder)
+		} else if sortBy == "email" {
+			orderClause = fmt.Sprintf("ORDER BY u.email %s", sortOrder)
+		} else if sortBy == "created_at" {
+			orderClause = fmt.Sprintf("ORDER BY u.created_at %s", sortOrder)
+		}
+	}
+
+	offset := (page - 1) * perPage
+	totalPages := (total + perPage - 1) / perPage
+
+	argCount++
+	query := fmt.Sprintf(`
+		SELECT u.id, u.email, u.password_hash, u.name, COALESCE(a.avatar, u.avatar) as avatar,
+		       u.role_id, COALESCE(r.slug, '') as role_slug, u.created_at, u.updated_at, u.deleted_at
+		%s
+		%s
+		LIMIT $%d OFFSET $%d
+	`, baseQuery, orderClause, argCount, argCount+1)
+	args = append(args, perPage, offset)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list users: %w", err)
+	}
+	defer rows.Close()
+
+	users := []models.User{}
+	for rows.Next() {
+		var user models.User
+		err := rows.Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Avatar, &user.RoleID, &user.RoleSlug, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	return &models.PaginatedUsers{
+		Users:      users,
+		Total:      total,
+		Page:       page,
+		PerPage:    perPage,
+		TotalPages: totalPages,
+	}, nil
+}
+
 func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := "UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 
