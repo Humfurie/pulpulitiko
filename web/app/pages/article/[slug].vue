@@ -4,6 +4,29 @@ const api = useApi()
 
 const slug = computed(() => route.params.slug as string)
 
+// Helper function to sanitize text for Schema.org JSON-LD
+// Strips HTML tags and ensures safe content for JSON serialization
+function sanitizeForSchema(html: string | undefined): string | undefined {
+  if (!html) return undefined
+
+  // Strip HTML tags
+  const withoutTags = html.replace(/<[^>]*>/g, '')
+
+  // Decode common HTML entities to prevent double-encoding
+  const decoded = withoutTags
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+
+  // Trim and normalize whitespace
+  const normalized = decoded.replace(/\s+/g, ' ').trim()
+
+  // Truncate to reasonable length (Google recommends max 5000 characters for articleBody)
+  return normalized.length > 5000 ? normalized.substring(0, 4997) + '...' : normalized
+}
+
 const { data: article, error, status } = await useAsyncData(
   `article-${slug.value}`,
   () => api.getArticleBySlug(slug.value)
@@ -93,10 +116,8 @@ useHead({
     {
       type: 'application/ld+json',
       innerHTML: computed(() => {
-        // Strip HTML from content for articleBody
-        const articleBody = article.value?.content
-          ? article.value.content.replace(/<[^>]*>/g, '').trim()
-          : undefined
+        // Sanitize content for articleBody (strips HTML, decodes entities, truncates)
+        const articleBody = sanitizeForSchema(article.value?.content)
 
         const schema: Record<string, unknown> = {
           '@context': 'https://schema.org',

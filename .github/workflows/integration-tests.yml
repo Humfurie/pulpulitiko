@@ -7,10 +7,15 @@ on:
     branches: [ master, main, develop ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker-integration:
     name: Docker Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -33,8 +38,10 @@ jobs:
 
           MINIO_ACCESS_KEY=minioadmin
           MINIO_SECRET_KEY=minioadmin
-          MINIO_ENDPOINT=minio.humfurie.org
+          MINIO_ENDPOINT=minio:9000
+          MINIO_PUBLIC_ENDPOINT=localhost:9000
           MINIO_BUCKET=pulpulitiko-test
+          MINIO_USE_SSL=false
 
           API_PORT=8080
           WEB_PORT=3000
@@ -42,15 +49,99 @@ jobs:
           ENVIRONMENT=test
           EOF
 
-      - name: Build Docker images
+      - name: Start MinIO mock service
         run: |
-          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml build --no-cache
+          # Create network if it doesn't exist
+          docker network create pulpulitiko_default || true
+          
+          # Start MinIO
+          docker run -d \
+            --name minio-test \
+            --network pulpulitiko_default \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            -p 9000:9000 \
+            -p 9001:9001 \
+            minio/minio:latest \
+            server /data --console-address ":9001"
+          
+          echo "Waiting for MinIO to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:9000/minio/health/live > /dev/null 2>&1; then
+              echo "MinIO is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "MinIO failed to start"
+              docker logs minio-test
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          # Create test bucket
+          docker run --rm --network pulpulitiko_default \
+            --entrypoint sh minio/mc:latest \
+            -c "mc alias set testminio http://minio-test:9000 minioadmin minioadmin && mc mb testminio/pulpulitiko-test"
 
-      - name: Start services
+      - name: Build Docker images with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          tags: pulpulitiko-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+          push: false
+          load: true
+
+      - name: Build frontend with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          tags: pulpulitiko-web:ci
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+          push: false
+          load: true
+          build-args: |
+            NUXT_PUBLIC_API_URL=http://localhost:8080/api
+            NUXT_PUBLIC_SITE_URL=http://localhost:3000
+
+      - name: Start and verify database services
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d postgres redis
-          echo "Waiting for services to be ready..."
-          sleep 10
+          
+          # Wait for PostgreSQL with retry logic
+          echo "Waiting for PostgreSQL..."
+          for i in {1..30}; do
+            if docker exec pulpulitiko-postgres pg_isready -U politics; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "PostgreSQL failed to start"
+              docker logs pulpulitiko-postgres
+              exit 1
+            fi
+            sleep 2
+          done
+          
+          # Wait for Redis
+          echo "Waiting for Redis..."
+          for i in {1..20}; do
+            if docker exec pulpulitiko-redis redis-cli ping | grep -q PONG; then
+              echo "Redis is ready"
+              break
+            fi
+            if [ $i -eq 20 ]; then
+              echo "Redis failed to start"
+              docker logs pulpulitiko-redis
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Check service health
         run: |
@@ -58,10 +149,27 @@ jobs:
           docker exec pulpulitiko-postgres pg_isready -U politics || exit 1
           docker exec pulpulitiko-redis redis-cli ping || exit 1
 
-      - name: Run database migrations
+      - name: Start API and run migrations
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d api
-          sleep 5
+          
+          # Wait for API container to be running
+          echo "Waiting for API container..."
+          for i in {1..30}; do
+            if [ "$(docker inspect -f '{{.State.Running}}' pulpulitiko-api 2>/dev/null)" == "true" ]; then
+              echo "API container is running"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "API container failed to start"
+              docker logs pulpulitiko-api
+              exit 1
+            fi
+            sleep 1
+          done
+          
+          # Run migrations
+          echo "Running database migrations..."
           docker exec pulpulitiko-api /usr/local/bin/migrate \
             -path /app/migrations \
             -database "postgres://politics:testpassword@postgres:5432/politics_test_db?sslmode=disable" \
@@ -74,16 +182,40 @@ jobs:
                      -e ADMIN_NAME="Test Admin" \
                      pulpulitiko-api /app/seed || echo "Seed skipped or failed"
 
-      - name: Wait for API to be ready
+      - name: Wait for API health
         run: |
-          echo "Waiting for API to be ready..."
-          timeout 60 sh -c 'until curl -f http://localhost:8080/health > /dev/null 2>&1; do sleep 2; done'
-          echo "API is ready!"
+          echo "Waiting for API to be healthy..."
+          for i in {1..60}; do
+            if curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+              echo "API is healthy!"
+              curl http://localhost:8080/health
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "API failed to become healthy"
+              docker logs pulpulitiko-api
+              exit 1
+            fi
+            sleep 2
+          done
 
-      - name: Start frontend
+      - name: Start and verify frontend
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d web
-          sleep 10
+          
+          echo "Waiting for frontend..."
+          for i in {1..60}; do
+            if curl -f -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Frontend failed to start"
+              docker logs pulpulitiko-web
+              exit 1
+            fi
+            sleep 2
+          done
 
       - name: Run integration tests
         run: |
@@ -120,11 +252,15 @@ jobs:
         if: always()
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml down -v
+          docker stop minio-test || true
+          docker rm minio-test || true
+          docker network rm pulpulitiko_default || true
           rm -f .env
 
   e2e-tests:
     name: End-to-End Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: docker-integration
 
     steps:
@@ -147,18 +283,58 @@ jobs:
           JWT_SECRET=test-jwt-secret-key-for-integration-tests
           MINIO_ACCESS_KEY=minioadmin
           MINIO_SECRET_KEY=minioadmin
-          MINIO_ENDPOINT=minio.humfurie.org
+          MINIO_ENDPOINT=minio:9000
+          MINIO_PUBLIC_ENDPOINT=localhost:9000
           MINIO_BUCKET=pulpulitiko-test
+          MINIO_USE_SSL=false
           API_PORT=8080
           WEB_PORT=3000
           ENVIRONMENT=test
           EOF
 
+      - name: Start MinIO mock service
+        run: |
+          docker network create pulpulitiko_default || true
+          docker run -d \
+            --name minio-test \
+            --network pulpulitiko_default \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            -p 9000:9000 \
+            minio/minio:latest \
+            server /data
+          
+          echo "Waiting for MinIO..."
+          for i in {1..30}; do
+            if curl -f http://localhost:9000/minio/health/live > /dev/null 2>&1; then
+              echo "MinIO is ready"
+              break
+            fi
+            sleep 2
+          done
+          
+          docker run --rm --network pulpulitiko_default \
+            --entrypoint sh minio/mc:latest \
+            -c "mc alias set testminio http://minio-test:9000 minioadmin minioadmin && mc mb testminio/pulpulitiko-test"
+
       - name: Start test environment
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d
-          echo "Waiting for services..."
-          sleep 30
+          
+          echo "Waiting for services to be ready..."
+          for i in {1..60}; do
+            if curl -f http://localhost:8080/health > /dev/null 2>&1 && \
+               curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "All services are ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Services failed to start"
+              docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml logs
+              exit 1
+            fi
+            sleep 3
+          done
 
       - name: Install Playwright
         working-directory: ./web
@@ -171,10 +347,8 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
         run: |
-          # This would run actual Playwright tests if they exist
-          echo "E2E tests would run here with Playwright"
-          echo "BASE_URL is set to: $BASE_URL"
-          # npx playwright test
+          # Run Playwright tests
+          npx playwright test --reporter=html
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -188,4 +362,7 @@ jobs:
         if: always()
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml down -v
+          docker stop minio-test || true
+          docker rm minio-test || true
+          docker network rm pulpulitiko_default || true
           rm -f .env

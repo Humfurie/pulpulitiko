@@ -12,10 +12,15 @@ on:
       - 'web/**'
       - '.github/workflows/frontend-ci.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-test-build:
     name: Lint, Test & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -35,7 +40,6 @@ jobs:
       - name: Run ESLint
         working-directory: ./web
         run: npm run lint
-        continue-on-error: true
 
       - name: Run TypeScript type checking
         working-directory: ./web
@@ -56,11 +60,14 @@ jobs:
           echo "Coverage check passed (thresholds in vitest.config.ts)"
 
       - name: Upload coverage to Codecov
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./web/coverage/coverage-final.json
           flags: frontend
           name: frontend-coverage
+          fail_ci_if_error: false
 
       - name: Build application
         working-directory: ./web
@@ -77,6 +84,55 @@ jobs:
           fi
           echo "Build successful"
 
+      - name: Analyze build size
+        working-directory: ./web
+        run: |
+          echo "=== Build Size Analysis ==="
+          
+          # Get overall build size
+          BUILD_SIZE=$(du -sh .output | cut -f1)
+          BUILD_SIZE_BYTES=$(du -sb .output | cut -f1)
+          echo "Total build size: $BUILD_SIZE"
+          
+          # Get detailed breakdown
+          echo ""
+          echo "Breakdown by directory:"
+          du -sh .output/* 2>/dev/null | sort -hr || echo "No subdirectories found"
+          
+          # Check for large files (over 1MB)
+          echo ""
+          echo "Large files (>1MB):"
+          find .output -type f -size +1M -exec ls -lh {} \; 2>/dev/null | awk '{print $5 "\t" $9}' || echo "No large files found"
+          
+          # Set size limit (50MB)
+          MAX_SIZE=$((50 * 1024 * 1024))
+          
+          if [ $BUILD_SIZE_BYTES -gt $MAX_SIZE ]; then
+            echo ""
+            echo "❌ Build size ($BUILD_SIZE) exceeds limit (50MB)"
+            echo ""
+            echo "Consider:"
+            echo "  • Enabling tree-shaking for unused code"
+            echo "  • Removing unused dependencies"
+            echo "  • Optimizing images and assets"
+            echo "  • Code splitting for dynamic imports"
+            echo "  • Using dynamic imports for heavy libraries"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Build size is within acceptable limits"
+          
+          # Save size for trending
+          echo "$BUILD_SIZE_BYTES" > .build-size.txt
+
+      - name: Upload build size metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-size-metrics
+          path: web/.build-size.txt
+          retention-days: 30
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -87,6 +143,7 @@ jobs:
   accessibility-test:
     name: Accessibility Testing
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: lint-test-build
 
     steps:
@@ -124,6 +181,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -137,11 +195,25 @@ jobs:
       - name: Run npm audit
         working-directory: ./web
         run: |
-          npm audit --audit-level=high || echo "Security vulnerabilities found, please review"
+          # Run audit and save results
+          npm audit --audit-level=high --json > audit-results.json || true
+          
+          # Check for high or critical vulnerabilities
+          HIGH_COUNT=$(cat audit-results.json | grep -o '"high":[0-9]*' | cut -d: -f2 || echo "0")
+          CRITICAL_COUNT=$(cat audit-results.json | grep -o '"critical":[0-9]*' | cut -d: -f2 || echo "0")
+          TOTAL=$((HIGH_COUNT + CRITICAL_COUNT))
+          
+          if [ $TOTAL -gt 0 ]; then
+            echo "Found $TOTAL high/critical vulnerabilities!"
+            npm audit --audit-level=high
+            exit 1
+          fi
+          
+          echo "No high or critical vulnerabilities found"
 
       - name: Run Snyk security scan
+        if: env.SNYK_TOKEN != ''
         uses: snyk/actions/node@master
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
