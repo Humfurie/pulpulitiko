@@ -123,15 +123,15 @@ jobs:
           echo ""
           echo "✅ Build size is within acceptable limits"
 
-          # Save size for trending (use absolute path to ensure persistence)
-          echo "$BUILD_SIZE_BYTES" > $GITHUB_WORKSPACE/web/.build-size.txt
-          ls -la $GITHUB_WORKSPACE/web/.build-size.txt || echo "File not created!"
+          # Save size for trending
+          echo "$BUILD_SIZE_BYTES" > ../build-size.txt
+          echo "Created build-size.txt with size: $BUILD_SIZE_BYTES"
 
       - name: Upload build size metrics
         uses: actions/upload-artifact@v4
         with:
           name: build-size-metrics
-          path: web/.build-size.txt
+          path: build-size.txt
           retention-days: 30
           if-no-files-found: error
 

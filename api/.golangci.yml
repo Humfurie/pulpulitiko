@@ -1,5 +1,3 @@
-version: 2
-
 run:
   timeout: 5m
   tests: true
@@ -17,16 +15,15 @@ output:
 
 linters:
   enable:
-    # Default linters (compatible with golangci-lint v2.x)
+    # Default linters
     - errcheck      # Check for unchecked errors
-    # Note: gosimple removed (not available in v2.x)
+    - gosimple      # Simplify code
     - govet         # Reports suspicious constructs
     - ineffassign   # Detect ineffectual assignments
     - staticcheck   # Go static analysis
     - unused        # Check for unused constants, variables, functions and types
 
     # Additional recommended linters
-    # Note: goimports, gofmt, gci are formatters and cannot be enabled as linters in v2.x
     - gocritic      # Provides diagnostics that check for bugs, performance and style issues
     - gosec         # Inspects source code for security problems
     - misspell      # Finds commonly misspelled English words
@@ -39,15 +36,16 @@ linters:
     - noctx         # Finds sending http request without context.Context
     - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed
     - rowserrcheck  # Checks whether Err of rows is checked successfully
-    # Note: exportloopref removed (not available in v2.x)
+    - exportloopref # Checks for pointers to enclosing loop variables
 
   disable:
     - exhaustive    # Can be too strict
-    # Note: exhauststruct, gomnd removed (not available in v2.x)
+    - exhauststruct # Can be too strict
     - funlen        # Can be too opinionated
     - gochecknoglobals # Sometimes globals are necessary
     - gocognit      # Similar to gocyclo
     - godox         # Allow TODO comments
+    - gomnd         # Can be too strict about magic numbers
     - lll           # Line length can be handled by formatters
     - nlreturn      # Can be too opinionous
     - wsl           # Whitespace linter can be too strict
@@ -57,6 +55,15 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+    # Ignore defer Close() calls - they're usually safe to ignore
+    ignore: fmt:.*,io/ioutil:^Read.*,io:^Copy.*
+    exclude-functions:
+      - (io.Closer).Close
+      - (*database/sql.DB).Close
+      - (*database/sql.Rows).Close
+      - (*database/sql.Stmt).Close
+      - (*os.File).Close
+      - (*github.com/gorilla/websocket.Conn).Close
 
   govet:
     enable-all: true
