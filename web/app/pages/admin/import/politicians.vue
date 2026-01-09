@@ -61,7 +61,7 @@ const loadingLogs = ref(false)
 function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    selectedFile.value = target.files[0]
+    selectedFile.value = target.files[0] || null
     validationResult.value = null
     importSuccess.value = false
     error.value = ''
@@ -83,7 +83,7 @@ function handleDrop(event: DragEvent) {
   dragging.value = false
 
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
-    selectedFile.value = event.dataTransfer.files[0]
+    selectedFile.value = event.dataTransfer.files[0] || null
     validationResult.value = null
     importSuccess.value = false
     error.value = ''

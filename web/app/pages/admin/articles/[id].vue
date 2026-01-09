@@ -41,11 +41,11 @@ const wordCount = computed(() => countWordsInHtml(form.content))
 
 const wordCountStatus = computed(() => {
   const count = wordCount.value
-  if (count < 300) return { color: 'red', label: 'Too short', message: 'Aim for at least 800 words for better SEO' }
-  if (count < 600) return { color: 'orange', label: 'Short', message: 'Consider adding more content (800+ words recommended)' }
-  if (count < 800) return { color: 'yellow', label: 'Fair', message: 'Good length, but 1000+ words is ideal for SEO' }
-  if (count < 1500) return { color: 'green', label: 'Good', message: 'Excellent length for SEO and engagement' }
-  return { color: 'blue', label: 'Excellent', message: 'Outstanding depth and detail!' }
+  if (count < 300) return { color: 'error' as const, label: 'Too short', message: 'Aim for at least 800 words for better SEO' }
+  if (count < 600) return { color: 'warning' as const, label: 'Short', message: 'Consider adding more content (800+ words recommended)' }
+  if (count < 800) return { color: 'warning' as const, label: 'Fair', message: 'Good length, but 1000+ words is ideal for SEO' }
+  if (count < 1500) return { color: 'success' as const, label: 'Good', message: 'Excellent length for SEO and engagement' }
+  return { color: 'info' as const, label: 'Excellent', message: 'Outstanding depth and detail!' }
 })
 
 const categories = ref<Category[]>([])
