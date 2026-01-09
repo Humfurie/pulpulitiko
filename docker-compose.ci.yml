@@ -54,6 +54,3 @@ networks:
   default:
     name: pulpulitiko_default
     external: true
-  # Disable proxy network for CI
-  proxy:
-    driver: bridge
