@@ -54,3 +54,7 @@ networks:
   default:
     name: pulpulitiko_default
     external: true
+  # Override proxy network from prod to not be external in CI
+  proxy:
+    external: false
+    driver: bridge
