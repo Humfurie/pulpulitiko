@@ -63,7 +63,11 @@ func (s *ImportService) StartImport(ctx context.Context, req *models.ProcessImpo
 	go func() {
 		// Create a new context for async processing (don't use request context)
 		processCtx := context.Background()
-		s.ProcessImport(processCtx, importLog.ID, req.FileData)
+		if err := s.ProcessImport(processCtx, importLog.ID, req.FileData); err != nil {
+			// Error is already logged in ProcessImport via UpdateStatus and UpdateErrorLog
+			// This is a safety net for any unexpected errors
+			fmt.Printf("Unexpected error in background import processing (ID: %s): %v\n", importLog.ID, err)
+		}
 	}()
 
 	return importLog, nil

@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -407,6 +407,6 @@ func hashFilter(filter *models.ArticleFilter) string {
 		filter.Search,
 	)
 
-	hash := md5.Sum([]byte(data))
+	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
