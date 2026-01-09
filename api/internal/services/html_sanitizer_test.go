@@ -16,9 +16,9 @@ func TestHTMLSanitizer_SanitizeRichContent(t *testing.T) {
 		mustHave []string
 	}{
 		{
-			name:    "removes script tags",
-			input:   "<p>Hello</p><script>alert('xss')</script><p>World</p>",
-			mustNot: []string{"<script>", "alert", "xss"},
+			name:     "removes script tags",
+			input:    "<p>Hello</p><script>alert('xss')</script><p>World</p>",
+			mustNot:  []string{"<script>", "alert", "xss"},
 			mustHave: []string{"<p>Hello</p>", "<p>World</p>"},
 		},
 		{
@@ -102,14 +102,14 @@ func TestHTMLSanitizer_SanitizeRichContent(t *testing.T) {
 			mustHave: []string{"<a", "href="},
 		},
 		{
-			name:    "handles empty input",
-			input:   "",
-			want:    "",
+			name:  "handles empty input",
+			input: "",
+			want:  "",
 		},
 		{
-			name:    "handles nested XSS attempts",
-			input:   `<div><script>alert('xss')</script><p>Safe text</p></div>`,
-			mustNot: []string{"<script>", "alert"},
+			name:     "handles nested XSS attempts",
+			input:    `<div><script>alert('xss')</script><p>Safe text</p></div>`,
+			mustNot:  []string{"<script>", "alert"},
 			mustHave: []string{"Safe text"},
 		},
 		{
@@ -171,15 +171,15 @@ func TestHTMLSanitizer_SanitizeComment(t *testing.T) {
 		mustHave []string
 	}{
 		{
-			name:    "removes script tags",
-			input:   "<p>Comment</p><script>alert('xss')</script>",
-			mustNot: []string{"<script>", "alert"},
+			name:     "removes script tags",
+			input:    "<p>Comment</p><script>alert('xss')</script>",
+			mustNot:  []string{"<script>", "alert"},
 			mustHave: []string{"Comment"},
 		},
 		{
-			name:    "removes headings (not allowed in comments)",
-			input:   "<h2>Title</h2><p>Comment</p>",
-			mustNot: []string{"<h2>"},
+			name:     "removes headings (not allowed in comments)",
+			input:    "<h2>Title</h2><p>Comment</p>",
+			mustNot:  []string{"<h2>"},
 			mustHave: []string{"Comment"},
 		},
 		{
@@ -213,9 +213,9 @@ func TestHTMLSanitizer_SanitizeComment(t *testing.T) {
 			mustHave: []string{"<br>"},
 		},
 		{
-			name:    "handles empty input",
-			input:   "",
-			want:    "",
+			name:  "handles empty input",
+			input: "",
+			want:  "",
 		},
 		{
 			name:    "removes onclick handlers",
