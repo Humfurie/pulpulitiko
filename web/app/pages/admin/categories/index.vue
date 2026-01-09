@@ -26,7 +26,7 @@ const columns: TableColumn<Category>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'slug', header: 'Slug' },
   { accessorKey: 'description', header: 'Description' },
-  { id: 'actions', header: '' }
+  { id: 'actions', header: 'Actions' }
 ]
 
 async function fetchCategories() {
@@ -173,14 +173,18 @@ useSeoMeta({
               variant="ghost"
               size="sm"
               icon="i-heroicons-pencil"
-            />
+            >
+              Edit
+            </UButton>
             <UButton
               variant="ghost"
               size="sm"
               color="error"
               icon="i-heroicons-trash"
               @click="deleteCategory(row.original.id)"
-            />
+            >
+              Delete
+            </UButton>
           </div>
         </template>
       </UTable>

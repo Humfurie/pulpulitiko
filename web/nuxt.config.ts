@@ -37,6 +37,14 @@ export default defineNuxtConfig({
     }
   },
 
+  icon: {
+    clientBundle: {
+      scan: true,
+      includeCustomCollections: true
+    },
+    serverBundle: 'local'
+  },
+
   runtimeConfig: {
     apiInternalUrl: process.env.NUXT_API_INTERNAL_URL || 'http://api:8080/api',
     public: {
