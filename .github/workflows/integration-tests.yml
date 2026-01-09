@@ -112,7 +112,7 @@ jobs:
       - name: Start and verify database services
         run: |
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d postgres redis
-          
+
           # Wait for PostgreSQL with retry logic
           echo "Waiting for PostgreSQL..."
           for i in {1..30}; do
@@ -127,7 +127,13 @@ jobs:
             fi
             sleep 2
           done
-          
+
+          # Drop and recreate database to ensure clean state
+          echo "Ensuring clean database state..."
+          docker exec pulpulitiko-postgres psql -U politics -d postgres -c "DROP DATABASE IF EXISTS politics_test_db;"
+          docker exec pulpulitiko-postgres psql -U politics -d postgres -c "CREATE DATABASE politics_test_db;"
+          echo "Database recreated successfully"
+
           # Wait for Redis
           echo "Waiting for Redis..."
           for i in {1..20}; do
@@ -319,8 +325,31 @@ jobs:
 
       - name: Start test environment
         run: |
+          docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d postgres redis
+
+          # Wait for PostgreSQL
+          echo "Waiting for PostgreSQL..."
+          for i in {1..30}; do
+            if docker exec pulpulitiko-postgres pg_isready -U politics; then
+              echo "PostgreSQL is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "PostgreSQL failed to start"
+              exit 1
+            fi
+            sleep 2
+          done
+
+          # Drop and recreate database to ensure clean state
+          echo "Ensuring clean database state..."
+          docker exec pulpulitiko-postgres psql -U politics -d postgres -c "DROP DATABASE IF EXISTS politics_test_db;"
+          docker exec pulpulitiko-postgres psql -U politics -d postgres -c "CREATE DATABASE politics_test_db;"
+          echo "Database recreated successfully"
+
+          # Start remaining services
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d
-          
+
           echo "Waiting for services to be ready..."
           for i in {1..60}; do
             if curl -f http://localhost:8080/health > /dev/null 2>&1 && \

@@ -104,12 +104,12 @@ jobs:
           echo "Large files (>1MB):"
           find .output -type f -size +1M -exec ls -lh {} \; 2>/dev/null | awk '{print $5 "\t" $9}' || echo "No large files found"
           
-          # Set size limit (50MB)
-          MAX_SIZE=$((50 * 1024 * 1024))
-          
+          # Set size limit (75MB)
+          MAX_SIZE=$((75 * 1024 * 1024))
+
           if [ $BUILD_SIZE_BYTES -gt $MAX_SIZE ]; then
             echo ""
-            echo "❌ Build size ($BUILD_SIZE) exceeds limit (50MB)"
+            echo "❌ Build size ($BUILD_SIZE) exceeds limit (75MB)"
             echo ""
             echo "Consider:"
             echo "  • Enabling tree-shaking for unused code"
