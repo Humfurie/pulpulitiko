@@ -172,10 +172,12 @@ jobs:
         working-directory: ./api
         run: go mod verify
 
+      - name: Install Gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: -no-ssa -exclude-dir=test -exclude-dir=mocks ./api/...
+        working-directory: ./api
+        run: gosec -no-fail -fmt sarif -out gosec-results.sarif -exclude-dir=test -exclude-dir=mocks ./...
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

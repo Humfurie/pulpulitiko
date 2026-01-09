@@ -17,16 +17,16 @@ output:
 
 linters:
   enable:
-    # Default linters
+    # Default linters (compatible with golangci-lint v2.x)
     - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
+    # Note: gosimple removed (not available in v2.x)
     - govet         # Reports suspicious constructs
     - ineffassign   # Detect ineffectual assignments
     - staticcheck   # Go static analysis
     - unused        # Check for unused constants, variables, functions and types
 
     # Additional recommended linters
-    # Note: goimports is a formatter and cannot be enabled as a linter in v2.x
+    # Note: goimports, gofmt, gci are formatters and cannot be enabled as linters in v2.x
     - gocritic      # Provides diagnostics that check for bugs, performance and style issues
     - gosec         # Inspects source code for security problems
     - misspell      # Finds commonly misspelled English words
@@ -39,17 +39,15 @@ linters:
     - noctx         # Finds sending http request without context.Context
     - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed
     - rowserrcheck  # Checks whether Err of rows is checked successfully
-    - exportloopref # Checks for pointers to enclosing loop variables
-    # Note: gci is a formatter and cannot be enabled as a linter in v2.x
+    # Note: exportloopref removed (not available in v2.x)
 
   disable:
     - exhaustive    # Can be too strict
-    - exhauststruct # Can be too strict
+    # Note: exhauststruct, gomnd removed (not available in v2.x)
     - funlen        # Can be too opinionated
     - gochecknoglobals # Sometimes globals are necessary
     - gocognit      # Similar to gocyclo
     - godox         # Allow TODO comments
-    - gomnd         # Can be too strict about magic numbers
     - lll           # Line length can be handled by formatters
     - nlreturn      # Can be too opinionous
     - wsl           # Whitespace linter can be too strict
