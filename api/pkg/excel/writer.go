@@ -19,7 +19,7 @@ func GenerateExportFile(politicians []models.Politician) (*excelize.File, error)
 		return nil, fmt.Errorf("failed to create sheet: %w", err)
 	}
 	f.SetActiveSheet(index)
-	f.DeleteSheet("Sheet1") // Remove default sheet
+	_ = f.DeleteSheet("Sheet1") // Remove default sheet
 
 	// Define headers
 	headers := []string{
@@ -30,7 +30,7 @@ func GenerateExportFile(politicians []models.Politician) (*excelize.File, error)
 	// Write headers
 	for i, header := range headers {
 		cell := fmt.Sprintf("%s1", string(rune('A'+i)))
-		f.SetCellValue(sheetName, cell, header)
+		_ = f.SetCellValue(sheetName, cell, header)
 	}
 
 	// Style headers
@@ -39,7 +39,7 @@ func GenerateExportFile(politicians []models.Politician) (*excelize.File, error)
 		Fill:      excelize.Fill{Type: "pattern", Color: []string{"#4472C4"}, Pattern: 1},
 		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
 	})
-	f.SetCellStyle(sheetName, "A1", fmt.Sprintf("%s1", string(rune('A'+len(headers)-1))), headerStyle)
+	_ = f.SetCellStyle(sheetName, "A1", fmt.Sprintf("%s1", string(rune('A'+len(headers)-1))), headerStyle)
 
 	// Write data
 	for i, politician := range politicians {
@@ -69,25 +69,25 @@ func GenerateExportFile(politicians []models.Politician) (*excelize.File, error)
 		}
 
 		// Write row data
-		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), politician.Name)
-		f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), positionName)
-		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), jurisdictionType)
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), jurisdictionName)
-		f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), partyName)
-		f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), termStart)
-		f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), termEnd)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), politician.Name)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), positionName)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), jurisdictionType)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), jurisdictionName)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), partyName)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), termStart)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), termEnd)
 		if politician.Photo != nil {
-			f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), *politician.Photo)
+			_ = f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), *politician.Photo)
 		}
 		if politician.ShortBio != nil {
-			f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), *politician.ShortBio)
+			_ = f.SetCellValue(sheetName, fmt.Sprintf("I%d", row), *politician.ShortBio)
 		}
 	}
 
 	// Auto-fit columns
 	for i := 0; i < len(headers); i++ {
 		col := string(rune('A' + i))
-		f.SetColWidth(sheetName, col, col, 20)
+		_ = f.SetColWidth(sheetName, col, col, 20)
 	}
 
 	return f, nil
@@ -104,7 +104,7 @@ func GenerateTemplateFile(positions []models.GovernmentPosition, parties []model
 		return nil, fmt.Errorf("failed to create sheet: %w", err)
 	}
 	f.SetActiveSheet(index)
-	f.DeleteSheet("Sheet1")
+	_ = f.DeleteSheet("Sheet1")
 
 	// Headers with instructions
 	headers := []struct {
@@ -136,8 +136,8 @@ func GenerateTemplateFile(positions []models.GovernmentPosition, parties []model
 		if header.Required {
 			headerText += " *"
 		}
-		f.SetCellValue(sheetName, cell, headerText)
-		f.SetCellStyle(sheetName, cell, cell, headerStyle)
+		_ = f.SetCellValue(sheetName, cell, headerText)
+		_ = f.SetCellStyle(sheetName, cell, cell, headerStyle)
 	}
 
 	// Write example row
@@ -148,8 +148,8 @@ func GenerateTemplateFile(positions []models.GovernmentPosition, parties []model
 
 	for i, header := range headers {
 		cell := fmt.Sprintf("%s2", string(rune('A'+i)))
-		f.SetCellValue(sheetName, cell, header.Example)
-		f.SetCellStyle(sheetName, cell, cell, exampleStyle)
+		_ = f.SetCellValue(sheetName, cell, header.Example)
+		_ = f.SetCellStyle(sheetName, cell, cell, exampleStyle)
 	}
 
 	// Add data validation dropdowns
@@ -161,7 +161,7 @@ func GenerateTemplateFile(positions []models.GovernmentPosition, parties []model
 	widths := []float64{25, 25, 20, 25, 20, 15, 15, 40, 50}
 	for i, width := range widths {
 		col := string(rune('A' + i))
-		f.SetColWidth(sheetName, col, col, width)
+		_ = f.SetColWidth(sheetName, col, col, width)
 	}
 
 	// Sheet 2: Valid Positions (Reference)
@@ -196,8 +196,8 @@ func addPositionValidation(f *excelize.File, sheetName string, positions []model
 	// Add dropdown validation for position column (B3:B1000)
 	dvRange := excelize.NewDataValidation(true)
 	dvRange.Sqref = "B3:B1000"
-	dvRange.SetDropList(positionNames)
-	f.AddDataValidation(sheetName, dvRange)
+	_ = dvRange.SetDropList(positionNames)
+	_ = f.AddDataValidation(sheetName, dvRange)
 }
 
 func addPartyValidation(f *excelize.File, sheetName string, parties []models.PoliticalParty) {
@@ -210,8 +210,8 @@ func addPartyValidation(f *excelize.File, sheetName string, parties []models.Pol
 	// Add dropdown validation for party column (E3:E1000)
 	dvRange := excelize.NewDataValidation(true)
 	dvRange.Sqref = "E3:E1000"
-	dvRange.SetDropList(partyNames)
-	f.AddDataValidation(sheetName, dvRange)
+	_ = dvRange.SetDropList(partyNames)
+	_ = f.AddDataValidation(sheetName, dvRange)
 }
 
 func addJurisdictionTypeValidation(f *excelize.File, sheetName string) {
@@ -221,8 +221,8 @@ func addJurisdictionTypeValidation(f *excelize.File, sheetName string) {
 	// Add dropdown validation for jurisdiction type column (C3:C1000)
 	dvRange := excelize.NewDataValidation(true)
 	dvRange.Sqref = "C3:C1000"
-	dvRange.SetDropList(types)
-	f.AddDataValidation(sheetName, dvRange)
+	_ = dvRange.SetDropList(types)
+	_ = f.AddDataValidation(sheetName, dvRange)
 }
 
 func createReferenceSheet[T any](f *excelize.File, sheetName string, items []T, rowFunc func(T) []string, headers []string) {
@@ -237,8 +237,8 @@ func createReferenceSheet[T any](f *excelize.File, sheetName string, items []T, 
 
 	for i, header := range headers {
 		cell := fmt.Sprintf("%s1", string(rune('A'+i)))
-		f.SetCellValue(sheetName, cell, header)
-		f.SetCellStyle(sheetName, cell, cell, headerStyle)
+		_ = f.SetCellValue(sheetName, cell, header)
+		_ = f.SetCellStyle(sheetName, cell, cell, headerStyle)
 	}
 
 	// Data
@@ -247,14 +247,14 @@ func createReferenceSheet[T any](f *excelize.File, sheetName string, items []T, 
 		cols := rowFunc(item)
 		for j, val := range cols {
 			cell := fmt.Sprintf("%s%d", string(rune('A'+j)), row)
-			f.SetCellValue(sheetName, cell, val)
+			_ = f.SetCellValue(sheetName, cell, val)
 		}
 	}
 
 	// Auto-fit columns
 	for i := range headers {
 		col := string(rune('A' + i))
-		f.SetColWidth(sheetName, col, col, 25)
+		_ = f.SetColWidth(sheetName, col, col, 25)
 	}
 }
 
@@ -297,13 +297,13 @@ func createInstructionsSheet(f *excelize.File) {
 
 	for i, instruction := range instructions {
 		cell := fmt.Sprintf("A%d", i+1)
-		f.SetCellValue(sheetName, cell, instruction)
+		_ = f.SetCellValue(sheetName, cell, instruction)
 		if i == 0 {
-			f.SetCellStyle(sheetName, cell, cell, titleStyle)
+			_ = f.SetCellStyle(sheetName, cell, cell, titleStyle)
 		}
 	}
 
-	f.SetColWidth(sheetName, "A", "A", 100)
+	_ = f.SetColWidth(sheetName, "A", "A", 100)
 }
 
 // GenerateErrorReport generates an Excel file with import errors
@@ -313,39 +313,39 @@ func GenerateErrorReport(importLog *models.PoliticianImportLog, rows []models.Im
 	sheetName := "Import Errors"
 	index, _ := f.NewSheet(sheetName)
 	f.SetActiveSheet(index)
-	f.DeleteSheet("Sheet1")
+	_ = f.DeleteSheet("Sheet1")
 
 	// Summary section
-	f.SetCellValue(sheetName, "A1", "IMPORT ERROR REPORT")
-	f.SetCellValue(sheetName, "A2", "Filename:")
-	f.SetCellValue(sheetName, "B2", importLog.Filename)
-	f.SetCellValue(sheetName, "A3", "Import Date:")
-	f.SetCellValue(sheetName, "B3", time.Now().Format("2006-01-02 15:04:05"))
-	f.SetCellValue(sheetName, "A4", "Total Rows:")
-	f.SetCellValue(sheetName, "B4", importLog.TotalRows)
-	f.SetCellValue(sheetName, "A5", "Successful:")
-	f.SetCellValue(sheetName, "B5", importLog.SuccessfulImports)
-	f.SetCellValue(sheetName, "A6", "Failed:")
-	f.SetCellValue(sheetName, "B6", importLog.FailedImports)
+	_ = f.SetCellValue(sheetName, "A1", "IMPORT ERROR REPORT")
+	_ = f.SetCellValue(sheetName, "A2", "Filename:")
+	_ = f.SetCellValue(sheetName, "B2", importLog.Filename)
+	_ = f.SetCellValue(sheetName, "A3", "Import Date:")
+	_ = f.SetCellValue(sheetName, "B3", time.Now().Format("2006-01-02 15:04:05"))
+	_ = f.SetCellValue(sheetName, "A4", "Total Rows:")
+	_ = f.SetCellValue(sheetName, "B4", importLog.TotalRows)
+	_ = f.SetCellValue(sheetName, "A5", "Successful:")
+	_ = f.SetCellValue(sheetName, "B5", importLog.SuccessfulImports)
+	_ = f.SetCellValue(sheetName, "A6", "Failed:")
+	_ = f.SetCellValue(sheetName, "B6", importLog.FailedImports)
 
 	// Error details headers
 	headers := []string{"Row", "Field", "Error", "Value", "Suggestions"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%s8", string(rune('A'+i)))
-		f.SetCellValue(sheetName, cell, header)
+		_ = f.SetCellValue(sheetName, cell, header)
 	}
 
 	// Write errors
 	row := 9
 	for _, err := range importLog.ValidationErrors {
-		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), err.Row)
-		f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), err.Field)
-		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), err.Error)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), err.Row)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), err.Field)
+		_ = f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), err.Error)
 		if err.Value != nil {
-			f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), *err.Value)
+			_ = f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), *err.Value)
 		}
 		if len(err.Suggestions) > 0 {
-			f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), fmt.Sprintf("%v", err.Suggestions))
+			_ = f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), fmt.Sprintf("%v", err.Suggestions))
 		}
 		row++
 	}

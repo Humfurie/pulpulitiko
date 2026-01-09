@@ -1,5 +1,9 @@
 # Pulpulitiko Project
 
+---
+alwaysThinkingDisabled: true
+---
+
 ## Running with Docker (Production)
 
 ```bash
