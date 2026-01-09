@@ -31,6 +31,22 @@ const form = reactive({
   politician_ids: [] as string[]
 })
 
+// Word count calculation
+const wordCount = computed(() => {
+  if (!form.content) return 0
+  const text = form.content.replace(/<[^>]*>/g, '').trim()
+  return text.split(/\s+/).filter(word => word.length > 0).length
+})
+
+const wordCountStatus = computed(() => {
+  const count = wordCount.value
+  if (count < 300) return { color: 'red', label: 'Too short', message: 'Aim for at least 800 words for better SEO' }
+  if (count < 600) return { color: 'orange', label: 'Short', message: 'Consider adding more content (800+ words recommended)' }
+  if (count < 800) return { color: 'yellow', label: 'Fair', message: 'Good length, but 1000+ words is ideal for SEO' }
+  if (count < 1500) return { color: 'green', label: 'Good', message: 'Excellent length for SEO and engagement' }
+  return { color: 'blue', label: 'Excellent', message: 'Outstanding depth and detail!' }
+})
+
 const categories = ref<Category[]>([])
 const tags = ref<Tag[]>([])
 const politicians = ref<Politician[]>([])
@@ -308,12 +324,35 @@ useSeoMeta({
               <!-- Content editor with label -->
               <UFormField label="Content" name="content" required class="w-full">
                 <template #hint>
-                  <span class="text-xs text-gray-400">Full article content with rich text formatting</span>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs text-gray-400">Full article content with rich text formatting</span>
+                    <div class="flex items-center gap-2">
+                      <UBadge
+                        :color="wordCountStatus.color"
+                        variant="soft"
+                        size="sm"
+                      >
+                        {{ wordCount }} words - {{ wordCountStatus.label }}
+                      </UBadge>
+                    </div>
+                  </div>
                 </template>
                 <RichTextEditor
                   v-model="form.content"
                   placeholder="Start writing your article..."
                 />
+                <template #help>
+                  <div class="flex items-start gap-2 mt-2">
+                    <UIcon
+                      :name="wordCount >= 800 ? 'i-heroicons-check-circle' : 'i-heroicons-information-circle'"
+                      :class="wordCount >= 800 ? 'text-green-500' : 'text-gray-400'"
+                      class="w-4 h-4 mt-0.5 flex-shrink-0"
+                    />
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ wordCountStatus.message }}
+                    </span>
+                  </div>
+                </template>
               </UFormField>
             </div>
           </UCard>

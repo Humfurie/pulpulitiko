@@ -52,11 +52,20 @@ const ogImageUrl = computed(() => {
   return `${siteUrl}${img.startsWith('/') ? '' : '/'}${img}`
 })
 
+// Generate keywords from tags and category
+const keywords = computed(() => {
+  const tags = article.value?.tags?.map(t => t.name) || []
+  const category = article.value?.category?.name
+  const allKeywords = category ? [category, ...tags] : tags
+  return allKeywords.slice(0, 5).join(', ')
+})
+
 useSeoMeta({
   title: () => article.value?.title || 'Article',
   ogTitle: () => article.value?.title,
   description: () => article.value?.summary || '',
   ogDescription: () => article.value?.summary || '',
+  keywords: () => keywords.value,
   ogImage: () => ogImageUrl.value,
   ogImageWidth: 1200,
   ogImageHeight: 630,
@@ -83,31 +92,91 @@ useHead({
   script: [
     {
       type: 'application/ld+json',
-      innerHTML: computed(() => JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'NewsArticle',
-        mainEntityOfPage: {
-          '@type': 'WebPage',
-          '@id': `${siteUrl}/article/${slug.value}`
-        },
-        headline: article.value?.title,
-        description: article.value?.summary,
-        image: ogImageUrl.value,
-        datePublished: article.value?.published_at,
-        dateModified: article.value?.updated_at || article.value?.published_at,
-        author: article.value?.author ? {
-          '@type': 'Person',
-          name: article.value.author.name
-        } : undefined,
-        publisher: {
-          '@type': 'Organization',
-          name: 'Pulpulitiko',
-          logo: {
-            '@type': 'ImageObject',
-            url: `${siteUrl}/logo.png`
+      innerHTML: computed(() => {
+        // Strip HTML from content for articleBody
+        const articleBody = article.value?.content
+          ? article.value.content.replace(/<[^>]*>/g, '').trim()
+          : undefined
+
+        const schema: Record<string, unknown> = {
+          '@context': 'https://schema.org',
+          '@type': 'NewsArticle',
+          mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': `${siteUrl}/article/${slug.value}`
+          },
+          headline: article.value?.title,
+          description: article.value?.summary,
+          image: ogImageUrl.value ? [ogImageUrl.value] : undefined,
+          datePublished: article.value?.published_at,
+          dateModified: article.value?.updated_at || article.value?.published_at,
+          articleBody,
+          author: article.value?.author ? {
+            '@type': 'Person',
+            name: article.value.author.name,
+            url: article.value.author.slug ? `${siteUrl}/user/${article.value.author.slug}` : undefined,
+            image: article.value.author.avatar ? {
+              '@type': 'ImageObject',
+              url: article.value.author.avatar
+            } : undefined
+          } : undefined,
+          publisher: {
+            '@type': 'Organization',
+            name: 'Pulpulitiko',
+            url: siteUrl,
+            logo: {
+              '@type': 'ImageObject',
+              url: `${siteUrl}/pulpulitiko.png`,
+              width: 512,
+              height: 512
+            }
           }
         }
-      }))
+
+        // Remove undefined fields
+        Object.keys(schema).forEach(key => {
+          if (schema[key] === undefined) {
+            delete schema[key]
+          }
+        })
+
+        return JSON.stringify(schema)
+      })
+    },
+    {
+      type: 'application/ld+json',
+      innerHTML: computed(() => {
+        const breadcrumbItems = [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: siteUrl
+          }
+        ]
+
+        if (article.value?.category) {
+          breadcrumbItems.push({
+            '@type': 'ListItem',
+            position: 2,
+            name: article.value.category.name,
+            item: `${siteUrl}/category/${article.value.category.slug}`
+          })
+        }
+
+        breadcrumbItems.push({
+          '@type': 'ListItem',
+          position: article.value?.category ? 3 : 2,
+          name: article.value?.title || 'Article',
+          item: `${siteUrl}/article/${slug.value}`
+        })
+
+        return JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: breadcrumbItems
+        })
+      })
     }
   ]
 })
@@ -148,8 +217,36 @@ useHead({
 
     <!-- Article Content -->
     <article v-else-if="article" class="pb-16">
+      <!-- Breadcrumbs -->
+      <nav class="max-w-3xl mx-auto px-4 pt-8 pb-4" aria-label="Breadcrumb">
+        <ol class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <li>
+            <NuxtLink to="/" class="hover:text-primary transition-colors">
+              <UIcon name="i-heroicons-home" class="w-4 h-4" />
+            </NuxtLink>
+          </li>
+          <li>
+            <UIcon name="i-heroicons-chevron-right" class="w-3 h-3" />
+          </li>
+          <li v-if="article.category">
+            <NuxtLink
+              :to="`/category/${article.category.slug}`"
+              class="hover:text-primary transition-colors"
+            >
+              {{ article.category.name }}
+            </NuxtLink>
+          </li>
+          <li v-if="article.category">
+            <UIcon name="i-heroicons-chevron-right" class="w-3 h-3" />
+          </li>
+          <li class="text-gray-900 dark:text-white font-medium truncate">
+            {{ article.title }}
+          </li>
+        </ol>
+      </nav>
+
       <!-- Header Section -->
-      <header class="max-w-3xl mx-auto px-4 pt-12 pb-8 text-center">
+      <header class="max-w-3xl mx-auto px-4 pt-4 pb-8 text-center">
         <!-- Category Tags -->
         <div class="flex items-center justify-center gap-2 mb-6">
           <NuxtLink

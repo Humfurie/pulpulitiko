@@ -1,2 +1,9 @@
-User-Agent: *
-Disallow:
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /account
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://pulpulitiko.humfurie.org/sitemap.xml
