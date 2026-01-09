@@ -32,7 +32,7 @@ const columns: TableColumn<PoliticianListItem>[] = [
   { accessorKey: 'position', header: 'Position' },
   { accessorKey: 'party', header: 'Party' },
   { accessorKey: 'article_count', header: 'Articles' },
-  { id: 'actions', header: '' }
+  { id: 'actions', header: 'Actions' }
 ]
 
 // Party filter options
@@ -377,14 +377,18 @@ useSeoMeta({
               variant="ghost"
               size="sm"
               icon="i-heroicons-pencil"
-            />
+            >
+              Edit
+            </UButton>
             <UButton
               variant="ghost"
               size="sm"
               color="error"
               icon="i-heroicons-trash"
               @click="deletePolitician(row.original.id)"
-            />
+            >
+              Delete
+            </UButton>
           </div>
         </template>
       </UTable>

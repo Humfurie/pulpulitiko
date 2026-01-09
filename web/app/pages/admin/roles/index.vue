@@ -20,7 +20,7 @@ const columns = [
   { accessorKey: 'permission_count', header: 'Permissions' },
   { accessorKey: 'is_system', header: 'Type' },
   { accessorKey: 'created_at', header: 'Created' },
-  { id: 'actions', header: '' }
+  { id: 'actions', header: 'Actions' }
 ]
 
 async function fetchRoles() {
@@ -139,7 +139,9 @@ useSeoMeta({
               variant="ghost"
               size="sm"
               icon="i-heroicons-pencil"
-            />
+            >
+              Edit
+            </UButton>
             <UButton
               variant="ghost"
               size="sm"
@@ -147,7 +149,9 @@ useSeoMeta({
               icon="i-heroicons-trash"
               :disabled="row.original.is_system"
               @click="deleteRole(row.original.id, row.original.is_system)"
-            />
+            >
+              Delete
+            </UButton>
           </div>
         </template>
       </UTable>
