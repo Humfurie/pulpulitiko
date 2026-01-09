@@ -87,8 +87,8 @@ jobs:
       - name: Build Docker images with cache
         uses: docker/build-push-action@v5
         with:
-          context: ./api
-          file: ./api/Dockerfile
+          context: .
+          file: ./docker/api.Dockerfile
           tags: pulpulitiko-api:ci
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
@@ -98,8 +98,8 @@ jobs:
       - name: Build frontend with cache
         uses: docker/build-push-action@v5
         with:
-          context: ./web
-          file: ./web/Dockerfile
+          context: .
+          file: ./docker/web.Dockerfile
           tags: pulpulitiko-web:ci
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web

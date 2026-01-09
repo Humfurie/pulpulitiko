@@ -37,6 +37,7 @@
     "@tiptap/starter-kit": "^3.11.1",
     "@tiptap/vue-3": "^3.11.1",
     "@unhead/vue": "^2.0.19",
+    "commander": "^13.1.0",
     "eslint": "^9.39.1",
     "isomorphic-dompurify": "^2.35.0",
     "nuxt": "^4.2.2",
