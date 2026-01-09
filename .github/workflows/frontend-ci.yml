@@ -56,7 +56,7 @@ jobs:
           echo "Coverage check passed (thresholds in vitest.config.ts)"
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./web/coverage/coverage-final.json
           flags: frontend
