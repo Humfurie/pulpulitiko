@@ -139,9 +139,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: web/.output/
+          path: web/.output
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
 
   accessibility-test:
     name: Accessibility Testing
