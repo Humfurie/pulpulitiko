@@ -352,6 +352,39 @@ jobs:
           # Start remaining services
           docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d
 
+      - name: Run database migrations
+        run: |
+          # Wait for API container to be running
+          echo "Waiting for API container..."
+          for i in {1..30}; do
+            if [ "$(docker inspect -f '{{.State.Running}}' pulpulitiko-api 2>/dev/null)" == "true" ]; then
+              echo "API container is running"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "API container failed to start"
+              docker logs pulpulitiko-api
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Run migrations
+          echo "Running database migrations..."
+          docker exec pulpulitiko-api /usr/local/bin/migrate \
+            -path /app/migrations \
+            -database "postgres://politics:testpassword@postgres:5432/politics_test_db?sslmode=disable" \
+            up
+
+      - name: Seed test data
+        run: |
+          docker exec -e ADMIN_EMAIL=test@example.com \
+                     -e ADMIN_PASSWORD=TestPassword123! \
+                     -e ADMIN_NAME="Test Admin" \
+                     pulpulitiko-api /app/seed || echo "Seed skipped or failed"
+
+      - name: Wait for services to be ready
+        run: |
           echo "Waiting for services to be ready..."
           for i in {1..60}; do
             if curl -f http://localhost:8080/health > /dev/null 2>&1 && \
