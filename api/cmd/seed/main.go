@@ -856,7 +856,7 @@ func seedArticles(ctx context.Context, conn *pgx.Conn, authorEmail string) error
 		var articleID string
 		err = conn.QueryRow(ctx, `
 			INSERT INTO articles (slug, title, summary, content, author_id, category_id, status)
-			VALUES ($1, $2, $3, $4, $5, $6, 'draft')
+			VALUES ($1, $2, $3, $4, $5, $6, 'published')
 			RETURNING id
 		`, article.slug, article.title, article.summary, article.content, authorID, categoryID).Scan(&articleID)
 		if err != nil {
