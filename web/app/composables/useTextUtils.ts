@@ -9,10 +9,15 @@ export function useTextUtils() {
     // Try DOMParser first (browser environment) - handles ALL HTML entities correctly
     if (typeof DOMParser !== 'undefined') {
       try {
-        // Remove script and style tags first
+        // Add spaces after block elements to preserve word boundaries
+        // Must do this BEFORE parsing to ensure spaces are in the DOM
         const cleanHtml = html
           .replace(/<script[^>]*>.*?<\/script>/gi, '')
           .replace(/<style[^>]*>.*?<\/style>/gi, '')
+          // Replace closing block tags with space to preserve word boundaries
+          .replace(/<\/(p|div|li|h[1-6]|blockquote|pre|article|section|header|footer|main|aside)>/gi, ' ')
+          // Replace br tags with space
+          .replace(/<br[^>]*>/gi, ' ')
 
         // Use DOMParser for complete HTML entity decoding
         // This handles all entities including &apos;, &mdash;, &ldquo;, etc.
