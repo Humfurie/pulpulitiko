@@ -56,6 +56,7 @@ export function useSanitizedHtml() {
       ],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel'],
       // Restrict class attribute to only div/p with prose-* pattern (matches backend)
+      // eslint-disable-next-line no-useless-escape
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
       ALLOW_DATA_ATTR: false, // Prevent data-* XSS vectors
       SAFE_FOR_TEMPLATES: true, // Escape template syntax
@@ -92,6 +93,7 @@ export function useSanitizedHtml() {
       ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'del', 'a'],
       ALLOWED_ATTR: ['href'],
       // Explicit URL scheme whitelist (matches backend: http, https, mailto)
+      // eslint-disable-next-line no-useless-escape
       ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
       ALLOW_DATA_ATTR: false,
       SAFE_FOR_TEMPLATES: true

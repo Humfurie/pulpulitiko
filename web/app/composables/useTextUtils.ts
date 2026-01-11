@@ -49,8 +49,8 @@ export function useTextUtils() {
       .replace(/&ndash;/g, '–')
       .replace(/&ldquo;/g, '"')
       .replace(/&rdquo;/g, '"')
-      .replace(/&lsquo;/g, ''')
-      .replace(/&rsquo;/g, ''')
+      .replace(/&lsquo;/g, '\u2018') // Left single quotation mark
+      .replace(/&rsquo;/g, '\u2019') // Right single quotation mark
       .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
       .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
       // Collapse multiple spaces
