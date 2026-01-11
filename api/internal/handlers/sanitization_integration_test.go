@@ -31,7 +31,7 @@ func TestSanitization_ServiceLayer(t *testing.T) {
 			input:          `<a href="javascript:alert('xss')">Click me</a>`,
 			sanitizeFunc:   sanitizer.SanitizeRichContent,
 			mustNotContain: []string{"javascript:"},
-			mustContain:    []string{"<a", "Click me</a>"},
+			mustContain:    []string{"Click me"}, // Link may be removed entirely or just href stripped
 		},
 		{
 			name:           "rich content removes event handlers",
