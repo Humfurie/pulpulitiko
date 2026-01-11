@@ -15,6 +15,12 @@ jobs:
   docker-integration:
     name: Docker Integration Tests
     runs-on: ubuntu-latest
+    # Timeout set to 20 minutes (generous for Docker build + tests)
+    # Typical run time: 8-12 minutes
+    # If consistently exceeding 15 minutes, consider:
+    # - Breaking into parallel jobs (unit tests separate from E2E)
+    # - Optimizing Docker layer caching
+    # - Using smaller base images
     timeout-minutes: 20
 
     steps:
@@ -187,7 +193,13 @@ jobs:
           docker exec -e ADMIN_EMAIL=test@example.com \
                      -e ADMIN_PASSWORD=TestPassword123! \
                      -e ADMIN_NAME="Test Admin" \
-                     pulpulitiko-api /app/seed || echo "Seed skipped or failed"
+                     pulpulitiko-api /app/seed
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to seed test data - E2E tests require articles!"
+            echo "Check seed script logs above for errors"
+            exit 1
+          fi
+          echo "✅ Test data seeded successfully"
 
       - name: Wait for API health
         run: |
@@ -381,7 +393,13 @@ jobs:
           docker exec -e ADMIN_EMAIL=test@example.com \
                      -e ADMIN_PASSWORD=TestPassword123! \
                      -e ADMIN_NAME="Test Admin" \
-                     pulpulitiko-api /app/seed || echo "Seed skipped or failed"
+                     pulpulitiko-api /app/seed
+          if [ $? -ne 0 ]; then
+            echo "❌ Failed to seed test data - E2E tests require articles!"
+            echo "Check seed script logs above for errors"
+            exit 1
+          fi
+          echo "✅ Test data seeded successfully"
 
       - name: Wait for services to be ready
         run: |

@@ -36,16 +36,89 @@ const form = reactive({
   politician_ids: [] as string[]
 })
 
-// Word count calculation using DOMParser for accurate HTML parsing
-const wordCount = computed(() => countWordsInHtml(form.content))
+/**
+ * Word count thresholds based on SEO best practices
+ *
+ * References:
+ * - HubSpot (2024): 2,100-2,400 words for optimal search ranking
+ * - Backlinko: Long-form content (>1,000 words) ranks better
+ * - Yoast SEO: Minimum 300 words for indexing
+ * - Medium sweet spot: 1,600 words (7 min read)
+ *
+ * These thresholds are configurable and serve as guidance, not strict requirements.
+ * News articles may be shorter; investigative pieces may be longer.
+ */
+const WORD_COUNT_THRESHOLDS = {
+  minimum: 300,    // Below this: likely too short for SEO
+  short: 600,      // Short but acceptable for news briefs
+  good: 1000,      // Good length for most articles
+  excellent: 1600, // Optimal for engagement and SEO
+  outstanding: 2100 // Outstanding depth (HubSpot recommendation)
+}
+
+// Debounced word count to avoid expensive recalculation on every keystroke
+const debouncedWordCount = ref(0)
+const updateWordCount = useDebounceFn(() => {
+  debouncedWordCount.value = countWordsInHtml(form.content)
+}, 500) // Update 500ms after user stops typing
+
+// Watch for content changes and update word count
+watch(() => form.content, () => {
+  updateWordCount()
+}, { immediate: true })
+
+// Use debounced value for display to improve performance
+const wordCount = computed(() => debouncedWordCount.value)
 
 const wordCountStatus = computed(() => {
   const count = wordCount.value
-  if (count < 300) return { color: 'error' as const, label: 'Too short', message: 'Aim for at least 800 words for better SEO' }
-  if (count < 600) return { color: 'warning' as const, label: 'Short', message: 'Consider adding more content (800+ words recommended)' }
-  if (count < 800) return { color: 'warning' as const, label: 'Fair', message: 'Good length, but 1000+ words is ideal for SEO' }
-  if (count < 1500) return { color: 'success' as const, label: 'Good', message: 'Excellent length for SEO and engagement' }
-  return { color: 'info' as const, label: 'Excellent', message: 'Outstanding depth and detail!' }
+  const t = WORD_COUNT_THRESHOLDS
+
+  if (count < t.minimum) {
+    return {
+      color: 'error' as const,
+      label: 'Too short',
+      message: `Add at least ${t.minimum - count} more words (minimum ${t.minimum} for SEO indexing)`
+    }
+  }
+
+  if (count < t.short) {
+    return {
+      color: 'warning' as const,
+      label: 'Short',
+      message: `${t.good - count} more words recommended for better ranking (target: ${t.good}+)`
+    }
+  }
+
+  if (count < t.good) {
+    return {
+      color: 'warning' as const,
+      label: 'Fair',
+      message: `${t.good - count} more words to reach recommended length (${t.good}+ words)`
+    }
+  }
+
+  if (count < t.excellent) {
+    return {
+      color: 'success' as const,
+      label: 'Good',
+      message: `Great length! ${t.excellent - count} more words to reach optimal engagement (${t.excellent}+)`
+    }
+  }
+
+  if (count < t.outstanding) {
+    return {
+      color: 'success' as const,
+      label: 'Excellent',
+      message: `Excellent! ${t.outstanding - count} more words for peak performance (${t.outstanding}+)`
+    }
+  }
+
+  return {
+    color: 'info' as const,
+    label: 'Outstanding',
+    message: 'Outstanding depth! Top-tier content for SEO and engagement'
+  }
 })
 
 const categories = ref<Category[]>([])

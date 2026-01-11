@@ -227,6 +227,27 @@ NUXT_PUBLIC_API_URL=http://localhost:8080/api
 | Category lists | 30 minutes | Redis |
 | Static assets | 1 year | Cloudflare |
 
+## Documentation
+
+Comprehensive documentation is available in the following files:
+
+### Deployment & Operations
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment guide with Docker and Traefik
+- **[CLAUDE.md](CLAUDE.md)** - Project instructions for Claude Code (development setup)
+
+### Development & Implementation
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Feature implementation details and architecture decisions
+- **[VALIDATION_CHECKLIST.md](VALIDATION_CHECKLIST.md)** - Quality assurance and testing checklist
+- **[TESTING_SUMMARY.md](TESTING_SUMMARY.md)** - Testing strategy and coverage overview
+
+### CI/CD & Workflows
+- **[CI_CD_FIXES.md](CI_CD_FIXES.md)** - CI/CD troubleshooting and fixes
+- **[CI_CD_TESTING_GUIDE.md](CI_CD_TESTING_GUIDE.md)** - Guide for testing workflows locally with `act`
+- **[LINTER_REPORT.md](LINTER_REPORT.md)** - Code quality and linter configuration
+
+### Architecture
+- **[philippine-politics-blog-stack.md](philippine-politics-blog-stack.md)** - Technical stack overview and architecture
+
 ## License
 
 MIT

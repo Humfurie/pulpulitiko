@@ -49,7 +49,9 @@ export default defineNuxtConfig({
     apiInternalUrl: process.env.NUXT_API_INTERNAL_URL || 'http://api:8080/api',
     public: {
       apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8080/api',
-      siteUrl
+      siteUrl,
+      cspEnforce: process.env.NUXT_PUBLIC_CSP_ENFORCE || 'false',
+      minioEndpoint: process.env.NUXT_PUBLIC_MINIO_ENDPOINT || 'https://minio.humfurie.org'
     }
   },
 

@@ -1,8 +1,34 @@
+/**
+ * Content Security Policy (CSP) Plugin
+ *
+ * Implements defense-in-depth by setting CSP headers to prevent XSS, clickjacking,
+ * and other injection attacks.
+ *
+ * Environment Variables:
+ * - NUXT_PUBLIC_CSP_ENFORCE: Set to 'true' to enable enforcement mode (default: report-only)
+ *
+ * Usage:
+ * 1. Deploy with report-only mode (default)
+ * 2. Monitor CSP reports at /api/csp-report
+ * 3. Fix any violations
+ * 4. Set NUXT_PUBLIC_CSP_ENFORCE=true to enable enforcement
+ *
+ * HTTPS Enforcement:
+ * - Production: upgrade-insecure-requests directive is enabled
+ * - Development: HTTP is allowed for local development convenience
+ * - For production-like testing, use HTTPS with self-signed certificates
+ *   or configure Traefik/nginx with SSL termination
+ *
+ * SECURITY: Always test in report-only mode before enabling enforcement to avoid
+ * breaking legitimate functionality.
+ */
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('render:response', (response) => {
-    // Only apply CSP in non-development environments or when explicitly enabled
     const isDev = import.meta.dev
     const config = useRuntimeConfig()
+
+    // Check if CSP enforcement is enabled (default: report-only for safety)
+    const cspEnforce = config.public.cspEnforce === 'true' || config.public.cspEnforce === true
 
     // CSP directives
     const cspDirectives = [
@@ -51,13 +77,18 @@ export default defineNitroPlugin((nitroApp) => {
     // Join directives
     const cspHeader = cspDirectives.join('; ')
 
-    // Use report-only mode for safety (can be changed to enforcement later)
+    // Choose header based on enforcement mode
     if (isDev) {
+      // Development: always report-only
       response.headers!['Content-Security-Policy-Report-Only'] = cspHeader
+    } else if (cspEnforce) {
+      // Production with enforcement enabled
+      response.headers!['Content-Security-Policy'] = cspHeader
+      console.info('CSP: Enforcement mode ENABLED')
     } else {
-      // TODO: After testing in production, switch to enforcement mode:
-      // response.headers['Content-Security-Policy'] = cspHeader
+      // Production with report-only (default)
       response.headers!['Content-Security-Policy-Report-Only'] = cspHeader
+      console.info('CSP: Report-only mode (set NUXT_PUBLIC_CSP_ENFORCE=true to enforce)')
     }
 
     // Additional security headers

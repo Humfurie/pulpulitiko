@@ -1,13 +1,33 @@
 export function useTextUtils() {
   /**
    * Converts HTML to plain text, correctly handling HTML entities and nested tags
-   * Uses DOMParser for accurate parsing instead of regex
+   * Uses DOMParser for accurate parsing in browser, falls back to regex for SSR
    */
   function htmlToPlainText(html: string | undefined): string {
     if (!html) return ''
 
-    // Simple regex-based approach that works consistently across environments
-    // Replace block-level elements with spaces to preserve word boundaries
+    // Try DOMParser first (browser environment) - handles ALL HTML entities correctly
+    if (typeof DOMParser !== 'undefined') {
+      try {
+        // Remove script and style tags first
+        const cleanHtml = html
+          .replace(/<script[^>]*>.*?<\/script>/gi, '')
+          .replace(/<style[^>]*>.*?<\/style>/gi, '')
+
+        // Use DOMParser for complete HTML entity decoding
+        // This handles all entities including &apos;, &mdash;, &ldquo;, etc.
+        const doc = new DOMParser().parseFromString(cleanHtml, 'text/html')
+        return (doc.body.textContent || '')
+          .replace(/\s+/g, ' ') // Collapse multiple spaces
+          .trim()
+      } catch (e) {
+        // Fall through to regex approach if DOMParser fails
+        console.warn('DOMParser failed, falling back to regex approach', e)
+      }
+    }
+
+    // Fallback regex-based approach for SSR or if DOMParser fails
+    // This covers common entities but may miss uncommon ones
     return html
       .replace(/<script[^>]*>.*?<\/script>/gi, '')
       .replace(/<style[^>]*>.*?<\/style>/gi, '')
@@ -17,14 +37,22 @@ export function useTextUtils() {
       .replace(/<br[^>]*>/gi, ' ')
       // Remove all remaining HTML tags
       .replace(/<[^>]+>/g, '')
-      // Decode HTML entities
+      // Decode common HTML entities (incomplete - DOMParser is preferred)
       .replace(/&nbsp;/g, ' ')
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&mdash;/g, '—')
+      .replace(/&ndash;/g, '–')
+      .replace(/&ldquo;/g, '"')
+      .replace(/&rdquo;/g, '"')
+      .replace(/&lsquo;/g, ''')
+      .replace(/&rsquo;/g, ''')
       .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
       // Collapse multiple spaces
       .replace(/\s+/g, ' ')
       .trim()
