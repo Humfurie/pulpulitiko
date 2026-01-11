@@ -74,20 +74,20 @@ function handleMouseLeave() {
     </div>
 
     <!-- Content overlay -->
-    <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10 transform group-hover:translate-y-0 translate-y-2 transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]">
-      <div class="flex items-center gap-3 mb-4">
+    <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10 transform group-hover:translate-y-0 translate-y-2 transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] pointer-events-none">
+      <div class="flex items-center gap-3 mb-4 pointer-events-auto">
         <span v-if="article.published_at" class="px-4 py-1.5 bg-stone-800/70 backdrop-blur-md rounded-full text-white text-sm font-medium border border-stone-700/50">
           {{ formatDate(article.published_at) }}
         </span>
         <NuxtLink
           v-if="article.category_slug && article.category_name"
           :to="`/category/${article.category_slug}`"
-          class="px-4 py-1.5 bg-orange-500 rounded-full text-white text-sm font-semibold hover:bg-orange-400 transition-all duration-300 hover:scale-105"
+          class="px-4 py-1.5 bg-orange-500 rounded-full text-white text-sm font-semibold hover:bg-orange-400 transition-all duration-300 hover:scale-105 pointer-events-auto"
         >
           {{ article.category_name }}
         </NuxtLink>
       </div>
-      <NuxtLink :to="`/article/${article.slug}`">
+      <NuxtLink :to="`/article/${article.slug}`" class="pointer-events-auto">
         <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 tracking-tight">
           <span class="bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat bg-left-bottom group-hover:bg-[length:100%_2px] transition-all duration-500">
             {{ article.title }}
@@ -129,15 +129,15 @@ function handleMouseLeave() {
     </NuxtLink>
 
     <!-- Content overlay -->
-    <div class="absolute bottom-0 left-0 right-0 p-5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-400 ease-[cubic-bezier(0.19,1,0.22,1)]">
+    <div class="absolute bottom-0 left-0 right-0 p-5 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-400 ease-[cubic-bezier(0.19,1,0.22,1)] pointer-events-none">
       <NuxtLink
         v-if="article.category_slug && article.category_name"
         :to="`/category/${article.category_slug}`"
-        class="inline-block mb-3 px-3 py-1 bg-orange-500/90 backdrop-blur-sm rounded-full text-white text-xs font-semibold hover:bg-orange-400 transition-all duration-300"
+        class="inline-block mb-3 px-3 py-1 bg-orange-500/90 backdrop-blur-sm rounded-full text-white text-xs font-semibold hover:bg-orange-400 transition-all duration-300 pointer-events-auto"
       >
         {{ article.category_name }}
       </NuxtLink>
-      <NuxtLink :to="`/article/${article.slug}`">
+      <NuxtLink :to="`/article/${article.slug}`" class="pointer-events-auto">
         <h3 class="text-lg font-bold text-white leading-snug line-clamp-3">
           <span class="bg-gradient-to-r from-white to-white bg-[length:0%_1px] bg-no-repeat bg-left-bottom group-hover:bg-[length:100%_1px] transition-all duration-400">
             {{ article.title }}
