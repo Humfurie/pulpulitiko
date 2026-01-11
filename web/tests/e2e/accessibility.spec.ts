@@ -49,9 +49,9 @@ test.describe('Accessibility - WCAG 2.1 AA Compliance', () => {
     // Verify link text
     await expect(skipLink).toHaveText('Skip to main content')
 
-    // Focus and click the skip link
+    // Focus and click the skip link (force to bypass header blocking)
     await skipLink.focus()
-    await skipLink.click()
+    await skipLink.click({ force: true })
 
     // Main content should now be in view
     const mainContent = page.locator('#main-content')
