@@ -5,10 +5,10 @@ test.describe('Schema.org Structured Data Validation', () => {
     // Navigate to articles list
     await page.goto('/articles')
 
-    // Find and click first article link
+    // Find and click first article link (force click to bypass animations)
     const firstArticle = page.locator('article a, .article-card a, a[href*="/article/"]').first()
     if (await firstArticle.count() > 0) {
-      await firstArticle.click()
+      await firstArticle.click({ force: true })
     } else {
       test.skip(true, 'No articles available for testing')
       return

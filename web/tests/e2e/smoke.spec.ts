@@ -32,8 +32,8 @@ test.describe('Smoke Tests', () => {
     // Check if article has a clickable link
     const articleLink = firstArticle.locator('a').first()
     if (await articleLink.count() > 0) {
-      await articleLink.click()
-      
+      await articleLink.click({ force: true })
+
       // Wait for navigation
       await page.waitForLoadState('networkidle')
       

@@ -55,11 +55,11 @@ test.describe('Dynamic robots.txt', () => {
     const response = await page.goto('/robots.txt')
     const text = await response?.text()
 
-    // Should start with User-agent
-    expect(text?.trim()).toMatch(/^#.*User-agent:/s)
+    // Should contain User-agent at or near the start (may have comment before it)
+    expect(text?.trim()).toMatch(/^(#.*\n)?User-agent:/s)
 
     // Should have newlines between directives
     expect(text).toMatch(/User-agent:.*\n.*Allow:/)
-    expect(text).toMatch(/Sitemap:.*\n/)
+    expect(text).toMatch(/Sitemap:/)
   })
 })

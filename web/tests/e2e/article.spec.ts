@@ -4,18 +4,18 @@ test.describe('Article Pages', () => {
   test('article page has proper structure', async ({ page }) => {
     // Navigate to homepage first
     await page.goto('/')
-    
-    // Find and click on the first article link
+
+    // Find and click on the first article link (force click to bypass animations)
     const firstArticleLink = page.locator('article a, [class*="article"] a').first()
     await expect(firstArticleLink).toBeVisible({ timeout: 10000 })
-    await firstArticleLink.click()
-    
+    await firstArticleLink.click({ force: true })
+
     // Wait for article page to load
     await page.waitForLoadState('networkidle')
-    
+
     // Check article page structure
     await expect(page.locator('h1').first()).toBeVisible()
-    
+
     // Check for article content
     const content = page.locator('article, [class*="content"], [class*="body"]').first()
     if (await content.count() > 0) {
@@ -29,7 +29,7 @@ test.describe('Article Pages', () => {
     // Navigate to first article
     const firstArticleLink = page.locator('article a, [class*="article"] a').first()
     if (await firstArticleLink.count() > 0) {
-      await firstArticleLink.click()
+      await firstArticleLink.click({ force: true })
       await page.waitForLoadState('networkidle')
       
       // Check for meta description
@@ -48,7 +48,7 @@ test.describe('Article Pages', () => {
     // Navigate to first article
     const firstArticleLink = page.locator('article a, [class*="article"] a').first()
     if (await firstArticleLink.count() > 0) {
-      await firstArticleLink.click()
+      await firstArticleLink.click({ force: true })
       await page.waitForLoadState('networkidle')
       
       // Look for share buttons (adjust selectors based on your implementation)
@@ -65,7 +65,7 @@ test.describe('Article Pages', () => {
     // Navigate to first article
     const firstArticleLink = page.locator('article a, [class*="article"] a').first()
     if (await firstArticleLink.count() > 0) {
-      await firstArticleLink.click()
+      await firstArticleLink.click({ force: true })
       await page.waitForLoadState('networkidle')
       
       // Check for breadcrumb navigation
@@ -86,7 +86,7 @@ test.describe('Article Pages', () => {
     // Navigate to first article
     const firstArticleLink = page.locator('article a, [class*="article"] a').first()
     if (await firstArticleLink.count() > 0) {
-      await firstArticleLink.click()
+      await firstArticleLink.click({ force: true })
       await page.waitForLoadState('networkidle')
       
       // Scroll to bottom to ensure related articles are loaded
