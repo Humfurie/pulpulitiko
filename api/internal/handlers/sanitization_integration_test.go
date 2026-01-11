@@ -24,9 +24,9 @@ func TestArticleSanitization_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
-		name        string
-		articleData map[string]interface{}
-		checkField  string // Field to check in response
+		name           string
+		articleData    map[string]interface{}
+		checkField     string   // Field to check in response
 		mustNotContain []string // XSS patterns that should be removed
 		mustContain    []string // Safe content that should remain
 	}{

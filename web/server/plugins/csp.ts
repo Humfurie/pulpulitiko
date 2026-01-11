@@ -28,7 +28,7 @@ export default defineNitroPlugin((nitroApp) => {
     const config = useRuntimeConfig()
 
     // Check if CSP enforcement is enabled (default: report-only for safety)
-    const cspEnforce = config.public.cspEnforce === 'true' || config.public.cspEnforce === true
+    const cspEnforce = config.public.cspEnforce === 'true'
 
     // CSP directives
     const cspDirectives = [

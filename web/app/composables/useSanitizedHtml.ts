@@ -61,7 +61,7 @@ export function useSanitizedHtml() {
       ALLOW_DATA_ATTR: false, // Prevent data-* XSS vectors
       SAFE_FOR_TEMPLATES: true, // Escape template syntax
       // Hook to enforce class attribute restrictions (matches backend policy)
-      HOOK_AFTER_SANITIZE_ATTRIBUTES: (node) => {
+      HOOK_AFTER_SANITIZE_ATTRIBUTES: (node: Element) => {
         // Only allow class attribute on div and p elements with prose-* pattern
         if (node.hasAttribute('class')) {
           const tagName = node.tagName.toLowerCase()
