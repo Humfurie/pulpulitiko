@@ -18,6 +18,7 @@ const totalPages = ref(1)
 const error = ref('')
 
 const columns: TableColumn<ArticleListItem>[] = [
+  { id: 'image', header: 'Image' },
   { accessorKey: 'title', header: 'Title' },
   { accessorKey: 'category_name', header: 'Category' },
   { accessorKey: 'status', header: 'Status' },
@@ -99,6 +100,23 @@ useSeoMeta({
         :data="articles"
         :columns="columns"
       >
+        <template #image-cell="{ row }">
+          <div class="flex items-center justify-center">
+            <img
+              v-if="row.original.featured_image"
+              :src="row.original.featured_image"
+              :alt="row.original.title"
+              class="size-12 object-cover rounded"
+            />
+            <div
+              v-else
+              class="size-12 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded"
+            >
+              <UIcon name="i-heroicons-photo" class="size-6 text-gray-400" />
+            </div>
+          </div>
+        </template>
+
         <template #title-cell="{ row }">
           <NuxtLink :to="`/admin/articles/${row.original.id}`" class="block min-w-0">
             <p class="font-medium text-gray-900 dark:text-white truncate hover:text-primary">{{ row.original.title }}</p>
