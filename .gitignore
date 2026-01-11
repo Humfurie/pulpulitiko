@@ -2,7 +2,10 @@
 
 # Build artifacts
 api/server
-/.idea/remote-targets.xml
-/.idea/webServers.xml
-/.idea/deployment.xml
+
+# IDE files (ignore entire .idea directory)
+/.idea/
+
 /.playwright-mcp/
+/api/node_modules/
+/web/test-results/

@@ -10,12 +10,12 @@ services:
       APP_PORT: "8080"
       DATABASE_URL: postgres://politics:${POSTGRES_PASSWORD:-testpassword}@postgres:5432/${POSTGRES_DB:-politics_test_db}?sslmode=disable
       REDIS_URL: redis://redis:6379
-      MINIO_ENDPOINT: minio.humfurie.org
-      MINIO_PUBLIC_ENDPOINT: minio.humfurie.org
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio-test:9000}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-pulpulitiko-test}
-      MINIO_USE_SSL: "true"
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       JWT_SECRET: ${JWT_SECRET:-test-jwt-secret}
     labels: []
 
@@ -33,8 +33,17 @@ services:
 
   # Ensure postgres only uses default network
   postgres:
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-politics_test_db}
+      POSTGRES_USER: ${POSTGRES_USER:-politics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testpassword}
     networks:
       - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U politics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Ensure redis only uses default network
   redis:
@@ -43,7 +52,9 @@ services:
 
 networks:
   default:
-    driver: bridge
-  # Disable proxy network for CI
+    name: pulpulitiko_default
+    external: true
+  # Override proxy network from prod to not be external in CI
   proxy:
+    external: false
     driver: bridge

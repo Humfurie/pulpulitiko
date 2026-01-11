@@ -1,12 +1,16 @@
 <script setup lang="ts">
 const route = useRoute()
 const api = useApi()
+const { sanitizeRichContent } = useSanitizedHtml()
 const slug = route.params.slug as string
 
 const { data: content, status } = await useAsyncData(
   `voter-education-${slug}`,
   () => api.getVoterEducationBySlug(slug)
 )
+
+// Sanitize voter education content for safe display (XSS protection)
+const sanitizedContent = computed(() => sanitizeRichContent(content.value?.content))
 
 function getContentTypeIcon(type: string): string {
   switch (type) {
@@ -144,7 +148,7 @@ useSeoMeta({
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <div
             class="prose prose-lg dark:prose-invert max-w-none"
-            v-html="content.content"
+            v-html="sanitizedContent"
           />
         </div>
 

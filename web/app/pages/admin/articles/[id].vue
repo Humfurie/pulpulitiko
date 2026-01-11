@@ -11,6 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuth()
 const api = useApi()
+const { countWordsInHtml } = useTextUtils()
 const config = useRuntimeConfig()
 const baseUrl = import.meta.server ? config.apiInternalUrl : config.public.apiUrl
 
@@ -33,6 +34,91 @@ const form = reactive({
   status: 'draft' as 'draft' | 'published' | 'archived',
   tag_ids: [] as string[],
   politician_ids: [] as string[]
+})
+
+/**
+ * Word count thresholds based on SEO best practices
+ *
+ * References:
+ * - HubSpot (2024): 2,100-2,400 words for optimal search ranking
+ * - Backlinko: Long-form content (>1,000 words) ranks better
+ * - Yoast SEO: Minimum 300 words for indexing
+ * - Medium sweet spot: 1,600 words (7 min read)
+ *
+ * These thresholds are configurable and serve as guidance, not strict requirements.
+ * News articles may be shorter; investigative pieces may be longer.
+ */
+const WORD_COUNT_THRESHOLDS = {
+  minimum: 300,    // Below this: likely too short for SEO
+  short: 600,      // Short but acceptable for news briefs
+  good: 1000,      // Good length for most articles
+  excellent: 1600, // Optimal for engagement and SEO
+  outstanding: 2100 // Outstanding depth (HubSpot recommendation)
+}
+
+// Debounced word count to avoid expensive recalculation on every keystroke
+const debouncedWordCount = ref(0)
+const updateWordCount = useDebounceFn(() => {
+  debouncedWordCount.value = countWordsInHtml(form.content)
+}, 500) // Update 500ms after user stops typing
+
+// Watch for content changes and update word count
+watch(() => form.content, () => {
+  updateWordCount()
+}, { immediate: true })
+
+// Use debounced value for display to improve performance
+const wordCount = computed(() => debouncedWordCount.value)
+
+const wordCountStatus = computed(() => {
+  const count = wordCount.value
+  const t = WORD_COUNT_THRESHOLDS
+
+  if (count < t.minimum) {
+    return {
+      color: 'error' as const,
+      label: 'Too short',
+      message: `Add at least ${t.minimum - count} more words (minimum ${t.minimum} for SEO indexing)`
+    }
+  }
+
+  if (count < t.short) {
+    return {
+      color: 'warning' as const,
+      label: 'Short',
+      message: `${t.good - count} more words recommended for better ranking (target: ${t.good}+)`
+    }
+  }
+
+  if (count < t.good) {
+    return {
+      color: 'warning' as const,
+      label: 'Fair',
+      message: `${t.good - count} more words to reach recommended length (${t.good}+ words)`
+    }
+  }
+
+  if (count < t.excellent) {
+    return {
+      color: 'success' as const,
+      label: 'Good',
+      message: `Great length! ${t.excellent - count} more words to reach optimal engagement (${t.excellent}+)`
+    }
+  }
+
+  if (count < t.outstanding) {
+    return {
+      color: 'success' as const,
+      label: 'Excellent',
+      message: `Excellent! ${t.outstanding - count} more words for peak performance (${t.outstanding}+)`
+    }
+  }
+
+  return {
+    color: 'info' as const,
+    label: 'Outstanding',
+    message: 'Outstanding depth! Top-tier content for SEO and engagement'
+  }
 })
 
 const categories = ref<Category[]>([])
@@ -340,12 +426,36 @@ useSeoMeta({
                 <!-- Content editor with label -->
                 <UFormField label="Content" name="content" required class="w-full">
                   <template #hint>
-                    <span class="text-xs text-gray-400">Full article content with rich text formatting</span>
+                    <div class="flex items-center justify-between w-full">
+                      <span class="text-xs text-gray-400">Full article content with rich text formatting</span>
+                      <div class="flex items-center gap-2">
+                        <UBadge
+                          :color="wordCountStatus.color"
+                          variant="soft"
+                          size="sm"
+                          :aria-label="`Article has ${wordCount} words, status: ${wordCountStatus.label}`"
+                        >
+                          {{ wordCount }} words - {{ wordCountStatus.label }}
+                        </UBadge>
+                      </div>
+                    </div>
                   </template>
                   <RichTextEditor
                     v-model="form.content"
                     placeholder="Start writing your article..."
                   />
+                  <template #help>
+                    <div class="flex items-start gap-2 mt-2">
+                      <UIcon
+                        :name="wordCount >= 800 ? 'i-heroicons-check-circle' : 'i-heroicons-information-circle'"
+                        :class="wordCount >= 800 ? 'text-green-500' : 'text-gray-400'"
+                        class="w-4 h-4 mt-0.5 flex-shrink-0"
+                      />
+                      <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ wordCountStatus.message }}
+                      </span>
+                    </div>
+                  </template>
                 </UFormField>
               </div>
             </UCard>

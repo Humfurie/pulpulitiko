@@ -1,5 +1,15 @@
 declare const process: { env: Record<string, string | undefined> }
 
+// Validate NUXT_PUBLIC_SITE_URL for proper SEO configuration
+const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'https://pulpulitiko.com'
+if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+  throw new Error(
+    'NUXT_PUBLIC_SITE_URL must be a valid URL starting with http:// or https://\n' +
+    `Current value: "${siteUrl}"\n` +
+    'This URL is critical for SEO (canonical URLs, Open Graph tags, Schema.org, etc.)'
+  )
+}
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -39,12 +49,14 @@ export default defineNuxtConfig({
     apiInternalUrl: process.env.NUXT_API_INTERNAL_URL || 'http://api:8080/api',
     public: {
       apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8080/api',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://pulpulitiko.com'
+      siteUrl,
+      cspEnforce: process.env.NUXT_PUBLIC_CSP_ENFORCE || 'false',
+      minioEndpoint: process.env.NUXT_PUBLIC_MINIO_ENDPOINT || 'https://minio.humfurie.org'
     }
   },
 
   site: {
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://pulpulitiko.com',
+    url: siteUrl,
     name: 'Pulpulitiko'
   },
 

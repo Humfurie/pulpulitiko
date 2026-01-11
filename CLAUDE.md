@@ -47,3 +47,12 @@ Key variables in `.env`:
 - `JWT_SECRET` - Authentication secret
 - `RESEND_API_KEY` - Email service (optional)
 
+## Additional Documentation
+
+For comprehensive documentation, see:
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Feature implementation details
+- **[VALIDATION_CHECKLIST.md](VALIDATION_CHECKLIST.md)** - QA and testing checklist
+- **[CI_CD_TESTING_GUIDE.md](CI_CD_TESTING_GUIDE.md)** - Local workflow testing with `act`
+- **[README.md](README.md)** - Complete documentation index
+

@@ -1,7 +1,7 @@
 -- Migration: 000014_politician_import_logs
 -- Creates table for tracking Excel import operations
 
-CREATE TABLE politician_import_logs (
+CREATE TABLE IF NOT EXISTS politician_import_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     filename VARCHAR(500) NOT NULL,
     uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -28,8 +28,8 @@ CREATE TABLE politician_import_logs (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Indexes for performance
-CREATE INDEX idx_politician_import_logs_uploaded_by ON politician_import_logs(uploaded_by);
-CREATE INDEX idx_politician_import_logs_status ON politician_import_logs(status);
-CREATE INDEX idx_politician_import_logs_election_id ON politician_import_logs(election_id) WHERE election_id IS NOT NULL;
-CREATE INDEX idx_politician_import_logs_created_at ON politician_import_logs(created_at DESC);
+-- Indexes for performance (idempotent)
+CREATE INDEX IF NOT EXISTS idx_politician_import_logs_uploaded_by ON politician_import_logs(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_politician_import_logs_status ON politician_import_logs(status);
+CREATE INDEX IF NOT EXISTS idx_politician_import_logs_election_id ON politician_import_logs(election_id) WHERE election_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_politician_import_logs_created_at ON politician_import_logs(created_at DESC);

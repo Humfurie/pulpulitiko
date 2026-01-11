@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const api = useApi()
 const auth = useAuth()
+const { sanitizeComment } = useSanitizedHtml()
 
 const content = ref('')
 const isSubmitting = ref(false)
@@ -102,6 +103,9 @@ const formattedPreview = computed(() => {
       // Line breaks
       .replace(/\n/g, '<br>')
 })
+
+// Sanitize preview for safe display (XSS protection)
+const sanitizedPreview = computed(() => sanitizeComment(formattedPreview.value))
 
 // Filter users for mention dropdown
 const filteredMentionUsers = computed(() => {
@@ -424,13 +428,11 @@ function handleCancel() {
           </button>
         </div>
         <div v-else class="min-h-[52px]">
-          <!-- eslint-disable vue/no-v-html -->
           <div
             v-if="content.trim()"
             class="text-gray-700 dark:text-gray-300"
-            v-html="formattedPreview"
+            v-html="sanitizedPreview"
           />
-          <!-- eslint-enable vue/no-v-html -->
           <span v-else class="text-gray-400">Nothing to preview</span>
         </div>
       </div>

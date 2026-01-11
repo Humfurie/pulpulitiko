@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useGrouping } from './useGrouping'
-import type { GroupByOption, UseGroupingOptions } from './useGrouping'
 
 // Test data types
 interface TestPerson {
@@ -116,7 +115,9 @@ describe('useGrouping', () => {
     })
 
     it('should handle single item', async () => {
-      const items = ref([testPeople[0]])
+      const singlePerson = testPeople[0]
+      if (!singlePerson) throw new Error('Test data is missing')
+      const items = ref<TestPerson[]>([singlePerson])
       const groupBy = ref('department')
       const getGroupKey = (item: TestPerson, field: string) => item[field as keyof TestPerson] as string
 
@@ -125,7 +126,8 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(Object.keys(groupedItems.value)).toEqual(['Engineering'])
-      expect(groupedItems.value.Engineering).toHaveLength(1)
+      expect(groupedItems.value.Engineering).toBeDefined()
+      expect(groupedItems.value.Engineering!).toHaveLength(1)
     })
   })
 
@@ -616,7 +618,8 @@ describe('useGrouping', () => {
       const { groupedItems } = useGrouping(items, groupBy, getGroupKey)
 
       await nextTick()
-      const initialEngineeringCount = groupedItems.value.Engineering.length
+      expect(groupedItems.value.Engineering).toBeDefined()
+      const initialEngineeringCount = groupedItems.value.Engineering!.length
 
       items.value.push({
         id: 6,
@@ -627,7 +630,8 @@ describe('useGrouping', () => {
       })
       await nextTick()
 
-      expect(groupedItems.value.Engineering.length).toBe(initialEngineeringCount + 1)
+      expect(groupedItems.value.Engineering).toBeDefined()
+      expect(groupedItems.value.Engineering!.length).toBe(initialEngineeringCount + 1)
     })
 
     it('should handle removing items', async () => {
@@ -773,7 +777,7 @@ describe('useGrouping', () => {
       await nextTick()
 
       expect(groupedItems.value[longName]).toBeDefined()
-      expect(groupedItems.value[longName].length).toBe(1)
+      expect(groupedItems.value[longName]!).toHaveLength(1)
     })
   })
 

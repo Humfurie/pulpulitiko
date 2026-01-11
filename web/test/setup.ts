@@ -10,7 +10,8 @@ const localStorageMock = (() => {
       store[key] = value.toString()
     },
     removeItem: (key: string) => {
-      delete store[key]
+      const { [key]: _, ...rest } = store
+      store = rest
     },
     clear: () => {
       store = {}

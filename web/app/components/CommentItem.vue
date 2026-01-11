@@ -20,6 +20,7 @@ const emit = defineEmits<{
 
 const api = useApi()
 const auth = useAuth()
+const { sanitizeComment } = useSanitizedHtml()
 
 const showReplies = ref(props.isExpanded || false)
 const replies = ref<Comment[]>([])
@@ -145,6 +146,9 @@ function formatContent(content: string): string {
       // Line breaks
       .replace(/\n/g, '<br>')
 }
+
+// Sanitize formatted content for safe display (XSS protection)
+const sanitizedContent = computed(() => sanitizeComment(formatContent(props.comment.content)))
 
 // Get user slug from name for profile link
 function getUserSlug(name?: string): string {
@@ -329,12 +333,10 @@ defineExpose({ loadReplies })
         </div>
 
         <!-- Comment body (sanitized content) -->
-        <!-- eslint-disable vue/no-v-html -->
         <div
           class="mt-1 text-gray-700 dark:text-gray-300 break-words"
-          v-html="formatContent(comment.content)"
+          v-html="sanitizedContent"
         />
-        <!-- eslint-enable vue/no-v-html -->
 
         <!-- Actions row -->
         <div class="mt-3 flex items-center gap-4">

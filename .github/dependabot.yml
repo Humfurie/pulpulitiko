@@ -7,14 +7,10 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    labels:
-      - "dependencies"
-      - "go"
-      - "api"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 3
     reviewers:
       - "Humfurie"
     assignees:
@@ -27,10 +23,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    labels:
-      - "dependencies"
-      - "npm"
-      - "web"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -57,9 +49,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    labels:
-      - "dependencies"
-      - "docker"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -76,10 +65,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "ci"
     commit-message:
       prefix: "chore(ci)"
       include: "scope"

@@ -19,11 +19,57 @@ function handlePageChange(page: number) {
   navigateTo({ query: { page: page > 1 ? page : undefined } })
 }
 
+const config = useRuntimeConfig()
+const siteUrl = config.public.siteUrl
+
 useSeoMeta({
   title: 'Pulpulitiko - Philippine Politics News',
   ogTitle: 'Pulpulitiko - Philippine Politics News',
   description: 'Your trusted source for Philippine political news and commentary',
-  ogDescription: 'Your trusted source for Philippine political news and commentary'
+  ogDescription: 'Your trusted source for Philippine political news and commentary',
+  keywords: 'Philippine politics, political news, Philippines, government, elections, politicians',
+  ogImage: `${siteUrl}/pulpulitiko.png`,
+  ogUrl: siteUrl,
+  twitterCard: 'summary_large_image',
+  robots: 'index, follow'
+})
+
+// Canonical URL and Organization Schema
+useHead({
+  link: [
+    { rel: 'canonical', href: siteUrl }
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Pulpulitiko',
+        url: siteUrl,
+        logo: `${siteUrl}/pulpulitiko.png`,
+        description: 'Your trusted source for Philippine political news and commentary',
+        sameAs: []
+      })
+    },
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Pulpulitiko',
+        url: siteUrl,
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${siteUrl}/search?q={search_term_string}`
+          },
+          'query-input': 'required name=search_term_string'
+        }
+      })
+    }
+  ]
 })
 </script>
 

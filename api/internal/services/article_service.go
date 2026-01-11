@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -23,22 +23,32 @@ type ArticleService struct {
 	repo           *repository.ArticleRepository
 	politicianRepo *repository.PoliticianRepository
 	cache          *cache.RedisCache
+	sanitizer      *HTMLSanitizer
 }
 
-func NewArticleService(repo *repository.ArticleRepository, politicianRepo *repository.PoliticianRepository, cache *cache.RedisCache) *ArticleService {
+func NewArticleService(repo *repository.ArticleRepository, politicianRepo *repository.PoliticianRepository, cache *cache.RedisCache, sanitizer *HTMLSanitizer) *ArticleService {
 	return &ArticleService{
 		repo:           repo,
 		politicianRepo: politicianRepo,
 		cache:          cache,
+		sanitizer:      sanitizer,
 	}
 }
 
 func (s *ArticleService) Create(ctx context.Context, req *models.CreateArticleRequest) (*models.Article, error) {
+	// Sanitize HTML content to prevent XSS attacks
+	sanitizedContent := s.sanitizer.SanitizeRichContent(req.Content)
+	sanitizedSummary := req.Summary
+	if sanitizedSummary != nil {
+		cleaned := s.sanitizer.SanitizeRichContent(*sanitizedSummary)
+		sanitizedSummary = &cleaned
+	}
+
 	article := &models.Article{
 		Slug:          req.Slug,
 		Title:         req.Title,
-		Summary:       req.Summary,
-		Content:       req.Content,
+		Summary:       sanitizedSummary,
+		Content:       sanitizedContent,
 		FeaturedImage: req.FeaturedImage,
 		Status:        models.ArticleStatusDraft,
 	}
@@ -189,10 +199,12 @@ func (s *ArticleService) Update(ctx context.Context, id uuid.UUID, req *models.U
 		updates["title"] = *req.Title
 	}
 	if req.Summary != nil {
-		updates["summary"] = *req.Summary
+		sanitized := s.sanitizer.SanitizeRichContent(*req.Summary)
+		updates["summary"] = sanitized
 	}
 	if req.Content != nil {
-		updates["content"] = *req.Content
+		sanitized := s.sanitizer.SanitizeRichContent(*req.Content)
+		updates["content"] = sanitized
 	}
 	if req.FeaturedImage != nil {
 		updates["featured_image"] = *req.FeaturedImage
@@ -395,6 +407,6 @@ func hashFilter(filter *models.ArticleFilter) string {
 		filter.Search,
 	)
 
-	hash := md5.Sum([]byte(data))
+	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }

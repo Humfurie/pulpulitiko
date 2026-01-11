@@ -104,9 +104,12 @@ func main() {
 	electionRepo := repository.NewElectionRepository(db)
 	pollRepo := repository.NewPollRepository(db)
 
+	// Initialize HTML sanitizer for XSS protection
+	htmlSanitizer := services.NewHTMLSanitizer()
+
 	// Initialize services
 	politicianService := services.NewPoliticianService(politicianRepo, redisCache)
-	articleService := services.NewArticleService(articleRepo, politicianRepo, redisCache)
+	articleService := services.NewArticleService(articleRepo, politicianRepo, redisCache, htmlSanitizer)
 	categoryService := services.NewCategoryService(categoryRepo, redisCache)
 	tagService := services.NewTagService(tagRepo)
 	authService := services.NewAuthService(userRepo, roleRepo, authorRepo, emailService, cfg.JWTSecret)
@@ -116,7 +119,7 @@ func main() {
 	messageService := services.NewMessageService(messageRepo)
 	searchAnalyticsService := services.NewSearchAnalyticsService(searchAnalyticsRepo)
 	notificationService := services.NewNotificationService(notificationRepo, userRepo)
-	commentService := services.NewCommentService(commentRepo, articleRepo, notificationService)
+	commentService := services.NewCommentService(commentRepo, articleRepo, notificationService, htmlSanitizer)
 	politicianCommentService := services.NewPoliticianCommentService(politicianCommentRepo, politicianRepo, notificationService)
 	locationService := services.NewLocationService(locationRepo, redisCache)
 	politicalPartyService := services.NewPoliticalPartyService(politicalPartyRepo, redisCache)
